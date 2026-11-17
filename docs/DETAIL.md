@@ -14,11 +14,13 @@
 
 ## 数据格式
 
-情绪氛围光（主模式，纯视觉）：
+情绪氛围光（主模式，纯视觉，协议 v2——AI 可自定义情绪）：
 
 ```canvas
-{"kind":"mood","mood":"calm|curious|uneasy|warm|tired|excited|focused|amused|neutral","intensity":0.2-1.0,"transition":{"style":"soft|ripple|burst|dissolve|snap","speed":"slow|medium|fast"},"nebula":{"pattern":"spiral|ring|cloud|streak","density":0.1-1.0,"activity":0.1-1.0},"orb":{"size":0.1-1.0,"pulse":"steady|breathe|flicker","tone":"warm|cool|neutral|bright"}}
+{"kind":"mood","schema":2,"name":"被看穿时的不安","intensity":0.7,"palette":{"base":"#0b0a12","core":"#e8d9ff","tone":"#9a7aa6","spectrum":["#c9a3e0","#6a4b8f"]},"motion":{"speed":0.6,"amplitude":0.5,"rhythm":"uneven"},"form":"streak","transition":{"style":"burst","speed":"fast"}}
 ```
+
+省略 `palette` 时复用内置词表（calm / curious / uneasy / warm / tired / excited / focused / amused / neutral）。
 
 语义：
 

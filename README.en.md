@@ -74,15 +74,31 @@ Notes:
 
 Chat normally. When the model feels something it may emit one `canvas` block; the block collapses into a clickable pill in the conversation and the right-sidebar ambient light performs it.
 
-### Mood mode (primary)
+### Mood mode (primary, protocol v2)
+
+The model may pick a built-in mood, or **define its own emotion** (name + palette + motion + form):
 
 ```canvas
-{"kind":"mood","mood":"calm|curious|uneasy|warm|tired|excited|focused|amused|neutral","intensity":0.2-1.0,"transition":{"style":"soft|ripple|burst|dissolve|snap","speed":"slow|medium|fast"},"nebula":{"pattern":"spiral|ring|cloud|streak","density":0.1-1.0,"activity":0.1-1.0},"orb":{"size":0.1-1.0,"pulse":"steady|breathe|flicker","tone":"warm|cool|neutral|bright"}}
+{"kind":"mood","schema":2,"name":"the unease of being seen through","intensity":0.7,"palette":{"base":"#0b0a12","core":"#e8d9ff","tone":"#9a7aa6","spectrum":["#c9a3e0","#6a4b8f"]},"motion":{"speed":0.6,"amplitude":0.5,"rhythm":"uneven"},"form":"streak","transition":{"style":"burst","speed":"fast"}}
 ```
 
-- `mood` sets the subconscious colour; `intensity` its heat;
-- `transition` chooses the interpolation character and duration (`slow` ≈ 2.2s, `medium` ≈ 1.0s, `fast` ≈ 0.4s);
-- `nebula.pattern` reshapes the light; `orb.size` / `orb.pulse` / `orb.tone` shape the core.
+Omit `palette` to reuse a built-in palette:
+
+```canvas
+{"kind":"mood","name":"warm","intensity":0.65}
+```
+
+- `name`: free-text emotion name (history/debug only, never rendered)
+- `mood`: optional built-in key used as palette fallback
+- `palette.base/core/tone/spectrum`: AI-authored colours (hex; missing fields fall back)
+- `motion.speed/amplitude/rhythm`: motion speed, breathing amplitude, rhythm
+- `form`: `cloud` / `ring` / `streak` / `spiral`
+- `intensity`: 0.2–1.0
+- `transition.style/speed`: `soft`/`ripple`/`burst`/`dissolve`/`snap` × `slow`/`medium`/`fast`
+
+Built-in fallbacks: calm, curious, uneasy, warm, tired, excited, focused, amused, neutral.
+
+> Full protocol and validation rules: [docs/expression-protocol.md](docs/expression-protocol.md).
 
 ### Thinking modes (secondary)
 

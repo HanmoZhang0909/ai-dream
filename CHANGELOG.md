@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — 0.4.0
+
+- **Protocol v2**: the model can define its own emotion — `name`, `palette` (base/core/tone/spectrum), `motion` (speed/amplitude/rhythm) and `form`; built-in moods stay as palette fallback.
+- Renderer accepts AI-authored colours and motion parameters with hex validation and numeric clamping; invalid input degrades field by field.
+- System prompt rewritten around self-defined emotions instead of a fixed list.
+- Docs: product requirements, architecture and expression protocol added to `docs/`.
+
 ## 0.3.0 — 2026-11-16
 
 First public release.

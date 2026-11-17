@@ -134,7 +134,7 @@ interface EmotionState {
 |---|---|---|
 | 单文件 37KB，协议与渲染耦合 | 难测试/难移植 | v0.4 先增量改协议；v1.x 移植时拆 core/protocol/renderer |
 | 情绪词表硬编码 | 与"AI 自定义情绪"冲突 | v0.4 改为 AI 定义 + 内置 fallback |
-| 无 Config | 用户无法调参 | v0.4 加插件 Config |
+| 无 Config | 用户无法调参 | v0.5 加插件 Config（需先设计 Host→Client 配置通道） |
 | 无状态 | 每次从零开始 | v1.0 状态层 |
 | 无反馈入口 | 无法校准 | v1.0 |
 | 仅 DSH 宿主 | 平台受限 | v1.x MCP App 适配器 |

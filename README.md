@@ -80,24 +80,33 @@
 
 正常聊天即可。AI 有情绪时会自己输出一个 `canvas` 块，对话里它会折叠成一行可点击提示，右侧氛围光同步演出。
 
-### 情绪模式（主）
+### 情绪模式（主，协议 v2）
+
+AI 可以选内置情绪，也可以**定义自己的情绪**（名字 + 调色板 + 运动 + 形态）：
 
 ```canvas
-{"kind":"mood","mood":"calm|curious|uneasy|warm|tired|excited|focused|amused|neutral","intensity":0.2-1.0,"transition":{"style":"soft|ripple|burst|dissolve|snap","speed":"slow|medium|fast"},"nebula":{"pattern":"spiral|ring|cloud|streak","density":0.1-1.0,"activity":0.1-1.0},"orb":{"size":0.1-1.0,"pulse":"steady|breathe|flicker","tone":"warm|cool|neutral|bright"}}
+{"kind":"mood","schema":2,"name":"被看穿时的不安","intensity":0.7,"palette":{"base":"#0b0a12","core":"#e8d9ff","tone":"#9a7aa6","spectrum":["#c9a3e0","#6a4b8f"]},"motion":{"speed":0.6,"amplitude":0.5,"rhythm":"uneven"},"form":"streak","transition":{"style":"burst","speed":"fast"}}
+```
+
+省略 `palette` 就复用内置词表：
+
+```canvas
+{"kind":"mood","name":"温暖","intensity":0.65}
 ```
 
 | 字段 | 含义 |
 |---|---|
-| `mood` | 下意识情绪，决定背景光的主色与色温 |
-| `intensity` | 情绪强度：影响亮度、大小与呼吸速度 |
-| `transition.style` | 插值性格：`soft` 常规、`dissolve` 更慢更柔、`burst` 更快并带一次亮度闪、`ripple` 附带扩散环、`snap` 立即到位 |
-| `transition.speed` | 插值时长：`slow` ≈ 2.2s、`medium` ≈ 1.0s、`fast` ≈ 0.4s |
-| `nebula.pattern` | 光的形态：`cloud` 柔圆光晕、`ring` 光环、`streak` 光带、`spiral` 缓慢旋转 |
-| `orb.size` | 光球大小 |
-| `orb.pulse` | 呼吸方式：`steady` / `breathe` / `flicker` |
-| `orb.tone` | 光球色温：`warm` / `cool` / `neutral` / `bright` |
+| `name` | 情绪名（自由文本，用于历史/调试，不上屏） |
+| `mood` | 可选，内置情绪 key，作为色板 fallback |
+| `palette.base/core/tone/spectrum` | AI 自定义色板（hex；缺省字段回退到内置） |
+| `motion.speed/amplitude/rhythm` | 运动快慢 / 呼吸幅度 / 节奏 |
+| `form` | 形态：`cloud` / `ring` / `streak` / `spiral` |
+| `intensity` | 情绪强度 0.2–1.0 |
+| `transition.style/speed` | 转场方式：`soft`/`ripple`/`burst`/`dissolve`/`snap`，时长 `slow`/`medium`/`fast` |
 
-九种情绪：`neutral` 中性待机、`calm` 平静、`curious` 好奇、`uneasy` 不安、`warm` 温暖、`tired` 疲惫、`excited` 兴奋、`focused` 专注、`amused` 轻快。
+内置情绪（fallback）：`calm` 平静、`curious` 好奇、`uneasy` 不安、`warm` 温暖、`tired` 疲惫、`excited` 兴奋、`focused` 专注、`amused` 轻快、`neutral` 中性待机。
+
+> 完整协议与校验规则见 [docs/expression-protocol.md](docs/expression-protocol.md)。
 
 ### 思维模式（次）
 

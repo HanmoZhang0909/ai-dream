@@ -107,6 +107,48 @@ window.__ModuleLoader__.load({
       return TONES.has(value) ? value : 'default'
     }
 
+    const HEX_COLOR = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
+
+    function hexColor(value) {
+      if (typeof value !== 'string') return null
+      const text = value.trim()
+      return HEX_COLOR.test(text) ? text.toLowerCase() : null
+    }
+
+    /**
+     * Resolve the palette of one expression (protocol v2):
+     * AI-authored colours take precedence, the built-in mood palette is the fallback.
+     */
+    function resolveColors(raw, moodKey) {
+      const base = MOODS[moodKey] || MOODS.neutral
+      const source = raw.palette && typeof raw.palette === 'object' ? raw.palette : {}
+      const custom = {
+        base: hexColor(source.base),
+        core: hexColor(source.core),
+        tone: hexColor(source.tone),
+        spectrum: Array.isArray(source.spectrum)
+          ? source.spectrum.map(hexColor).filter(Boolean).slice(0, 4)
+          : [],
+      }
+      const anyCustom = custom.base || custom.core || custom.tone || custom.spectrum.length > 0
+      if (!anyCustom) {
+        return { base: base.base, tint: base.tint, spectrum: base.spectrum.slice(), core: base.core }
+      }
+      const core = custom.core || custom.spectrum[0] || base.core
+      const tone = custom.tone || custom.spectrum[1] || base.spectrum[1]
+      return {
+        base: custom.base || base.base,
+        tint: custom.tone || base.tint,
+        core,
+        spectrum: [
+          custom.spectrum[0] || core,
+          custom.spectrum[1] || tone,
+          custom.spectrum[2] || custom.spectrum[0] || tone,
+          custom.spectrum[3] || custom.spectrum[1] || core,
+        ],
+      }
+    }
+
     function normalize(raw) {
       if (!raw || typeof raw !== 'object') return null
       const kind = raw.kind
@@ -143,23 +185,31 @@ window.__ModuleLoader__.load({
         return { kind, title, nodes, edges }
       }
       if (kind === 'mood') {
-        const mood = Object.prototype.hasOwnProperty.call(MOODS, raw.mood) ? raw.mood : 'neutral'
+        const name = cut(raw.name, 40)
+        const moodKey = Object.prototype.hasOwnProperty.call(MOODS, raw.mood)
+          ? raw.mood
+          : Object.prototype.hasOwnProperty.call(MOODS, name) ? name : 'neutral'
         const transition = raw.transition && typeof raw.transition === 'object' ? raw.transition : {}
         const nebula = raw.nebula && typeof raw.nebula === 'object' ? raw.nebula : {}
         const orb = raw.orb && typeof raw.orb === 'object' ? raw.orb : {}
-        const neurons = Array.isArray(raw.neurons)
-          ? raw.neurons.filter(value => typeof value === 'string' && /^[imo]\d{1,2}$/.test(value)).slice(0, 12)
-          : []
+        const motion = raw.motion && typeof raw.motion === 'object' ? raw.motion : {}
+        const form = typeof raw.form === 'string' && NEBULA_PATTERNS.indexOf(raw.form) >= 0 ? raw.form : null
         return {
           kind,
-          mood,
+          name,
+          mood: moodKey,
+          colors: resolveColors(raw, moodKey),
           intensity: clamp(raw.intensity, 0.2, 1, 0.6),
+          motion: {
+            speed: clamp(motion.speed, 0.2, 2, 1),
+            amplitude: clamp(motion.amplitude, 0.1, 1, 0.5),
+          },
           transition: {
             style: pick(transition.style, TRANSITION_STYLES, 'soft'),
             speed: pick(transition.speed, Object.keys(TRANSITION_SPEEDS), 'medium'),
           },
           nebula: {
-            pattern: pick(nebula.pattern, NEBULA_PATTERNS, 'spiral'),
+            pattern: pick(form || nebula.pattern, NEBULA_PATTERNS, 'spiral'),
             density: clamp(nebula.density, 0.1, 1, 0.6),
             activity: clamp(nebula.activity, 0.1, 1, 0.5),
           },
@@ -168,7 +218,6 @@ window.__ModuleLoader__.load({
             pulse: pick(orb.pulse, ORB_PULSES, 'breathe'),
             tone: pick(orb.tone, ORB_TONES, 'neutral'),
           },
-          neurons,
         }
       }
       if (kind === 'cards') {
@@ -389,11 +438,12 @@ window.__ModuleLoader__.load({
     }
 
     function targetFrom(model) {
-      const palette = MOODS[model.mood] || MOODS.neutral
+      const palette = model.colors || MOODS[model.mood] || MOODS.neutral
       const intensity = model.intensity == null ? 0.6 : model.intensity
       const nebula = model.nebula || MOOD_DEFAULT.nebula
       const orb = model.orb || MOOD_DEFAULT.orb
       const transition = model.transition || MOOD_DEFAULT.transition
+      const motion = model.motion || { speed: 1, amplitude: 0.5 }
       const toneColor = orb.tone === 'warm' ? '#ff9a6b'
         : orb.tone === 'cool' ? '#66d8ff'
           : orb.tone === 'bright' ? '#ffffff'
@@ -413,8 +463,10 @@ window.__ModuleLoader__.load({
         rot: nebula.pattern === 'streak' ? -16 : 0,
         intensity,
         pattern: nebula.pattern,
-        pulseSpeed: orb.pulse === 'flicker' ? 5.2 : orb.pulse === 'steady' ? 0.5 : 2.2,
-        pulseAmp: orb.pulse === 'steady' ? 0.012 : orb.pulse === 'flicker' ? 0.05 : 0.03 * (0.5 + intensity),
+        pulseSpeed: (orb.pulse === 'flicker' ? 5.2 : orb.pulse === 'steady' ? 0.5 : 2.2) * motion.speed,
+        pulseAmp: (orb.pulse === 'steady' ? 0.012 : orb.pulse === 'flicker' ? 0.05 : 0.03 * (0.5 + intensity))
+          * (0.5 + motion.amplitude),
+        spin: (12 - intensity * 4) * motion.speed,
         style: transition.style,
         speed: transition.speed,
       }
@@ -612,7 +664,7 @@ window.__ModuleLoader__.load({
           }
           meta.phase += (dt / 1000) * current.pulseSpeed * Math.PI * 2
           if (current.pattern === 'spiral') {
-            meta.spiral += (dt / 1000) * (12 - current.intensity * 4)
+            meta.spiral += (dt / 1000) * current.spin
           } else if (Math.abs(meta.spiral) > 0.01) {
             meta.spiral += (0 - meta.spiral) * k
           } else {
