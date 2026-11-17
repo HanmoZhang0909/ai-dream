@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1 — 2026-11-17
+
+- Fix scroll replay never activating: `conversation.chat.turnTail` passes a `TurnLocation` object (read `.turn`), and the sentinel is now visible to `IntersectionObserver` (no negative margins, full-viewport observation, topmost visible turn wins).
+- Removed the temporary on-canvas debug line.
+
 ## 1.1.0 — 2026-11-17
 
 - Scroll replay: a 1px sentinel in the `conversation.chat.turnTail` slot reports which turn sits nearest the viewport top; scrolling above the newest turn renders that turn's emotion (or the nearest earlier expressed turn when it is silent) with a fast transition, and scrolling back to the bottom returns to live mode.

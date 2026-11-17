@@ -140,7 +140,7 @@ interface EmotionState {
 **位置检测（已实现）**：
 
 1. 在 `conversation.chat.turnTail` 注册 1px `TurnSentinel`（该 slot 的 props 自带 `turn`）；
-2. `IntersectionObserver` 的 root 取 `el.closest('[data-conversation-scroll]')`，`rootMargin: '-10% 0px -80% 0px'`，只把"靠近视口顶部"的 turn 视为可见；
+2. `IntersectionObserver` 的 root 取 `el.closest('[data-conversation-scroll]')`，观察整个视口（`threshold: 0`，不设 rootMargin）；哨兵为 1px 透明全宽元素，不加负 margin，保证可见；
 3. 多个哨兵之间取父元素 top 最小者写入共享 store，右栏用 `useTopTurn` 订阅；
 4. turn → 该轮 `canvas` 表达（`canvasFeed` 每块带上所属 turn）；无表达则向前找最近一次，并强制 `soft/fast` 转场。
 

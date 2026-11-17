@@ -467,8 +467,6 @@ window.__ModuleLoader__.load({
      */
     const timelineStore = { turn: null, listeners: new Set() }
     const sentinelTops = new Map()
-    let sentinelMounts = 0
-    let slotError = ''
 
     function setTopTurn(turn) {
       if (timelineStore.turn === turn) return
@@ -506,7 +504,6 @@ window.__ModuleLoader__.load({
     /** 1px sentinel in the turn-tail row; reports whether this turn is near the viewport top. */
     function TurnSentinel(props) {
       const ref = React.useRef(null)
-      sentinelMounts += 1
       // `turnTail` receives a TurnLocation object ({ turn, status, ... }), not a bare number.
       const rawTurn = props ? props.turn : undefined
       const turn = rawTurn && typeof rawTurn === 'object' && typeof rawTurn.turn === 'number'
@@ -520,7 +517,7 @@ window.__ModuleLoader__.load({
           for (const entry of entries) {
             reportSentinel(turn, entry.isIntersecting ? entry.boundingClientRect.top : null)
           }
-        }, { root: root || null, rootMargin: '-10% 0px -80% 0px' })
+        }, { root: root || null, threshold: 0 })
         observer.observe(element)
         return () => {
           reportSentinel(turn, null)
@@ -533,8 +530,8 @@ window.__ModuleLoader__.load({
         'data-ai-dream-sentinel': String(turn === null ? 'none' : turn),
         style: {
           height: 1,
-          marginTop: -8,
-          marginBottom: -9,
+          width: '100%',
+          opacity: 0,
           pointerEvents: 'none',
         },
       })
@@ -1251,22 +1248,8 @@ window.__ModuleLoader__.load({
             opacity: 0.72,
           },
         }, label))
-        const timelineDebug = 'turn=' + String(topTurn) + ' latest=' + String(timeline.latestTurn)
-          + ' turns=[' + Array.from(timeline.turnModels.keys()).join(',') + '] sentinels=' + sentinelTops.size
-          + ' mounts=' + sentinelMounts + ' err=' + slotError.slice(0, 80)
-        if (typeof window !== 'undefined') {
-          window.__aiDreamTimeline = {
-            topTurn,
-            latestTurn: timeline.latestTurn,
-            turnModels: Array.from(timeline.turnModels.keys()),
-            sentinelTops: sentinelTops.size,
-            mounts: sentinelMounts,
-            err: slotError,
-          }
-        }
         return h('div', { style: { height: '100%', background: BG, position: 'relative' } },
           h(MoodView, { model, revision: revision.current + bump }),
-          h('div', { style: { position: 'absolute', left: 8, bottom: 30, font: '10px/1.4 ui-monospace, monospace', color: 'rgba(255,255,255,0.6)', pointerEvents: 'none' } }, timelineDebug),
           h('div', {
             style: {
               position: 'absolute',
@@ -1403,8 +1386,7 @@ window.__ModuleLoader__.load({
           ctx.slots.inject(name, () => {
             try {
               return ctx.slots.register(options, component)
-            } catch (error) {
-              slotError = name + ': ' + String(error && error.message ? error.message : error)
+            } catch {
               return () => {}
             }
           })
