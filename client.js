@@ -92,7 +92,8 @@ window.__ModuleLoader__.load({
     const GOOD = 'var(--dsw-alias-state-success-primary, var(--dsw-alias-state-business-primary, #3aa76d))'
 
     /** Set in `apply`; lets the conversation pill open the sidebar tab. */
-    let openCanvas = () => {}
+    /** Open the canvas tab; returns whether the host accepted the request. */
+    let openCanvas = () => false
 
     // ---------------------------------------------------------------- parsing
 
@@ -1048,6 +1049,7 @@ window.__ModuleLoader__.load({
     /** Fence layer: replace the raw canvas JSON with a compact, clickable pill. */
     function CanvasFence(props) {
       const parsed = React.useMemo(() => parseCanvas(props.code), [props.code])
+      const [note, setNote] = React.useState(null)
       const ok = parsed !== null
       const failed = !props.streaming && !ok
       const kind = parsed ? parsed.kind : null
@@ -1061,13 +1063,18 @@ window.__ModuleLoader__.load({
             : kind === 'signature'
               ? '情绪签名已同步'
               : '已更新到 ' + NAME
-      const onClick = failed ? undefined : () => openCanvas()
+      const onClick = failed ? undefined : () => {
+        const opened = openCanvas()
+        setNote(opened ? '已在右侧打开' : '打开失败，请从右侧栏起始页进入')
+        setTimeout(() => setNote(null), 2400)
+      }
 
       const children = [
         h('span', { key: 'glyph', style: { color: failed ? WARN : ACCENT, fontWeight: 700, fontSize: 13 } }, failed ? '⚠' : '▦'),
         h('span', { key: 'status' }, status),
       ]
-      if (!failed) children.push(h('span', { key: 'hint', style: { color: CAPTION } }, '· 点这里打开'))
+      if (note) children.push(h('span', { key: 'note', style: { color: CAPTION } }, '· ' + note))
+      else if (!failed) children.push(h('span', { key: 'hint', style: { color: CAPTION } }, '· 点这里打开'))
 
       return h('div', null,
         h(onClick ? 'button' : 'div', {
@@ -1102,8 +1109,10 @@ window.__ModuleLoader__.load({
         openCanvas = () => {
           try {
             ctx.sidebarRight.openTab(KIND)
+            return true
           } catch {
             // no mounted Session surface yet: the guide page remains the entry
+            return false
           }
         }
 
