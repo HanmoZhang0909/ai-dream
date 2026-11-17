@@ -1,7 +1,22 @@
+# Dependencies and package manager output
 node_modules/
-*.log
 *.tgz
+
+# OS metadata
 .DS_Store
 Thumbs.db
+desktop.ini
 
+# Editor state
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+
+# Local-only design notes (kept on the author's machine, never published)
 docs/design-notes.md
+
+# Temporary frames from the docs/demo.gif render pipeline
+docs/_*.png
