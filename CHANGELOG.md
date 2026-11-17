@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.1 — 2026-11-17
+
+- Added `docs/iterations.md`: the ten-round autonomous iteration record (per-round increment, self-test evidence, engineering lessons, remaining backlog).
+- README and docs index link the iteration record; docs status reflects the wrap-up.
+
 ## 1.10.0 — 2026-11-17
 
 - Model-side calibration: `~/.dsh/storages/dsh-ai-dream/calibration.json` (`tone` / `note` / `intensity`) is read by the host at load, sanitized and injected as a `## Calibration` section of the system prompt, so calibration shapes the model's own expression rather than only the visuals.

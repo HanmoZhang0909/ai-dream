@@ -169,7 +169,7 @@ node scripts/check-fence-regex.mjs
 # 本地安装后：改 client.js → 刷新页面（或等 HMR 轮询重建）
 ```
 
-> 文档索引与维护规则见 [docs/README.md](docs/README.md)；产品需求、技术框架、表达协议分别在 `docs/product.md`、`docs/architecture.md`、`docs/expression-protocol.md`。
+> 文档索引与维护规则见 [docs/README.md](docs/README.md)；产品需求、技术框架、表达协议分别在 `docs/product.md`、`docs/architecture.md`、`docs/expression-protocol.md`，自主迭代记录见 `docs/iterations.md`。
 
 仓库结构：
 

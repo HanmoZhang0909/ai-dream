@@ -24,6 +24,7 @@
 | `CHANGELOG.md` | 版本历史 | 每次发版 |
 | `docs/index.json` | 插件市场索引 | 每次发版（版本 + pinned commit） |
 | `docs/mcp-app.md` | MCP App（ChatGPT/Claude）移植说明 | 移植形态、宿主限制、验收清单变化 |
+| `docs/iterations.md` | 自主迭代记录（每轮增量 + 自测证据 + 工程经验） | 每轮结束后追加 |
 | `mcp/app-manifest.json` | 可移植的工具契约（`express_emotion`） | 协议字段/枚举/范围变化（CI 校验） |
 | `mcp/server.mjs` | stdio JSON-RPC MCP server（handler 纯函数） | 工具/资源/协议方法变化（CI 单测） |
 | `renderer/core.mjs` | 与宿主无关的渲染核心（协议规范化/插值参数；MCP 渲染器共用） | 渲染语义变化（CI 单测 + 与客户端同步复制） |
@@ -73,5 +74,5 @@
 
 ## 当前状态
 
-- **最近发布**：`1.10.0` —— 模型侧校准（本地 `calibration.json` 注入系统提示，全链路已验证）；
-- **下一步**：收尾（README/路线图整理、最终发布与总结）。
+- **最近发布**：`1.10.1` —— 收尾：自主迭代记录 `docs/iterations.md` + 路线图状态整理；
+- **下一步**：见 `docs/iterations.md`「剩余待办」（MCP 真机验证需用户账号；流式表达、天气/角色形态、双向校准、分发宣传）。

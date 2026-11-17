@@ -26,6 +26,7 @@ const required = [
   'docs/expression-protocol.md',
   'docs/DETAIL.md',
   'docs/mcp-app.md',
+  'docs/iterations.md',
   'mcp/app-manifest.json',
   'mcp/server.mjs',
   'renderer/core.mjs',
