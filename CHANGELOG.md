@@ -1,0 +1,19 @@
+# Changelog
+
+## 0.3.0 — 2026-11-16
+
+First public release.
+
+- **AI Dream** — Artificial Intelligence Driven Real-time Emotional Ambient Medium.
+- Continuous emotional glow in the DSH right sidebar, driven by `requestAnimationFrame` interpolation (no frame replacement).
+- Mood vocabulary of nine emotions, each with its own palette; `intensity` scales heat, size and breathing.
+- AI-chosen transitions: `soft` / `dissolve` / `burst` / `ripple` / `snap` × `slow` / `medium` / `fast`.
+- Nebula patterns (`cloud` / `ring` / `streak` / `spiral`) change the light's form with a cross-fade.
+- Idle decay: without new input the glow settles back towards a calm baseline.
+- Secondary thinking modes: structural `diagram` / `cards` blocks.
+- Zero-build, zero-dependency client bundle (single `client.js`, `react` from the host module table).
+- Respects `prefers-reduced-motion`; only `canvas` fenced blocks are rendered.
+
+## Renamed earlier in development
+
+- `@local/dsh-ai-canvas` → `dsh-ai-canvas` → **`dsh-ai-dream`**.

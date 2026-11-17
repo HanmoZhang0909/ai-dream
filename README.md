@@ -1,5 +1,7 @@
 # AI Dream
 
+[![ci](https://github.com/HanmoZhang0909/ai-dream/actions/workflows/ci.yml/badge.svg)](https://github.com/HanmoZhang0909/ai-dream/actions/workflows/ci.yml)
+
 > **A**rtificial **I**ntelligence **D**riven **R**eal-time **E**motional **A**mbient **M**edium
 > 让每个 AI 的感受有形状。
 > *A shape for every feeling.*
@@ -110,7 +112,10 @@ Plugin bundle
 ```bash
 # 语法检查（无需安装依赖）
 node --check client.js
-node --check index.js
+node --input-type=module -e "await import('./index.js')"
+
+# fence 提取器回归测试（防止行内 ```canvas 被误识别）
+node scripts/check-fence-regex.mjs
 
 # 本地安装后：改 client.js → 刷新页面（或等 HMR 轮询重建）
 ```

@@ -1,0 +1,22 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Syntax check (client half)
+        run: node --check client.js
+      - name: Syntax check (host half)
+        run: node --input-type=module -e "await import('./index.js'); console.log('index.js loads')"
+      - name: Fence extractor regression
+        run: node scripts/check-fence-regex.mjs
+      - name: JSON validation
+        run: node -e "for (const f of ['package.json','locale/en.json','locale/zh.json']) JSON.parse(require('fs').readFileSync(f,'utf8')); console.log('json ok')"

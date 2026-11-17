@@ -1,5 +1,7 @@
 # AI Dream
 
+[![ci](https://github.com/HanmoZhang0909/ai-dream/actions/workflows/ci.yml/badge.svg)](https://github.com/HanmoZhang0909/ai-dream/actions/workflows/ci.yml)
+
 > **A**rtificial **I**ntelligence **D**riven **R**eal-time **E**motional **A**mbient **M**edium
 > A shape for every feeling.
 
@@ -89,7 +91,8 @@ Design notes:
 
 ```bash
 node --check client.js
-node --check index.js
+node --input-type=module -e "await import('./index.js')"
+node scripts/check-fence-regex.mjs
 ```
 
 Then refresh the page after editing (or wait for HMR to rebuild).

@@ -24,6 +24,10 @@
     "url": "https://github.com/HanmoZhang0909/ai-dream/issues"
   },
   "type": "module",
+  "engines": {
+    "node": ">=24",
+    "dsh": ">=0.2.2-rc.3"
+  },
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
@@ -37,6 +41,7 @@
     "locale/*.json",
     "docs",
     "examples",
+    "CHANGELOG.md",
     "icon.svg"
   ],
   "dsh": {
