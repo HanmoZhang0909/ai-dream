@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.0 — 2026-11-17
+
+- **Session continuity**: the client keeps the recent emotion history and the glow always interpolates from its current state (the renderer was already continuous, so expressions now feel like one evolving mood).
+- **Cross-session baseline (client)**: the emotion signature is cached in `localStorage`; a new session resolves signature names before the host init completes, and the fresh signature overwrites the cache.
+- **User calibration**: three quiet controls under the canvas — 「不像」/「再强一点」/「再淡一点」 — adjust an intensity bias (-0.4..0.4) that applies immediately and persists in `localStorage`.
+- Honest limits: calibration is a client-side visual bias (no prompt write-back), and both the bias and the signature cache are per-browser; model-side learning and host-side signature reuse are 1.0.x work.
+
 ## Unreleased
 
 - Tests: `scripts/check-config.mjs` covers configuration clamping and signature parsing (prose/code-fence wrappers, invalid colours, unknown enums, minimum emotion count); CI runs it.

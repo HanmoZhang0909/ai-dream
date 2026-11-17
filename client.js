@@ -182,6 +182,58 @@ window.__ModuleLoader__.load({
       return name ? SIGNATURE.get(name) || null : null
     }
 
+    /** Session emotion history (v1.0): newest last, capped. */
+    const HISTORY = []
+
+    /** User calibration (v1.0): a small intensity bias applied to every expression. */
+    const CALIBRATION = { intensityBias: 0 }
+    const CALIBRATION_KEY = 'ai-dream:calibration'
+    const SIGNATURE_CACHE_KEY = 'ai-dream:signature'
+
+    function loadLocalState() {
+      try {
+        const calibration = JSON.parse(window.localStorage.getItem(CALIBRATION_KEY) || 'null')
+        if (calibration && typeof calibration.intensityBias === 'number') {
+          CALIBRATION.intensityBias = Math.min(0.4, Math.max(-0.4, calibration.intensityBias))
+        }
+      } catch {
+        // storage unavailable: defaults stand
+      }
+    }
+
+    function saveCalibration() {
+      try {
+        window.localStorage.setItem(CALIBRATION_KEY, JSON.stringify(CALIBRATION))
+      } catch {
+        // ignore storage failures
+      }
+    }
+
+    /** Cross-session signature cache: names keep resolving before the host init finishes. */
+    function loadCachedSignature() {
+      try {
+        const cached = JSON.parse(window.localStorage.getItem(SIGNATURE_CACHE_KEY) || 'null')
+        return cached && Array.isArray(cached.emotions) ? cached.emotions : null
+      } catch {
+        return null
+      }
+    }
+
+    function saveCachedSignature(emotions) {
+      try {
+        window.localStorage.setItem(SIGNATURE_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), emotions }))
+      } catch {
+        // ignore storage failures
+      }
+    }
+
+    function recordHistory(model) {
+      if (!model || model.kind !== 'mood') return
+      const name = model.name || model.mood || ''
+      HISTORY.push({ name, intensity: model.intensity, at: Date.now() })
+      if (HISTORY.length > 24) HISTORY.shift()
+    }
+
     /** Validate one signature entry (shared by `signature` and `define` blocks). */
     function normalizeEmotionEntry(raw) {
       if (!raw || typeof raw !== 'object') return null
@@ -995,6 +1047,11 @@ window.__ModuleLoader__.load({
       // Host-side emotion signature (v0.5) and runtime config (v0.6) projections.
       const wire = props.useProjection ? props.useProjection('emotionSignature') : undefined
       const wireConfig = props.useProjection ? props.useProjection('aiDreamConfig') : undefined
+      const [bump, setBump] = React.useState(0)
+
+      React.useEffect(() => {
+        loadLocalState()
+      }, [])
 
       // Fold the whole timeline in order: `define`/`signature` blocks register
       // emotions, and the last non-define block is what belongs on screen.
@@ -1006,6 +1063,15 @@ window.__ModuleLoader__.load({
           for (const entry of wire.emotions) {
             const normalized = normalizeEmotionEntry(entry)
             if (normalized) SIGNATURE.set(normalized.name, normalized)
+          }
+          saveCachedSignature(wire.emotions)
+        } else if (SIGNATURE.size === 0) {
+          const cached = loadCachedSignature()
+          if (cached) {
+            for (const entry of cached) {
+              const normalized = normalizeEmotionEntry(entry)
+              if (normalized) SIGNATURE.set(normalized.name, normalized)
+            }
           }
         }
         if (feed == null) return { latest: null, parsedAny: false }
@@ -1028,7 +1094,15 @@ window.__ModuleLoader__.load({
       if (timeline.latest) shown.current = timeline.latest
 
       const failed = feed != null && !timeline.parsedAny && shown.current == null
-      const model = shown.current || (failed ? null : { ...MOOD_DEFAULT, intensity: CONFIG.defaultIntensity })
+      const baseModel = shown.current || (failed ? null : { ...MOOD_DEFAULT, intensity: CONFIG.defaultIntensity })
+      // Calibration bias is applied at render time so feedback takes effect immediately.
+      const model = baseModel && baseModel.kind === 'mood'
+        ? { ...baseModel, intensity: clamp(baseModel.intensity + CALIBRATION.intensityBias, 0.2, 1) }
+        : baseModel
+
+      React.useEffect(() => {
+        recordHistory(baseModel)
+      }, [shown.current])
 
       // Every distinct model bumps `revision`; the glide itself is driven by the
       // rAF engine and needs no scene remount.
@@ -1053,7 +1127,40 @@ window.__ModuleLoader__.load({
       }
 
       if (model.kind === 'mood') {
-        return h('div', { style: { height: '100%', background: BG } }, h(MoodView, { model, revision: revision.current }))
+        const adjust = delta => {
+          CALIBRATION.intensityBias = Math.min(0.4, Math.max(-0.4, CALIBRATION.intensityBias + delta))
+          saveCalibration()
+          setBump(value => value + 1)
+        }
+        const controls = [['不像', -0.15], ['再强一点', 0.08], ['再淡一点', -0.08]].map(([label, delta]) => h('button', {
+          key: label,
+          type: 'button',
+          onClick: () => adjust(delta),
+          style: {
+            border: '0.5px solid ' + BORDER,
+            background: 'rgba(8,12,20,0.55)',
+            color: LABEL_2,
+            borderRadius: 6,
+            padding: '3px 8px',
+            fontSize: 11,
+            font: 'inherit',
+            cursor: 'pointer',
+            opacity: 0.72,
+          },
+        }, label))
+        return h('div', { style: { height: '100%', background: BG, position: 'relative' } },
+          h(MoodView, { model, revision: revision.current + bump }),
+          h('div', {
+            style: {
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 8,
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 6,
+            },
+          }, controls))
       }
 
       return h('div', {
