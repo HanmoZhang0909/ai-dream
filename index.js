@@ -177,9 +177,9 @@ export function apply(ctx, config) {
     if (!dsh || !event || event.type !== 'user/message') return
     const source = event.data && event.data.source
     if (!source || source.kind !== 'user') return
+    syncConfig(session, settings)
     const header = session.header
     if (header && header.origin === 'subagent') return
-    syncConfig(session, settings)
     if (!settings.signatureEnabled) return
     if (inflight.has(session) || hasSignature(session)) return
     inflight.add(session)
@@ -194,7 +194,15 @@ function syncConfig(session, settings) {
   try {
     const last = snapshotEvents(session).filter(event => event && event.type === CONFIG_RECORD_TYPE).at(-1)
     if (last && JSON.stringify(last.data) === JSON.stringify(settings)) return
-    dsh.appendPluginRecord(session, CONFIG_RECORD_TYPE, settings)
+    // A plugin record must be committed outside the session/event publication,
+    // otherwise the commit reenters publication and is rejected.
+    setTimeout(() => {
+      try {
+        dsh.appendPluginRecord(session, CONFIG_RECORD_TYPE, settings)
+      } catch (error) {
+        // Delivery is best-effort: the client keeps its defaults.
+      }
+    }, 0)
   } catch (error) {
     // Configuration delivery is best-effort: defaults still apply on the client.
   }

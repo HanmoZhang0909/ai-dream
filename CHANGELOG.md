@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1 — 2026-11-17
+
+- Fix: the config record was dropped by the session publication reentrancy guard; it is now committed on the next tick. Sessions receive iDreamConfig (and the client applies it).
+
+
 ## 0.6.0 — 2026-11-17
 
 - **Plugin configuration**: the host resolves a configuration object from the Cordis row config (`cordis.patch.yml` in the profile) and commits it to the session as `plugin:ai-dream/config`; a second session projection (`aiDreamConfig`) delivers it to the client.
