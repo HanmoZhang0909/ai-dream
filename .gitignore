@@ -15,8 +15,5 @@ desktop.ini
 # Logs
 *.log
 
-# Local-only design notes (kept on the author's machine, never published)
-docs/design-notes.md
-
 # Temporary frames from the docs/demo.gif render pipeline
 docs/_*.png
