@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.0 — 2026-11-17
+
+- Extracted `renderer/core.mjs`: the host-independent renderer core (protocol normalization, palette resolution, interpolation targets, tau shaping). The DSH client keeps an equivalent copy inside `client.js` for the zero-build constraint.
+- New `scripts/check-renderer-core.mjs` unit tests (CI) cover primitives, palette fallbacks, clamping, built-in lookup, tau ordering and render targets.
+- `docs/mcp-app.md` step 1 is done; architecture documents the duplication rule.
+
 ## 1.5.0 — 2026-11-17
 
 - MCP App port groundwork: `docs/mcp-app.md` documents the host shapes and constraints, and `mcp/app-manifest.json` defines the portable `express_emotion` tool contract.

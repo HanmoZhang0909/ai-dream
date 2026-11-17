@@ -27,6 +27,7 @@ const required = [
   'docs/DETAIL.md',
   'docs/mcp-app.md',
   'mcp/app-manifest.json',
+  'renderer/core.mjs',
   'examples/moods.md',
 ]
 for (const rel of required) {

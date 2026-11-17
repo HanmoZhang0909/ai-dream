@@ -185,6 +185,8 @@ node scripts/check-fence-regex.mjs
 │   └── demo.gif          README 演示动图（由 demo.html 渲染）
 ├── scripts/
 │   └── check-fence-regex.mjs   fence 提取器回归测试
+├── renderer/
+│   └── core.mjs         与宿主无关的渲染核心（协议规范化/插值参数，MCP 渲染器共用）
 └── icon.svg
 ```
 

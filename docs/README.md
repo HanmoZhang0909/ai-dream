@@ -25,6 +25,7 @@
 | `docs/index.json` | 插件市场索引 | 每次发版（版本 + pinned commit） |
 | `docs/mcp-app.md` | MCP App（ChatGPT/Claude）移植说明 | 移植形态、宿主限制、验收清单变化 |
 | `mcp/app-manifest.json` | 可移植的工具契约（`express_emotion`） | 协议字段/枚举/范围变化（CI 校验） |
+| `renderer/core.mjs` | 与宿主无关的渲染核心（协议规范化/插值参数；MCP 渲染器共用） | 渲染语义变化（CI 单测 + 与客户端同步复制） |
 | `docs/demo.html` | 独立视觉复刻页 | 视觉参数/内置色板变化 |
 
 ## 改动同步清单

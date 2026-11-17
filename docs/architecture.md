@@ -76,6 +76,8 @@ core/emotion-dom.js  DOM 渲染后端
 
 > 拆分时机：**v1.x 移植 MCP App 时**（届时需要可移植的纯 JS 核心）。v0.4 先在单文件内增量支持协议 v2，贯彻"越简单越好"。
 
+**可移植核心（v1.6）**：`renderer/core.mjs` 抽出与宿主无关的纯函数（`normalizeMood`、`resolveColors`、`targetFrom`、`tauFor` 等），由 `scripts/check-renderer-core.mjs` 单测覆盖；`client.js` 因零构建约束保留一份等价实现，两者语义需同步（改动渲染语义时同时更新）。
+
 ## 4. 状态与记忆
 
 ```ts
