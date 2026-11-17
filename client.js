@@ -1262,6 +1262,42 @@ window.__ModuleLoader__.load({
             // no transcript surface: nothing to scroll
           }
         }
+        const jumpToTurn = turn => {
+          try {
+            const sentinel = document.querySelector('[data-ai-dream-sentinel="' + turn + '"]')
+            if (sentinel && typeof sentinel.scrollIntoView === 'function') {
+              sentinel.scrollIntoView({ block: 'start', behavior: 'smooth' })
+            }
+          } catch {
+            // no transcript surface: nothing to scroll
+          }
+        }
+        // Mini emotion timeline: recent expressed turns as colour dots; click to replay one.
+        const dots = []
+        if (CONFIG.replayEnabled !== false) {
+          const turns = Array.from(timeline.turnModels.keys()).sort((a, b) => a - b).slice(-8)
+          for (const turn of turns) {
+            const dotModel = timeline.turnModels.get(turn)
+            const core = dotModel && dotModel.colors && dotModel.colors.core ? dotModel.colors.core : '#9a7aa6'
+            dots.push(h('button', {
+              key: 'dot-' + turn,
+              type: 'button',
+              title: '第 ' + String(turn) + ' 轮',
+              'aria-label': '第 ' + String(turn) + ' 轮',
+              onClick: () => jumpToTurn(turn),
+              style: {
+                width: 7,
+                height: 7,
+                padding: 0,
+                border: '0',
+                borderRadius: '50%',
+                background: core,
+                opacity: turn === topTurn ? 0.95 : 0.45,
+                cursor: 'pointer',
+              },
+            }))
+          }
+        }
         return h('div', { style: { height: '100%', background: BG, position: 'relative' } },
           h(MoodView, { model, revision: revision.current + bump }),
           replaying
@@ -1272,7 +1308,7 @@ window.__ModuleLoader__.load({
                 position: 'absolute',
                 left: '50%',
                 transform: 'translateX(-50%)',
-                bottom: 34,
+                bottom: 46,
                 border: '0.5px solid ' + BORDER,
                 background: 'rgba(8,12,20,0.6)',
                 color: LABEL_2,
@@ -1284,6 +1320,20 @@ window.__ModuleLoader__.load({
                 opacity: 0.8,
               },
             }, '回看 · 第 ' + String(topTurn) + ' 轮 · 回到最新')
+            : null,
+          dots.length
+            ? h('div', {
+              style: {
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: 24,
+                display: 'flex',
+                gap: 5,
+                justifyContent: 'center',
+                alignItems: 'center',
+              },
+            }, dots)
             : null,
           h('div', {
             style: {

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.9.0 — 2026-11-17
+
+- Mini emotion timeline under the canvas: the latest eight expressed turns render as colour dots (each dot uses that turn's light-core colour); clicking a dot scrolls the transcript to that turn. Hidden when `replayEnabled` is off.
+
 ## 1.8.0 — 2026-11-17
 
 - MCP server skeleton `mcp/server.mjs`: stdio JSON-RPC with `initialize`, `ping`, `tools/list`, `tools/call`, `resources/list`, `resources/read`; `express_emotion` normalizes through `renderer/core.mjs` and the renderer HTML is served as an `ai-dream://renderer` resource.

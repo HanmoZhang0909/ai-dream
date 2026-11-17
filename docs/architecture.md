@@ -157,6 +157,8 @@ interface EmotionState {
 
 回看提示（v1.2）：`topTurn < latestTurn` 时面板底部显示「回看 · 第 N 轮 · 回到最新」，点击把 `[data-conversation-scroll]` 滚到底部（自动退出回看）。
 
+迷你情绪时间轴（v1.9）：底部渲染最近 8 个有表达的轮次为颜色点（取该轮 `colors.core`），点击用 `[data-ai-dream-sentinel="<turn>"]` 的 `scrollIntoView` 跳回该轮；`replayEnabled: false` 时整体隐藏。
+
 **模式与渲染**：
 
 - `mode: live | replay`：滚到底部 → live（跟随最新表达，保留 AI 选择的 transition）；离开底部 → replay；
