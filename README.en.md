@@ -3,9 +3,9 @@
 > An **emotional outlet for AI** in [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
 > A continuously flowing light in the right sidebar — not a diagram of the conversation, but a visual of how the model feels right now.
 
-![Screenshot](docs/screenshot.png)
-
-> Screenshot placeholder: run the canvas once and drop an image at `docs/screenshot.png`.
+> Screenshot placeholder: run the canvas once, save an image as `docs/screenshot.png`, then un-comment the line below.
+>
+> `<!-- ![Screenshot](docs/screenshot.png) -->`
 
 ## What it is
 

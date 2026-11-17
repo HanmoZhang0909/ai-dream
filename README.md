@@ -3,9 +3,9 @@
 > 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 **AI 情感出口**。
 > 右侧栏一块连续流动的光——不是解释对话，而是表达 AI 自己的情绪状态。
 
-![状态截图](docs/screenshot.png)
-
-> 截图位待补：把画布跑起来截一张放在 `docs/screenshot.png` 即可。
+> 截图位待补：把画布跑起来截一张放在 `docs/screenshot.png`，然后取消下面这行的注释。
+>
+> `<!-- ![状态截图](docs/screenshot.png) -->`
 
 ## 它是什么
 
