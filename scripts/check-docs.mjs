@@ -25,6 +25,8 @@ const required = [
   'docs/architecture.md',
   'docs/expression-protocol.md',
   'docs/DETAIL.md',
+  'docs/mcp-app.md',
+  'mcp/app-manifest.json',
   'examples/moods.md',
 ]
 for (const rel of required) {

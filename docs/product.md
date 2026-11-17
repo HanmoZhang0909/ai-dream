@@ -71,7 +71,8 @@
 
 ### v1.x — 平台移植与形态扩展
 
-- [ ] MCP App 适配器（ChatGPT / Claude 沙箱 iframe 版）；
+- [x] MCP App 移植规格 + 可移植工具契约（`docs/mcp-app.md`、`mcp/app-manifest.json`，CI 校验字段与协议一致）；
+- [ ] MCP App 渲染器 HTML 与 MCP server 骨架；
 - [ ] 视觉形态扩展：天气语义（晴/阴/雾/雨）、角色形象（远期）；
 - [ ] 流式表达：协议边生成边漂移（partial-json）。
 

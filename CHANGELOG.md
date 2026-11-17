@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.0 — 2026-11-17
+
+- MCP App port groundwork: `docs/mcp-app.md` documents the host shapes and constraints, and `mcp/app-manifest.json` defines the portable `express_emotion` tool contract.
+- New CI check `scripts/check-mcp-manifest.mjs` keeps the manifest fields, enums and ranges in sync with expression protocol v2 (and requires the port doc to exist).
+
 ## 1.4.0 — 2026-11-17
 
 - New config flags: `replayEnabled` (turn scroll replay on/off) and `calibrationEnabled` (show/hide the calibration controls). Both are delivered through the existing `aiDreamConfig` projection and applied by the client.

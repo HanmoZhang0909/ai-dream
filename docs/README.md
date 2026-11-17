@@ -23,6 +23,8 @@
 | `README.md` / `README.en.md` | 安装、快速上手、使用、FAQ | 安装方式、用户可见行为变化 |
 | `CHANGELOG.md` | 版本历史 | 每次发版 |
 | `docs/index.json` | 插件市场索引 | 每次发版（版本 + pinned commit） |
+| `docs/mcp-app.md` | MCP App（ChatGPT/Claude）移植说明 | 移植形态、宿主限制、验收清单变化 |
+| `mcp/app-manifest.json` | 可移植的工具契约（`express_emotion`） | 协议字段/枚举/范围变化（CI 校验） |
 | `docs/demo.html` | 独立视觉复刻页 | 视觉参数/内置色板变化 |
 
 ## 改动同步清单
@@ -68,5 +70,5 @@
 
 ## 当前状态
 
-- **最近发布**：`1.4.0` —— 配置化增强（回看开关、校准按钮开关）；
-- **下一步**：回看体验打磨 / MCP App 移植准备 / 模型侧校准通道。
+- **最近发布**：`1.5.0` —— MCP App 移植规格 + 可移植工具契约（manifest 由 CI 校验）；
+- **下一步**：MCP 渲染器 HTML / server 骨架 → 回看体验打磨 → 模型侧校准通道。

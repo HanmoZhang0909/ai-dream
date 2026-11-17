@@ -1,0 +1,65 @@
+{
+  "name": "ai-dream",
+  "title": "AI Dream",
+  "description": "Emotional ambient medium for AI: the model expresses how it feels as a continuously evolving glow.",
+  "manifestVersion": 1,
+  "protocol": 2,
+  "tool": {
+    "name": "express_emotion",
+    "description": "Express the assistant's current emotional state as a visual specification. Call this only when there is something worth feeling; emitting nothing keeps the previous expression.",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "const": "mood" },
+        "name": { "type": "string", "maxLength": 40 },
+        "intensity": { "type": "number", "minimum": 0.2, "maximum": 1 },
+        "palette": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "base": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" },
+            "core": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" },
+            "tone": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" },
+            "spectrum": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 4,
+              "items": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" }
+            }
+          }
+        },
+        "motion": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "speed": { "type": "number", "minimum": 0.2, "maximum": 2 },
+            "amplitude": { "type": "number", "minimum": 0.1, "maximum": 1 },
+            "rhythm": { "enum": ["steady", "breathing", "uneven"] }
+          }
+        },
+        "form": { "enum": ["cloud", "ring", "streak", "spiral"] },
+        "transition": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "style": { "enum": ["soft", "ripple", "burst", "dissolve", "snap"] },
+            "speed": { "enum": ["slow", "medium", "fast"] }
+          }
+        }
+      }
+    }
+  },
+  "resources": {
+    "renderer": "resources/ai-dream.html",
+    "sandbox": "iframe",
+    "persistence": "none",
+    "notes": "Renderer must run without host DOM access, respect prefers-reduced-motion, and clamp every numeric field again."
+  },
+  "hosts": {
+    "dsh": { "kind": "in-process-plugin" },
+    "chatgpt": { "kind": "mcp-app", "display": "inline|pip" },
+    "claude": { "kind": "mcp-app", "display": "inline|side-panel" }
+  }
+}
