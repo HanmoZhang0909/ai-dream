@@ -1,7 +1,10 @@
-# dsh-ai-canvas
+# AI Dream
 
-> 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 **AI 情感出口**。
-> 右侧栏一块连续流动的光——不是解释对话，而是表达 AI 自己的情绪状态。
+> **A**rtificial **I**ntelligence **D**riven **R**eal-time **E**motional **A**mbient **M**edium
+> 让每个 AI 的感受有形状。
+
+给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 **AI 情感出口**：
+右侧栏一块连续流动的光——不是解释对话，而是表达 AI 自己的情绪状态。
 
 > 截图位待补：把画布跑起来截一张放在 `docs/screenshot.png`，然后取消下面这行的注释。
 >
@@ -15,7 +18,7 @@
 - **纯视觉**：画布上没有任何文字，颜色、亮度、运动、形态承担表达；
 - **AI 自主**：每一轮由模型自己决定要不要表达、表达什么，不逼迫、不每轮必画；
 - **连续演化**：由 `requestAnimationFrame` 逐帧插值，新状态不会"跳帧"，而是滑过去；长时间没有新表达会自然衰减回基线；
-- **可选的双模式**：主模式是情绪光晕，次模式保留结构化的 `diagram` / `cards`，用于确实需要解释结构的场合。
+- **可选的双模式**：主模式是情绪氛围光，次模式保留结构化的 `diagram` / `cards`，用于确实需要解释结构的场合。
 
 ## 安装
 
@@ -23,7 +26,7 @@
 
 1. 打开 DSH 的 **插件** 页，选择 **Add plugin**（或 **添加插件**），目标选**本仓库目录**（绝对路径）；
 2. 安装完成后按提示刷新页面；
-3. 打开右侧栏，在起始页点「**画布**」卡片。
+3. 打开右侧栏，在起始页点「**AI Dream**」卡片。
 
 > 也可以让 Agent 用 `plugin_manager` 的 `install_bundle`，`target` 传本目录的绝对路径。
 
@@ -35,7 +38,7 @@
 
 ## 使用
 
-正常聊天即可。AI 有情绪时会自己输出一个 `canvas` 块，对话里它会折叠成一行可点击提示，右侧画布同步演出。
+正常聊天即可。AI 有情绪时会自己输出一个 `canvas` 块，对话里它会折叠成一行可点击提示，右侧氛围光同步演出。
 
 ### 情绪模式（主）
 
@@ -74,7 +77,7 @@ Plugin bundle
 ├── client.js         Client 半边：单文件 lazy-CJS
 │   ├── 右栏 tab        sidebarRightTabs.register + sidebar.right.pane.tab
 │   ├── fence 折叠层    conversation.chat.markdown.fence（key = canvas）
-│   └── rAF 引擎        目标参数 → 逐帧指数插值 → CSS 自定义属性 → 光晕
+│   └── rAF 引擎        目标参数 → 逐帧指数插值 → CSS 自定义属性 → 氛围光
 ├── cordis.patch.yml  bundle patch
 ├── locale/*.json     插件行标题/描述
 └── docs/DETAIL.md    插件详情页
@@ -87,13 +90,13 @@ Plugin bundle
   → useChat 选择器取最新一块 → JSON 校验/归一化
   → 目标参数（颜色 / 尺寸 / 透明度 / 模糊 / 形态）
   → rAF 每帧指数插值（τ 由 transition 决定）
-  → 写入 CSS 自定义属性 → 光晕连续演化
+  → 写入 CSS 自定义属性 → 氛围光连续演化
 ```
 
 技术要点：
 
 - **零依赖**：`react` 从宿主模块表 `require('react')` 取得，不打包任何第三方库；
-- **主题安全**：UI 元素只用宿主 `--dsw-alias-*` token；光晕本身属于 artwork，使用自有色板；
+- **主题安全**：UI 元素只用宿主 `--dsw-alias-*` token；氛围光本身属于 artwork，使用自有色板；
 - **可访问性**：尊重 `prefers-reduced-motion`，开启后停止动画、直接到目标状态；
 - **形态切换**：`pattern` 变化用双层交叉淡化，形状不插值但过渡连续。
 
@@ -112,7 +115,7 @@ node --check index.js
 ```
 .
 ├── index.js              Host 半边（系统提示）
-├── client.js             Client 半边（画布全部渲染逻辑）
+├── client.js             Client 半边（氛围光全部渲染逻辑）
 ├── cordis.patch.yml
 ├── package.json
 ├── locale/{en,zh}.json

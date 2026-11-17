@@ -1,18 +1,20 @@
-# AI 画布
+# AI Dream
 
-一块常驻右侧栏的 AI 表达窗口：用一片会呼吸的星云，纯视觉地流露 AI 对当前对话的情绪状态；次要模式可以画结构化图解 / 卡片。
+**A**rtificial **I**ntelligence **D**riven **R**eal-time **E**motional **A**mbient **M**edium —— 让每个 AI 的感受有形状。
+
+一块常驻右侧栏的 AI 表达窗口：用一片会呼吸的连续光晕，纯视觉地流露 AI 对当前对话的情绪状态；次要模式可以画结构化图解 / 卡片。
 
 ## 用法
 
 1. 安装后在会话里正常聊天，AI 会自己决定这一轮要不要表达。
 2. 打开画布有两种方式：
-   - 右侧栏起始页里的「画布」卡片；
+   - 右侧栏起始页里的「AI Dream」卡片；
    - 对话里每次出现画布时的那条可点击提示。
-3. 没有新表达时，画布保持当前状态；从未表达过时显示中性待机星云。
+3. 没有新表达时，画布保持当前状态并缓慢回落；从未表达过时显示中性待机光晕。
 
 ## 数据格式
 
-情绪星云（主模式，纯视觉）：
+情绪氛围光（主模式，纯视觉）：
 
 ```canvas
 {"kind":"mood","mood":"calm|curious|uneasy|warm|tired|excited|focused|amused|neutral","intensity":0.2-1.0,"transition":{"style":"soft|ripple|burst|dissolve|snap","speed":"slow|medium|fast"},"nebula":{"pattern":"spiral|ring|cloud|streak","density":0.1-1.0,"activity":0.1-1.0},"orb":{"size":0.1-1.0,"pulse":"steady|breathe|flicker","tone":"warm|cool|neutral|bright"}}
@@ -20,7 +22,7 @@
 
 语义：
 
-- `mood` + `intensity`：下意识情绪（背景光球的颜色与热度）；
+- `mood` + `intensity`：下意识情绪（背景光的颜色与热度）；
 - `nebula`：光球形态，`cloud` 柔圆光晕、`ring` 光环、`streak` 光带、`spiral` 缓慢旋转的光；
 - `orb`：光球本身，主动想表达的东西（大小 / 呼吸 / 色温）；
 - `transition`：这次变化的过渡方式与快慢（柔和 / 涟漪 / 爆发 / 溶解 / 瞬切）。
@@ -30,7 +32,7 @@
 ## 已知限制
 
 - 画布状态来自当前已加载的对话节点，不跨会话、不持久化到磁盘。
-- 情绪与星云都是受控参数，不是自由生成画面；视觉由客户端内置。
+- 情绪是受控词表（9 种），不是自由生成画面；视觉由客户端内置。
 - 画布数据解析失败时保留上一版成功结果。
 - 尊重系统「减少动态效果」设置：开启后停止所有动画。
 - 插件只渲染 `canvas` 语言的 fence；其他语言的 fence 不受影响。

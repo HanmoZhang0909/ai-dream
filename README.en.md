@@ -1,7 +1,10 @@
-# dsh-ai-canvas
+# AI Dream
 
-> An **emotional outlet for AI** in [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
-> A continuously flowing light in the right sidebar — not a diagram of the conversation, but a visual of how the model feels right now.
+> **A**rtificial **I**ntelligence **D**riven **R**eal-time **E**motional **A**mbient **M**edium
+> Giving every AI's feelings a shape.
+
+An **emotional outlet for AI** in [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
+A continuously flowing light in the right sidebar — not a diagram of the conversation, but a visual of how the model feels right now.
 
 > Screenshot placeholder: run the canvas once, save an image as `docs/screenshot.png`, then un-comment the line below.
 >
@@ -15,7 +18,7 @@ A pure-visual window for an AI to express its own emotional state:
 - **Pure visual** — no text on the canvas at all; colour, light, motion and form carry the meaning;
 - **Model-driven** — the model decides each turn whether and how to express something;
 - **Continuous** — a `requestAnimationFrame` engine interpolates every parameter frame by frame, so changes glide instead of cutting; with no new input the glow slowly decays back to a calm baseline;
-- **Two modes** — the emotional glow is primary; structural `diagram` / `cards` remain as a secondary mode for when an explanation really needs a shape.
+- **Two modes** — the emotional ambient light is primary; structural `diagram` / `cards` remain as a secondary mode for when an explanation really needs a shape.
 
 ## Install
 
@@ -23,7 +26,7 @@ Requires the DSH Web GUI (`profile=web`).
 
 1. Open **Plugins → Add plugin** and pick **this directory** (absolute path);
 2. Refresh the page when prompted;
-3. Open the right sidebar and pick the **canvas** card on the guide page.
+3. Open the right sidebar and pick the **AI Dream** card on the guide page.
 
 Notes:
 
@@ -33,7 +36,7 @@ Notes:
 
 ## Usage
 
-Chat normally. When the model feels something it may emit one `canvas` block; the block collapses into a clickable pill in the conversation and the right-sidebar canvas performs it.
+Chat normally. When the model feels something it may emit one `canvas` block; the block collapses into a clickable pill in the conversation and the right-sidebar ambient light performs it.
 
 ### Mood mode (primary)
 
@@ -69,7 +72,7 @@ Plugin bundle
 └── docs/DETAIL.md
 ```
 
-Data flow: the latest `canvas` block from the transcript → validated/normalized → target parameters → per-frame interpolation → CSS custom properties → the glow.
+Data flow: the latest `canvas` block from the transcript → validated/normalized → target parameters → per-frame interpolation → CSS custom properties → the ambient light.
 
 Design notes:
 

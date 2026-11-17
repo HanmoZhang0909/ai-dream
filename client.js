@@ -11,12 +11,12 @@
  * renders it as an SVG diagram or a card grid. No durable state.
  */
 window.__ModuleLoader__.load({
-  id: 'dsh-ai-canvas',
+  id: 'dsh-ai-dream',
   factory(require) {
     const React = require('react')
     const h = React.createElement
 
-    const PKG = 'dsh-ai-canvas'
+    const PKG = 'dsh-ai-dream'
     const KIND = 'ai-canvas'
     const NAME = '画布'
 
@@ -969,8 +969,8 @@ window.__ModuleLoader__.load({
           guide: [{
             id: 'canvas',
             order: 50,
-            title: () => NAME,
-            description: () => '把对话里的结构画成图解',
+            title: () => 'AI Dream',
+            description: () => '让每个 AI 的感受有形状',
           }],
         }), 'ai-canvas tab type')
 

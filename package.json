@@ -1,25 +1,27 @@
 {
-  "name": "dsh-ai-canvas",
-  "version": "0.2.0",
-  "description": "AI 情感出口：DSH 右侧栏一块连续流动的光，用纯视觉表达 AI 自己的情绪状态。",
+  "name": "dsh-ai-dream",
+  "version": "0.3.0",
+  "description": "AI Dream — Artificial Intelligence Driven Real-time Emotional Ambient Medium. 让每个 AI 的感受有形状：DSH 右侧栏一块连续流动的情绪氛围光。",
   "license": "MIT",
   "author": "HanmoZhang0909",
   "keywords": [
+    "ai-dream",
     "dsh-plugin",
     "deepseek-harness",
+    "affective-computing",
     "ai",
     "emotion",
     "generative-visual",
-    "canvas",
-    "ambient"
+    "ambient",
+    "canvas"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/HanmoZhang0909/dsh-ai-canvas.git"
+    "url": "git+https://github.com/HanmoZhang0909/ai-dream.git"
   },
-  "homepage": "https://github.com/HanmoZhang0909/dsh-ai-canvas#readme",
+  "homepage": "https://github.com/HanmoZhang0909/ai-dream#readme",
   "bugs": {
-    "url": "https://github.com/HanmoZhang0909/dsh-ai-canvas/issues"
+    "url": "https://github.com/HanmoZhang0909/ai-dream/issues"
   },
   "type": "module",
   "exports": {
