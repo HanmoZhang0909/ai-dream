@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0 — 2026-11-17
+
+- **Plugin configuration**: the host resolves a configuration object from the Cordis row config (`cordis.patch.yml` in the profile) and commits it to the session as `plugin:ai-dream/config`; a second session projection (`aiDreamConfig`) delivers it to the client.
+- Fields: `signatureEnabled` (skip the init call), `signatureEmotions` (4–12, default 8), `holdSeconds` (1–60, default 6), `decaySeconds` (0.5–30, default 3), `defaultIntensity` (0.2–1, default 0.6), `allowInlinePalette` (default true).
+- Host instructions and the signature prompt now follow the configuration; the client clamps the same values.
+- `allowInlinePalette: false` makes the client ignore inline palettes and the prompt forbid them, so expression stays on signature/built-in palettes.
+
 ## 0.5.0 — 2026-11-17
 
 - **Emotion signature (Host)**: on the first human message of a session the host asks the model to design this assistant's own emotional vocabulary from the conversation (6–10 emotions with palette/motion/form), validates it, and commits it as the experimental plugin record `plugin:ai-dream/signature`.

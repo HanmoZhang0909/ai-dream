@@ -43,17 +43,63 @@ Rules: one block per reply; at most 10 nodes / 14 edges / 6 cards; ids are short
 
 const RECORD_TYPE = 'plugin:ai-dream/signature'
 const PROJECTION_KEY = 'emotionSignature'
+const CONFIG_RECORD_TYPE = 'plugin:ai-dream/config'
+const CONFIG_PROJECTION_KEY = 'aiDreamConfig'
 const INIT_TIMEOUT_MS = 25000
 const HISTORY_LIMIT = 16
 const MAX_TOKENS = 3500
 
-const SIGNATURE_SYSTEM = [
-  'You design the emotional language of an AI assistant for one conversation.',
-  'Read the supplied conversation excerpt (JSON) and invent 6 to 10 emotions this assistant would genuinely use with this person.',
-  'Return ONLY one compact single-line JSON object, with no prose, no code fences and no spaces between tokens:',
-  '{"version":1,"emotions":[{"name":"...","palette":{"base":"#0b0a12","core":"#e8d9ff","tone":"#9a7aa6","spectrum":["#c9a3e0","#6a4b8f"]},"motion":{"speed":0.6,"amplitude":0.5,"rhythm":"breathing"},"form":"cloud"}]}',
-  'Rules: names are short (max 12 characters) and in the language of the conversation; palette uses valid #rrggbb colours from one consistent family — base is the background, core the light centre, tone/spectrum the secondary hues; motion.speed is 0.2-2.0, motion.amplitude 0.1-1.0; rhythm is steady|breathing|uneven; form is cloud|ring|streak|spiral.',
-].join('\n')
+/** Plugin configuration defaults; every value is clamped again by the client. */
+const DEFAULT_CONFIG = {
+  signatureEnabled: true,
+  signatureEmotions: 8,
+  holdSeconds: 6,
+  decaySeconds: 3,
+  defaultIntensity: 0.6,
+  allowInlinePalette: true,
+}
+
+/** Validate one plugin configuration object into immutable settings. */
+function resolveConfig(raw) {
+  const source = raw && typeof raw === 'object' ? raw : {}
+  const clamp = (value, min, max, fallback) => (
+    typeof value === 'number' && Number.isFinite(value)
+      ? Math.min(max, Math.max(min, value))
+      : fallback
+  )
+  return Object.freeze({
+    signatureEnabled: source.signatureEnabled !== false,
+    signatureEmotions: Math.round(clamp(source.signatureEmotions, 4, 12, DEFAULT_CONFIG.signatureEmotions)),
+    holdSeconds: clamp(source.holdSeconds, 1, 60, DEFAULT_CONFIG.holdSeconds),
+    decaySeconds: clamp(source.decaySeconds, 0.5, 30, DEFAULT_CONFIG.decaySeconds),
+    defaultIntensity: clamp(source.defaultIntensity, 0.2, 1, DEFAULT_CONFIG.defaultIntensity),
+    allowInlinePalette: source.allowInlinePalette !== false,
+  })
+}
+
+/** System instruction for the one-shot signature call. */
+function signatureSystem(count) {
+  return [
+    'You design the emotional language of an AI assistant for one conversation.',
+    `Read the supplied conversation excerpt (JSON) and invent ${count} emotions this assistant would genuinely use with this person.`,
+    'Return ONLY one compact single-line JSON object, with no prose, no code fences and no spaces between tokens:',
+    '{"version":1,"emotions":[{"name":"...","palette":{"base":"#0b0a12","core":"#e8d9ff","tone":"#9a7aa6","spectrum":["#c9a3e0","#6a4b8f"]},"motion":{"speed":0.6,"amplitude":0.5,"rhythm":"breathing"},"form":"cloud"}]}',
+    'Rules: names are short (max 12 characters) and in the language of the conversation; palette uses valid #rrggbb colours from one consistent family — base is the background, core the light centre, tone/spectrum the secondary hues; motion.speed is 0.2-2.0, motion.amplitude 0.1-1.0; rhythm is steady|breathing|uneven; form is cloud|ring|streak|spiral.',
+  ].join('\n')
+}
+
+/** Base instructions plus the parts that depend on configuration. */
+function instructionsFor(settings) {
+  const notes = [
+    '',
+    '## Configuration',
+    `- Your session signature holds about ${settings.signatureEmotions} emotions.`,
+  ]
+  if (!settings.allowInlinePalette) {
+    notes.push('- Do not emit custom palettes: reference a signature name or a built-in mood, never `palette`.')
+  }
+  return INSTRUCTIONS + notes.join('\n')
+}
 
 const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
 const FORMS = ['cloud', 'ring', 'streak', 'spiral']
@@ -101,24 +147,29 @@ try {
 export const inject = ['systemPrompt', 'llm', 'sessionProjections', 'agentDefaultModel']
 
 /** Register the prompt section, the signature projection and the one-shot init. */
-export function apply(ctx) {
+export function apply(ctx, config) {
+  const settings = resolveConfig(config)
   ctx.systemPrompt.section({
     name: 'ai-canvas:instructions',
     order: 9500,
-    text: INSTRUCTIONS,
+    text: instructionsFor(settings),
   })
 
   if (typeof ctx.sessionProjections?.register === 'function') {
-    Promise.resolve(ctx.sessionProjections.register({
-      key: PROJECTION_KEY,
-      stateVersion: 1,
-      stateSchema: { parse: value => value },
-      init: () => null,
-      apply: (state, event) => (event && event.type === RECORD_TYPE ? event.data : state),
-      wire: { viewSchema: { parse: value => value }, view: state => state },
-    })).catch(error => {
-      ctx.logger.warn(`ai-dream: signature projection registration failed: ${String(error)}`)
-    })
+    const register = (key, type, label) => {
+      Promise.resolve(ctx.sessionProjections.register({
+        key,
+        stateVersion: 1,
+        stateSchema: { parse: value => value },
+        init: () => null,
+        apply: (state, event) => (event && event.type === type ? event.data : state),
+        wire: { viewSchema: { parse: value => value }, view: state => state },
+      })).catch(error => {
+        ctx.logger.warn(`ai-dream: ${label} projection registration failed: ${String(error)}`)
+      })
+    }
+    register(PROJECTION_KEY, RECORD_TYPE, 'signature')
+    register(CONFIG_PROJECTION_KEY, CONFIG_RECORD_TYPE, 'config')
   }
 
   const inflight = new WeakSet()
@@ -128,12 +179,25 @@ export function apply(ctx) {
     if (!source || source.kind !== 'user') return
     const header = session.header
     if (header && header.origin === 'subagent') return
+    syncConfig(session, settings)
+    if (!settings.signatureEnabled) return
     if (inflight.has(session) || hasSignature(session)) return
     inflight.add(session)
-    void generateSignature(ctx, session)
+    void generateSignature(ctx, session, settings)
       .catch(error => ctx.logger.warn(`ai-dream: signature init failed: ${String(error)}`))
       .finally(() => inflight.delete(session))
   })
+}
+
+/** Commit the resolved configuration once per session, and again whenever it changes. */
+function syncConfig(session, settings) {
+  try {
+    const last = snapshotEvents(session).filter(event => event && event.type === CONFIG_RECORD_TYPE).at(-1)
+    if (last && JSON.stringify(last.data) === JSON.stringify(settings)) return
+    dsh.appendPluginRecord(session, CONFIG_RECORD_TYPE, settings)
+  } catch (error) {
+    // Configuration delivery is best-effort: defaults still apply on the client.
+  }
 }
 
 function snapshotEvents(session) {
@@ -176,11 +240,11 @@ function collectHistory(session) {
   return turns.slice(-HISTORY_LIMIT)
 }
 
-async function generateSignature(ctx, session) {
+async function generateSignature(ctx, session, settings) {
   const route = resolveRoute(ctx, session)
   const history = collectHistory(session)
   if (history.length === 0) return
-  const text = await callModel(ctx, session, route, 'Conversation excerpt (JSON):\n' + JSON.stringify(history))
+  const text = await callModel(ctx, session, route, 'Conversation excerpt (JSON):\n' + JSON.stringify(history), settings)
   const signature = parseSignature(text, route)
   if (!signature) throw new Error('model returned an invalid signature')
   dsh.appendPluginRecord(session, RECORD_TYPE, signature)
@@ -206,7 +270,7 @@ function resolveRoute(ctx, session) {
   throw new Error('no model route is available')
 }
 
-async function callModel(ctx, session, route, input) {
+async function callModel(ctx, session, route, input, settings) {
   const signal = AbortSignal.timeout(INIT_TIMEOUT_MS)
   const call = await ctx.llm.prepareCall({ ...route, maxTokens: MAX_TOKENS }, signal, (controls, model) => {
     const effort = model && model.reasoning && Array.isArray(model.reasoning.efforts) && model.reasoning.efforts[0]
@@ -223,7 +287,7 @@ async function callModel(ctx, session, route, input) {
   for await (const chunk of call.stream({
     ...call.config,
     messages,
-    system: SIGNATURE_SYSTEM,
+    system: signatureSystem(settings.signatureEmotions),
     sessionId: session.id,
     signal,
   })) {

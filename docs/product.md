@@ -1,6 +1,6 @@
-# AI Dream — 产品需求（v0.4 规划）
+# AI Dream — 产品需求（v0.6 规划）
 
-> 状态：已确认，持续更新（当前 v0.5）。产品名 **AI Dream**（Artificial Intelligence Driven Real-time Emotional Ambient Medium），中文口号「让每个 AI 的感受有形状」。
+> 状态：已确认，持续更新（当前 v0.6）。产品名 **AI Dream**（Artificial Intelligence Driven Real-time Emotional Ambient Medium），中文口号「让每个 AI 的感受有形状」。
 >
 > 文档索引与维护规则见 [`docs/README.md`](README.md)。
 
@@ -36,13 +36,13 @@
 
 ## 5. 需求清单
 
-### v0.4 — 协议 v2：AI 自定义情绪（当前）
+### v0.4 — 协议 v2：AI 自定义情绪（已实现）
 
 - [x] 表达协议 v2：AI 输出自定义情绪（颜色 / 运动 / 形态 / 强度 / 转场），见 `docs/expression-protocol.md`；
 - [x] 渲染器接受 AI 色板与运动参数，内置词表降级为 fallback；
 - [x] 安全边界：hex 校验、数值夹紧、非法输入回退；
 - [x] 系统提示更新：告诉模型"你可以定义自己的情绪语言"。
-- [ ] 流式表达（协议边生成边漂移）留到 v0.5。
+- [ ] 流式表达（协议边生成边漂移）留到 v1.x。
 
 ### v0.5 — 情绪签名初始化（Host 侧，已实现）
 
@@ -50,13 +50,16 @@
 - [x] session projection + `wire.view` 把签名送到客户端；客户端用 `mood.name` 引用；
 - [x] 客户端签名存储与解析顺序（`mood.name` → 会话签名 → inline 覆盖 → 内置 → neutral）；
 - [x] AI 可在对话中随时用 `define` 块**新增情绪定义**，客户端合并进会话签名；
-- [x] 失败降级：Host 初始化失败只记 warn，回退内置 9 情绪词表，不阻塞对话；
+- [x] 失败降级：Host 初始化失败只记 warn，回退内置词表，不阻塞对话；
 - [x] 提示词约束：统一色彩家族、hex 色板、名称简洁。
 
-### v0.6 — 配置化
+### v0.6 — 配置化（当前）
 
-- [ ] 插件 Config：默认强度、衰减时长、是否允许 AI 自定义颜色；
-- [ ] 复用 v0.5 的 projection 通道下发配置。
+- [x] 从 Cordis 行配置（profile 的 `cordis.patch.yml`）解析并夹紧配置；
+- [x] 配置以 `plugin:ai-dream/config` 记录 + `aiDreamConfig` projection 下发客户端；
+- [x] 字段：`signatureEnabled`、`signatureEmotions`、`holdSeconds`、`decaySeconds`、`defaultIntensity`、`allowInlinePalette`；
+- [x] Host 提示词与签名调用跟随配置；客户端对同一组值再夹紧；
+- [x] `allowInlinePalette: false` 时客户端忽略 inline 色板、提示词禁止自定义色板。
 
 ### v1.0 — 状态与记忆 + 用户校准
 

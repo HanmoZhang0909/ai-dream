@@ -157,6 +157,27 @@ window.__ModuleLoader__.load({
      */
     const SIGNATURE = new Map()
 
+    /** Runtime configuration from the host (v0.6); mirrored locally for rendering. */
+    const CONFIG = {
+      holdSeconds: 6,
+      decaySeconds: 3,
+      defaultIntensity: 0.6,
+      allowInlinePalette: true,
+    }
+
+    function applyConfig(raw) {
+      if (!raw || typeof raw !== 'object') return
+      const num = (value, min, max, fallback) => (
+        typeof value === 'number' && Number.isFinite(value)
+          ? Math.min(max, Math.max(min, value))
+          : fallback
+      )
+      CONFIG.holdSeconds = num(raw.holdSeconds, 1, 60, CONFIG.holdSeconds)
+      CONFIG.decaySeconds = num(raw.decaySeconds, 0.5, 30, CONFIG.decaySeconds)
+      CONFIG.defaultIntensity = num(raw.defaultIntensity, 0.2, 1, CONFIG.defaultIntensity)
+      CONFIG.allowInlinePalette = raw.allowInlinePalette !== false
+    }
+
     function signatureEntry(name) {
       return name ? SIGNATURE.get(name) || null : null
     }
@@ -227,7 +248,7 @@ window.__ModuleLoader__.load({
         const name = cut(raw.name, 40)
         // A signed emotion supplies palette/motion/form; inline values win field by field.
         const entry = signatureEntry(name)
-        const merged = entry
+        let merged = entry
           ? {
             ...entry,
             ...raw,
@@ -242,6 +263,9 @@ window.__ModuleLoader__.load({
             form: raw.form || entry.form,
           }
           : raw
+        if (entry && CONFIG.allowInlinePalette === false) {
+          merged = { ...merged, palette: entry.palette }
+        }
         const moodKey = Object.prototype.hasOwnProperty.call(MOODS, merged.mood)
           ? merged.mood
           : Object.prototype.hasOwnProperty.call(MOODS, name) ? name : 'neutral'
@@ -255,7 +279,7 @@ window.__ModuleLoader__.load({
           name,
           mood: moodKey,
           colors: resolveColors(merged, moodKey),
-          intensity: clamp(merged.intensity, 0.2, 1, 0.6),
+          intensity: clamp(merged.intensity, 0.2, 1, CONFIG.defaultIntensity),
           motion: {
             speed: clamp(motion.speed, 0.2, 2, 1),
             amplitude: clamp(motion.amplitude, 0.1, 1, 0.5),
@@ -712,8 +736,8 @@ window.__ModuleLoader__.load({
           const tau = tauFor(current.speed, current.style)
           const k = tau <= 0 ? 1 : 1 - Math.exp(-dt / tau)
           const idle = now - meta.lastChangeAt
-          const hold = Math.max(4000, 9000 - current.intensity * 4000)
-          const decay = idle > hold ? Math.min(1, (idle - hold) / 2600) : 0
+          const hold = CONFIG.holdSeconds * 1000
+          const decay = idle > hold ? Math.min(1, (idle - hold) / (CONFIG.decaySeconds * 1000)) : 0
           const alive = 1 - decay * 0.45
 
           for (const name of ['w', 'px', 'h', 'blur', 'rot']) {
@@ -968,12 +992,14 @@ window.__ModuleLoader__.load({
 
     function CanvasBody(props) {
       const feed = props.useChat(canvasFeed)
-      // Host-side emotion signature (v0.5): arrives over the session projection.
+      // Host-side emotion signature (v0.5) and runtime config (v0.6) projections.
       const wire = props.useProjection ? props.useProjection('emotionSignature') : undefined
+      const wireConfig = props.useProjection ? props.useProjection('aiDreamConfig') : undefined
 
       // Fold the whole timeline in order: `define`/`signature` blocks register
       // emotions, and the last non-define block is what belongs on screen.
       const timeline = React.useMemo(() => {
+        applyConfig(wireConfig)
         // The host signature supplies palettes for name-only moods; transcript
         // `define` blocks are folded afterwards so the model can still add to it.
         if (wire && Array.isArray(wire.emotions)) {
@@ -996,13 +1022,13 @@ window.__ModuleLoader__.load({
           }
         }
         return { latest, parsedAny }
-      }, [feed, wire])
+      }, [feed, wire, wireConfig])
 
       const shown = React.useRef(null)
       if (timeline.latest) shown.current = timeline.latest
 
       const failed = feed != null && !timeline.parsedAny && shown.current == null
-      const model = shown.current || (failed ? null : MOOD_DEFAULT)
+      const model = shown.current || (failed ? null : { ...MOOD_DEFAULT, intensity: CONFIG.defaultIntensity })
 
       // Every distinct model bumps `revision`; the glide itself is driven by the
       // rAF engine and needs no scene remount.

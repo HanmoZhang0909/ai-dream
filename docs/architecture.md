@@ -107,6 +107,25 @@ interface EmotionState {
 
 客户端折叠已加载时间线里的全部 `canvas` 块，签名在刷新/恢复后从会话日志恢复（实验记录跨格式迁移为 best-effort）。
 
+### 4.2 运行时配置（v0.6，已实现）
+
+配置来源是 **Cordis 行配置**：用户在 profile 的 `cordis.patch.yml` 里给 `ai-canvas` 行加 `config:`，Host 在 `apply(ctx, config)` 里解析（无 schema，手动校验 + 夹紧）。
+
+```yaml
+- id: ai-canvas
+  name: dsh-ai-dream
+  config:
+    signatureEmotions: 8
+    holdSeconds: 6
+    decaySeconds: 3
+    defaultIntensity: 0.6
+    allowInlinePalette: true
+```
+
+- Host 在会话首条真人消息时把解析后的配置写成 `plugin:ai-dream/config` 记录（与上次相同则跳过），`aiDreamConfig` projection 下发客户端；
+- Host 用它调整系统提示（签名情绪数量、是否允许 inline 色板）和签名调用的产出要求；
+- 客户端对同一组值再夹紧，用于衰减曲线、基线强度与 inline 色板开关。
+
 ## 5. 情绪时间轴（滚动回看，v1.1）
 
 目标：用户上下滚动对话时，右栏渲染**对应那一轮**的情绪，而不是永远显示最新一条。

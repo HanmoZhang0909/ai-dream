@@ -194,6 +194,33 @@ node scripts/check-fence-regex.mjs
 - 本仓库建议在 GitHub 上打 `dsh-plugin`、`deepseek-harness` topics，方便按主题检索；
 - 后续计划：发布 npm 包 `dsh-ai-dream`。
 
+## 配置
+
+在 profile 的 `cordis.patch.yml`（如 `~/.dsh/profiles/web/cordis.patch.yml`）里给插件行加配置：
+
+```yaml
+- id: ai-canvas
+  name: dsh-ai-dream
+  config:
+    signatureEmotions: 8
+    holdSeconds: 6
+    decaySeconds: 3
+    defaultIntensity: 0.6
+    allowInlinePalette: true
+    signatureEnabled: true
+```
+
+| 字段 | 默认 | 范围 | 含义 |
+|---|---|---|---|
+| `signatureEnabled` | true | 布尔 | 是否在会话开始时自动生成情绪签名 |
+| `signatureEmotions` | 8 | 4–12 | 签名里的情绪数量 |
+| `holdSeconds` | 6 | 1–60 | 无新表达后保持当前状态的时间 |
+| `decaySeconds` | 3 | 0.5–30 | 回落到基线的时长 |
+| `defaultIntensity` | 0.6 | 0.2–1 | 未指定强度时的默认值 |
+| `allowInlinePalette` | true | 布尔 | 是否允许 AI 在表达里直接写色板 |
+
+配置在**该会话的下一条消息**时生效（Host 写入配置记录，前端再夹紧）。
+
 ## 已知限制
 
 - 画布状态来自当前已加载的对话节点，**不跨会话、不持久化**（情绪签名与记忆属于 v1.0）；
