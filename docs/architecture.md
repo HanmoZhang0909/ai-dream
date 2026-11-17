@@ -72,7 +72,7 @@ core/emotion-core.js 协议校验 + 插值状态机（纯 JS，可移植）
 core/emotion-dom.js  DOM 渲染后端
 ```
 
-> 拆分时机：v0.4 协议 v2 落地时。DSH 客户端仍保持单文件产物（可内联打包）。
+> 拆分时机：**v1.x 移植 MCP App 时**（届时需要可移植的纯 JS 核心）。v0.4 先在单文件内增量支持协议 v2，贯彻"越简单越好"。
 
 ## 4. 状态与记忆
 
@@ -106,7 +106,7 @@ interface EmotionState {
 
 | 债务 | 影响 | 计划 |
 |---|---|---|
-| 单文件 37KB，协议与渲染耦合 | 难测试/难移植 | v0.4 拆 core/protocol/renderer |
+| 单文件 37KB，协议与渲染耦合 | 难测试/难移植 | v0.4 先增量改协议；v1.x 移植时拆 core/protocol/renderer |
 | 情绪词表硬编码 | 与"AI 自定义情绪"冲突 | v0.4 改为 AI 定义 + 内置 fallback |
 | 无 Config | 用户无法调参 | v0.4 加插件 Config |
 | 无状态 | 每次从零开始 | v1.0 状态层 |
