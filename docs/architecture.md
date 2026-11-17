@@ -137,12 +137,14 @@ interface EmotionState {
 
 **数据**：表达块已经在每条助手消息的文本里（`canvas` fence），因此**无需额外存储**——从 `ChatSnapshot` 中按 `messageId` 解析出该轮的表达规格即可。更早的历史需要 Host projection 分页加载（后续）。
 
-**位置检测**（推荐方案）：
+**位置检测（已实现）**：
 
-1. 注册 `conversation.chat.assistant-actions`（list，每条完成消息一次，owner props 含 `messageId`）；
-2. 在里面渲染一个 1px 不可见的哨兵元素（`data-ai-dream-message-id`）；
-3. 用 `IntersectionObserver`（`root: null`，祖先 `overflow` 裁剪由规范保证）找出**最上方可见**的哨兵；
-4. 该 `messageId` → 该消息的 `canvas` 表达 → 设为回看目标。
+1. 在 `conversation.chat.turnTail` 注册 1px `TurnSentinel`（该 slot 的 props 自带 `turn`）；
+2. `IntersectionObserver` 的 root 取 `el.closest('[data-conversation-scroll]')`，`rootMargin: '-10% 0px -80% 0px'`，只把"靠近视口顶部"的 turn 视为可见；
+3. 多个哨兵之间取父元素 top 最小者写入共享 store，右栏用 `useTopTurn` 订阅；
+4. turn → 该轮 `canvas` 表达（`canvasFeed` 每块带上所属 turn）；无表达则向前找最近一次，并强制 `soft/fast` 转场。
+
+已知限制：turn-tail 行有 16px gap，用负 margin 抵消；折叠/分页可能让哨兵暂时不可见，此时保持实时模式。
 
 **模式与渲染**：
 

@@ -438,7 +438,8 @@ window.__ModuleLoader__.load({
         for (let index = 0; index < order.length; index += 1) {
           const node = store.get(order[index])
           if (!node || node.kind !== 'assistant-step' || !node.data) continue
-          for (const code of canvasFences(blocksText(node.data.blocks))) codes.push(code)
+          const turn = typeof node.data.turn === 'number' ? node.data.turn : ''
+          for (const code of canvasFences(blocksText(node.data.blocks))) codes.push(turn + '\u0001' + code)
         }
       }
 
@@ -446,16 +447,89 @@ window.__ModuleLoader__.load({
       if (Array.isArray(legacyNodes)) {
         for (const node of legacyNodes) {
           if (!node || node.kind !== 'assistant') continue
-          for (const code of canvasFences(blocksText(node.blocks))) codes.push(code)
+          for (const code of canvasFences(blocksText(node.blocks))) codes.push('\u0001' + code)
         }
       }
 
       const partial = snapshot.legacy && snapshot.legacy.partial
       if (partial) {
-        for (const code of canvasFences(blocksText(partial.blocks))) codes.push(code)
+        for (const code of canvasFences(blocksText(partial.blocks))) codes.push('\u0001' + code)
       }
 
       return codes.length ? codes.join(FEED_SEP) : null
+    }
+
+    // ------------------------------------------------------- timeline replay
+
+    /**
+     * Scroll-replay store (v1.1): turn sentinels report their viewport position,
+     * and the canvas renders the emotion of the turn nearest the viewport top.
+     */
+    const timelineStore = { turn: null, listeners: new Set() }
+    const sentinelTops = new Map()
+
+    function setTopTurn(turn) {
+      if (timelineStore.turn === turn) return
+      timelineStore.turn = turn
+      for (const listener of timelineStore.listeners) listener()
+    }
+
+    function reportSentinel(turn, top) {
+      if (top === null) sentinelTops.delete(turn)
+      else sentinelTops.set(turn, top)
+      let bestTurn = null
+      let bestTop = Infinity
+      for (const [candidate, candidateTop] of sentinelTops) {
+        if (candidateTop < bestTop) {
+          bestTurn = candidate
+          bestTop = candidateTop
+        }
+      }
+      setTopTurn(bestTurn)
+    }
+
+    function useTopTurn() {
+      const [turn, setTurn] = React.useState(timelineStore.turn)
+      React.useEffect(() => {
+        const listener = () => setTurn(timelineStore.turn)
+        timelineStore.listeners.add(listener)
+        listener()
+        return () => {
+          timelineStore.listeners.delete(listener)
+        }
+      }, [])
+      return turn
+    }
+
+    /** 1px sentinel in the turn-tail row; reports whether this turn is near the viewport top. */
+    function TurnSentinel(props) {
+      const ref = React.useRef(null)
+      const turn = props && typeof props.turn === 'number' ? props.turn : null
+      React.useEffect(() => {
+        const element = ref.current
+        if (!element || turn === null || typeof IntersectionObserver === 'undefined') return undefined
+        const root = element.closest('[data-conversation-scroll]')
+        const observer = new IntersectionObserver(entries => {
+          for (const entry of entries) {
+            reportSentinel(turn, entry.isIntersecting ? entry.boundingClientRect.top : null)
+          }
+        }, { root: root || null, rootMargin: '-10% 0px -80% 0px' })
+        observer.observe(element)
+        return () => {
+          reportSentinel(turn, null)
+          observer.disconnect()
+        }
+      }, [turn])
+      return h('div', {
+        ref,
+        'aria-hidden': true,
+        style: {
+          height: 1,
+          marginTop: -8,
+          marginBottom: -9,
+          pointerEvents: 'none',
+        },
+      })
     }
 
     // ---------------------------------------------------------------- layout
@@ -1048,6 +1122,7 @@ window.__ModuleLoader__.load({
       const wire = props.useProjection ? props.useProjection('emotionSignature') : undefined
       const wireConfig = props.useProjection ? props.useProjection('aiDreamConfig') : undefined
       const [bump, setBump] = React.useState(0)
+      const topTurn = useTopTurn()
 
       React.useEffect(() => {
         loadLocalState()
@@ -1074,27 +1149,48 @@ window.__ModuleLoader__.load({
             }
           }
         }
-        if (feed == null) return { latest: null, parsedAny: false }
+        if (feed == null) return { latest: null, parsedAny: false, turnModels: new Map(), latestTurn: null }
         let latest = null
         let parsedAny = false
-        for (const code of feed.split(FEED_SEP)) {
+        const turnModels = new Map()
+        let latestTurn = null
+        for (const entry of feed.split(FEED_SEP)) {
+          const separator = entry.indexOf('\u0001')
+          const rawTurn = separator >= 0 ? entry.slice(0, separator) : ''
+          const code = separator >= 0 ? entry.slice(separator + 1) : entry
+          const turn = rawTurn === '' ? null : Number(rawTurn)
+          if (turn !== null && Number.isFinite(turn)) {
+            latestTurn = latestTurn === null ? turn : Math.max(latestTurn, turn)
+          }
           const block = parseCanvas(code)
           if (!block) continue
           parsedAny = true
           if (block.kind === 'define' || block.kind === 'signature') {
-            for (const entry of block.emotions) SIGNATURE.set(entry.name, entry)
+            for (const entryEmotion of block.emotions) SIGNATURE.set(entryEmotion.name, entryEmotion)
           } else {
             latest = block
+            if (turn !== null && Number.isFinite(turn)) turnModels.set(turn, block)
           }
         }
-        return { latest, parsedAny }
+        return { latest, parsedAny, turnModels, latestTurn }
       }, [feed, wire, wireConfig])
 
       const shown = React.useRef(null)
       if (timeline.latest) shown.current = timeline.latest
 
       const failed = feed != null && !timeline.parsedAny && shown.current == null
-      const baseModel = shown.current || (failed ? null : { ...MOOD_DEFAULT, intensity: CONFIG.defaultIntensity })
+      let baseModel = shown.current || (failed ? null : { ...MOOD_DEFAULT, intensity: CONFIG.defaultIntensity })
+      // Replay mode: scrolled above the newest turn → show that turn's emotion,
+      // falling back to the nearest earlier expressed turn.
+      if (topTurn !== null && timeline.latestTurn !== null && topTurn < timeline.latestTurn) {
+        for (let turn = topTurn; turn >= 0; turn -= 1) {
+          const replayed = timeline.turnModels.get(turn)
+          if (replayed) {
+            baseModel = { ...replayed, transition: { style: 'soft', speed: 'fast' } }
+            break
+          }
+        }
+      }
       // Calibration bias is applied at render time so feedback takes effect immediately.
       const model = baseModel && baseModel.kind === 'mood'
         ? { ...baseModel, intensity: clamp(baseModel.intensity + CALIBRATION.intensityBias, 0.2, 1) }
@@ -1275,6 +1371,11 @@ window.__ModuleLoader__.load({
         ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register(
           { name: 'sidebar.right.pane.tab', key: PKG },
           CanvasBody,
+        ))
+
+        ctx.slots.inject('conversation.chat.turnTail', () => ctx.slots.register(
+          { name: 'conversation.chat.turnTail', id: PKG, order: 120 },
+          TurnSentinel,
         ))
 
         ctx.slots.inject('conversation.chat.markdown.fence', () => ctx.slots.register(

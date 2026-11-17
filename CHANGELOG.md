@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.0 — 2026-11-17
+
+- Scroll replay: a 1px sentinel in the `conversation.chat.turnTail` slot reports which turn sits nearest the viewport top; scrolling above the newest turn renders that turn's emotion (or the nearest earlier expressed turn when it is silent) with a fast transition, and scrolling back to the bottom returns to live mode.
+
 ## 1.0.0 — 2026-11-17
 
 - **Session continuity**: the client keeps the recent emotion history and the glow always interpolates from its current state (the renderer was already continuous, so expressions now feel like one evolving mood).
