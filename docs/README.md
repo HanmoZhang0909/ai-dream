@@ -26,6 +26,7 @@
 | `docs/mcp-app.md` | MCP App（ChatGPT/Claude）移植说明 | 移植形态、宿主限制、验收清单变化 |
 | `mcp/app-manifest.json` | 可移植的工具契约（`express_emotion`） | 协议字段/枚举/范围变化（CI 校验） |
 | `renderer/core.mjs` | 与宿主无关的渲染核心（协议规范化/插值参数；MCP 渲染器共用） | 渲染语义变化（CI 单测 + 与客户端同步复制） |
+| `resources/ai-dream.html` | MCP App 渲染器骨架（`?t=` 定格、`#probe` 自检） | 渲染目标/宿主适配方式变化（CI 无头 Chrome 探针） |
 | `docs/demo.html` | 独立视觉复刻页 | 视觉参数/内置色板变化 |
 
 ## 改动同步清单
@@ -71,5 +72,5 @@
 
 ## 当前状态
 
-- **最近发布**：`1.5.0` —— MCP App 移植规格 + 可移植工具契约（manifest 由 CI 校验）；
-- **下一步**：MCP 渲染器 HTML / server 骨架 → 回看体验打磨 → 模型侧校准通道。
+- **最近发布**：`1.7.0` —— MCP 渲染器骨架 + 无头 Chrome 自动验证（截图已入库）；
+- **下一步**：MCP server 骨架 → 回看体验 / 模型侧校准通道。

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.7.0 — 2026-11-17
+
+- MCP renderer skeleton `resources/ai-dream.html`: renders the expression spec through `renderer/core.mjs`, supports `?t=` deterministic frames, `?spec=` override, and exposes a `#probe` JSON of the computed target.
+- New `scripts/check-mcp-renderer.mjs`: serves the repo, drives headless Chrome, validates the probe (protocol/pattern/intensity/palette/tau), optional screenshot; skips when Chrome is unavailable. Verified output committed as `docs/mcp-renderer.png`.
+
 ## 1.6.0 — 2026-11-17
 
 - Extracted `renderer/core.mjs`: the host-independent renderer core (protocol normalization, palette resolution, interpolation targets, tau shaping). The DSH client keeps an equivalent copy inside `client.js` for the zero-build constraint.

@@ -187,6 +187,8 @@ node scripts/check-fence-regex.mjs
 │   └── check-fence-regex.mjs   fence 提取器回归测试
 ├── renderer/
 │   └── core.mjs         与宿主无关的渲染核心（协议规范化/插值参数，MCP 渲染器共用）
+├── resources/
+│   └── ai-dream.html    MCP App 渲染器骨架（`?t=` 定格 / `#probe` 自检）
 └── icon.svg
 ```
 

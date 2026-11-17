@@ -28,6 +28,7 @@ const required = [
   'docs/mcp-app.md',
   'mcp/app-manifest.json',
   'renderer/core.mjs',
+  'resources/ai-dream.html',
   'examples/moods.md',
 ]
 for (const rel of required) {
