@@ -186,6 +186,19 @@ Add a config block to the plugin row in your profile's `cordis.patch.yml` (for e
 
 Configuration applies on the session's next message (the host commits a config record; the client clamps the same values).
 
+### Model-side calibration (optional)
+
+Beyond the three canvas buttons you can write a local calibration file so the host injects it into the system prompt (it shapes how the model expresses, not just the visuals):
+
+`~/.dsh/storages/dsh-ai-dream/calibration.json`
+
+```json
+{ "tone": "more restrained, avoid drama", "note": "no heavy colours", "intensity": 0.5 }
+```
+
+- `tone` ≤ 200 chars, `note` ≤ 120 chars; control characters are stripped; `intensity` is clamped to 0.2–1.
+- Edit it, then disable/enable the plugin once (the host reads it at load); the next prompts contain a `## Calibration` section.
+
 ## Known limitations
 
 - Canvas state is derived from loaded chat nodes only — not persisted across sessions;

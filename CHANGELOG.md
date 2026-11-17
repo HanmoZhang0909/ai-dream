@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.10.0 — 2026-11-17
+
+- Model-side calibration: `~/.dsh/storages/dsh-ai-dream/calibration.json` (`tone` / `note` / `intensity`) is read by the host at load, sanitized and injected as a `## Calibration` section of the system prompt, so calibration shapes the model's own expression rather than only the visuals.
+- New `readCalibration` / `calibrationFilePath` helpers with unit tests (control-character stripping, length caps, clamping, invalid JSON fallback).
+- Verified end-to-end: a probe calibration file appeared verbatim in the next turn's injected prompt section.
+
 ## 1.9.0 — 2026-11-17
 
 - Mini emotion timeline under the canvas: the latest eight expressed turns render as colour dots (each dot uses that turn's light-core colour); clicking a dot scrolls the transcript to that turn. Hidden when `replayEnabled` is off.

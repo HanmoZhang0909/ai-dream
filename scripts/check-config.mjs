@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { resolveConfig, parseSignature, lastSignatureOf, persistSignature, readPersistedSignature, signatureFilePath } from '../index.js'
+import { resolveConfig, parseSignature, lastSignatureOf, persistSignature, readPersistedSignature, signatureFilePath, readCalibration, calibrationFilePath } from '../index.js'
 
 const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
 const emotion = (name, overrides = {}) => ({
@@ -122,6 +122,30 @@ const route = { provider: 'test-provider', model: 'test-model' }
     ]).emotions.length, 6)
     assert.equal(lastSignatureOf(undefined), null)
     assert.equal(lastSignatureOf([{ type: 'plugin:ai-dream/signature', data: { emotions: [] } }]), null)
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+// --- model-side calibration file ---------------------------------------------
+{
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-dream-cal-'))
+  try {
+    assert.equal(readCalibration(dir), null, 'missing calibration reads null')
+    assert.equal(calibrationFilePath(dir).startsWith(dir), true)
+    fs.mkdirSync(path.dirname(calibrationFilePath(dir)), { recursive: true })
+    fs.writeFileSync(calibrationFilePath(dir), 'not json')
+    assert.equal(readCalibration(dir), null, 'invalid JSON reads null')
+    fs.writeFileSync(calibrationFilePath(dir), JSON.stringify({ tone: '更克制\n但温暖\u0000', note: '别太夸张', intensity: 9 }))
+    const calibration = readCalibration(dir)
+    assert.ok(calibration, 'valid calibration reads back')
+    assert.equal(calibration.tone, '更克制 但温暖', 'control characters and newlines are collapsed')
+    assert.equal(calibration.note, '别太夸张')
+    assert.equal(calibration.intensity, 1, 'intensity is clamped')
+    fs.writeFileSync(calibrationFilePath(dir), JSON.stringify({ tone: 'x'.repeat(400) }))
+    assert.equal(readCalibration(dir).tone.length, 200, 'tone is capped at 200 chars')
+    fs.writeFileSync(calibrationFilePath(dir), JSON.stringify({}))
+    assert.equal(readCalibration(dir), null, 'empty calibration is ignored')
   } finally {
     fs.rmSync(dir, { recursive: true, force: true })
   }

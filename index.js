@@ -95,14 +95,21 @@ function signatureSystem(count) {
   ].join('\n')
 }
 
-/** Base instructions plus the parts that depend on configuration. */
-function instructionsFor(settings) {  const notes = [
+/** Base instructions plus the parts that depend on configuration and user calibration. */
+function instructionsFor(settings, calibration) {
+  const notes = [
     '',
     '## Configuration',
     `- Your session signature holds about ${settings.signatureEmotions} emotions.`,
   ]
   if (!settings.allowInlinePalette) {
     notes.push('- Do not emit custom palettes: reference a signature name or a built-in mood, never `palette`.')
+  }
+  if (calibration) {
+    notes.push('', '## Calibration（用户校准）')
+    if (calibration.tone) notes.push('- 表达基调：' + calibration.tone)
+    if (calibration.note) notes.push('- 备注：' + calibration.note)
+    if (calibration.intensity !== null) notes.push('- 强度倾向：表达强度尽量靠近 ' + calibration.intensity)
   }
   return INSTRUCTIONS + notes.join('\n')
 }
@@ -158,10 +165,11 @@ export const inject = ['systemPrompt', 'llm', 'sessionProjections', 'agentDefaul
 /** Register the prompt section, the signature projection and the one-shot init. */
 export function apply(ctx, config) {
   const settings = resolveConfig(config)
+  const calibration = readCalibration()
   ctx.systemPrompt.section({
     name: 'ai-canvas:instructions',
     order: 9500,
-    text: instructionsFor(settings),
+    text: instructionsFor(settings, calibration),
   })
 
   if (typeof ctx.sessionProjections?.register === 'function') {
@@ -227,9 +235,36 @@ function storageDir(override) {
   return path.join(os.homedir(), '.dsh', 'storages', 'dsh-ai-dream')
 }
 
-/** Path of the persisted emotion signature. */
+/** Path of the emotion signature file. */
 export function signatureFilePath(override) {
   return path.join(storageDir(override), 'signature.json')
+}
+
+/** Path of the user-tunable calibration file. */
+export function calibrationFilePath(override) {
+  return path.join(storageDir(override), 'calibration.json')
+}
+
+/** Read the user-tunable model-side calibration, sanitized; null when absent or invalid. */
+export function readCalibration(override) {
+  try {
+    const raw = JSON.parse(fs.readFileSync(calibrationFilePath(override), 'utf8'))
+    if (!raw || typeof raw !== 'object') return null
+    const clean = value => (
+      typeof value === 'string'
+        ? value.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim()
+        : ''
+    )
+    const tone = clean(raw.tone).slice(0, 200)
+    const note = clean(raw.note).slice(0, 120)
+    const intensity = typeof raw.intensity === 'number' && Number.isFinite(raw.intensity)
+      ? Math.min(1, Math.max(0.2, raw.intensity))
+      : null
+    if (!tone && !note && intensity === null) return null
+    return { tone, note, intensity }
+  } catch {
+    return null
+  }
 }
 
 /** Read the signature persisted by a previous session, or null. */
