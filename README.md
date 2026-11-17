@@ -120,8 +120,10 @@ Plugin bundle
 │   └── rAF 引擎        目标参数 → 逐帧指数插值 → CSS 自定义属性 → 氛围光
 ├── cordis.patch.yml  bundle patch
 ├── locale/*.json     插件行标题/描述
-└── docs/DETAIL.md    插件详情页
+└── docs/             产品需求、技术框架、表达协议
 ```
+
+> 规划与取舍见：[docs/product.md](docs/product.md)、[docs/architecture.md](docs/architecture.md)、[docs/expression-protocol.md](docs/expression-protocol.md)。
 
 数据流：
 

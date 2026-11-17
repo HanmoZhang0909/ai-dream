@@ -105,8 +105,10 @@ Plugin bundle
 │   └── rAF engine             target params → exponential interpolation → CSS vars → glow
 ├── cordis.patch.yml
 ├── locale/*.json
-└── docs/DETAIL.md
+└── docs/             product requirements, architecture, expression protocol
 ```
+
+> Planning and trade-offs: [docs/product.md](docs/product.md), [docs/architecture.md](docs/architecture.md), [docs/expression-protocol.md](docs/expression-protocol.md).
 
 Data flow: the latest `canvas` block from the transcript → validated/normalized → target parameters → per-frame interpolation → CSS custom properties → the ambient light.
 
