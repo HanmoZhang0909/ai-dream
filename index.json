@@ -33,7 +33,7 @@
           "source": {
             "type": "git",
             "url": "https://github.com/HanmoZhang0909/ai-dream",
-            "commit": "f2561f71f8040c4ca6c62f8c819c0b62a6186ec4"
+            "commit": "75d7247df7043a888aa79b3fac556bf780b6b624"
           },
           "engines": { "dsh": ">=0.2.2-rc.3" }
         }
