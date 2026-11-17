@@ -18,7 +18,7 @@ window.__ModuleLoader__.load({
 
     const PKG = 'dsh-ai-dream'
     const KIND = 'ai-canvas'
-    const NAME = '画布'
+    const NAME = 'Dream'
 
     const MAX_NODES = 10
     const MAX_EDGES = 14
@@ -914,7 +914,7 @@ window.__ModuleLoader__.load({
     function CanvasFence(props) {
       const ok = React.useMemo(() => parseCanvas(props.code) !== null, [props.code])
       const failed = !props.streaming && !ok
-      const status = failed ? '画布数据无法解析，原文保留' : props.streaming ? '画布生成中…' : '已更新到' + NAME
+      const status = failed ? '画布数据无法解析，原文保留' : props.streaming ? '画布生成中…' : '已更新到 ' + NAME
       const onClick = failed ? undefined : () => openCanvas()
 
       const children = [
