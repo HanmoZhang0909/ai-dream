@@ -22,5 +22,7 @@ jobs:
         run: node scripts/check-docs.mjs
       - name: Examples check
         run: node scripts/check-examples.mjs
+      - name: Config and signature checks
+        run: node scripts/check-config.mjs
       - name: JSON validation
         run: node -e "for (const f of ['package.json','locale/en.json','locale/zh.json']) JSON.parse(require('fs').readFileSync(f,'utf8')); console.log('json ok')"

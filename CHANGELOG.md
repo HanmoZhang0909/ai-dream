@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Tests: `scripts/check-config.mjs` covers configuration clamping and signature parsing (prose/code-fence wrappers, invalid colours, unknown enums, minimum emotion count); CI runs it.
+
 ## 0.6.1 — 2026-11-17
 
 - Fix: the config record was dropped by the session publication reentrancy guard; it is now committed on the next tick. Sessions receive iDreamConfig (and the client applies it).

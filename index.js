@@ -60,7 +60,7 @@ const DEFAULT_CONFIG = {
 }
 
 /** Validate one plugin configuration object into immutable settings. */
-function resolveConfig(raw) {
+export function resolveConfig(raw) {
   const source = raw && typeof raw === 'object' ? raw : {}
   const clamp = (value, min, max, fallback) => (
     typeof value === 'number' && Number.isFinite(value)
@@ -89,8 +89,7 @@ function signatureSystem(count) {
 }
 
 /** Base instructions plus the parts that depend on configuration. */
-function instructionsFor(settings) {
-  const notes = [
+function instructionsFor(settings) {  const notes = [
     '',
     '## Configuration',
     `- Your session signature holds about ${settings.signatureEmotions} emotions.`,
@@ -346,7 +345,7 @@ function normalizeEmotion(raw) {
   }
 }
 
-function parseSignature(text, route) {
+export function parseSignature(text, route) {
   if (typeof text !== 'string') return null
   const cleaned = text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim()
   const start = cleaned.indexOf('{')

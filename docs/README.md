@@ -51,6 +51,8 @@
 - [ ] `node scripts/check-fence-regex.mjs`
 - [ ] `node scripts/check-docs.mjs`
 - [ ] `node scripts/check-examples.mjs`
+- [ ] `node scripts/check-config.mjs`
+- [ ] `node --input-type=module -e "await import('./index.js')"`
 - [ ] 对照「改动同步清单」检查文档一致
 - [ ] `package.json` version / `CHANGELOG` / tag 三者一致
 - [ ] `docs/index.json` 新版本 pinned commit 已存在远端
