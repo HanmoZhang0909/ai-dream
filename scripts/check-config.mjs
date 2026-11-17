@@ -21,6 +21,8 @@ const route = { provider: 'test-provider', model: 'test-model' }
   const defaults = resolveConfig(undefined)
   assert.equal(defaults.signatureEnabled, true)
   assert.equal(defaults.reuseSignature, true)
+  assert.equal(defaults.replayEnabled, true)
+  assert.equal(defaults.calibrationEnabled, true)
   assert.equal(defaults.signatureEmotions, 8)
   assert.equal(defaults.holdSeconds, 6)
   assert.equal(defaults.decaySeconds, 3)
@@ -28,6 +30,8 @@ const route = { provider: 'test-provider', model: 'test-model' }
   assert.equal(defaults.allowInlinePalette, true)
   assert.ok(Object.isFrozen(defaults), 'settings must be immutable')
   assert.equal(resolveConfig({ reuseSignature: false }).reuseSignature, false)
+  assert.equal(resolveConfig({ replayEnabled: false }).replayEnabled, false)
+  assert.equal(resolveConfig({ calibrationEnabled: false }).calibrationEnabled, false)
 }
 
 {

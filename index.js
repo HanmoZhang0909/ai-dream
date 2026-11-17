@@ -54,6 +54,8 @@ const MAX_TOKENS = 3500
 const DEFAULT_CONFIG = {
   signatureEnabled: true,
   reuseSignature: true,
+  replayEnabled: true,
+  calibrationEnabled: true,
   signatureEmotions: 8,
   holdSeconds: 6,
   decaySeconds: 3,
@@ -72,6 +74,8 @@ export function resolveConfig(raw) {
   return Object.freeze({
     signatureEnabled: source.signatureEnabled !== false,
     reuseSignature: source.reuseSignature !== false,
+    replayEnabled: source.replayEnabled !== false,
+    calibrationEnabled: source.calibrationEnabled !== false,
     signatureEmotions: Math.round(clamp(source.signatureEmotions, 4, 12, DEFAULT_CONFIG.signatureEmotions)),
     holdSeconds: clamp(source.holdSeconds, 1, 60, DEFAULT_CONFIG.holdSeconds),
     decaySeconds: clamp(source.decaySeconds, 0.5, 30, DEFAULT_CONFIG.decaySeconds),

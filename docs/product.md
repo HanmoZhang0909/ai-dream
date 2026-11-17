@@ -57,7 +57,7 @@
 
 - [x] 从 Cordis 行配置（profile 的 `cordis.patch.yml`）解析并夹紧配置；
 - [x] 配置以 `plugin:ai-dream/config` 记录 + `aiDreamConfig` projection 下发客户端；
-- [x] 字段：`signatureEnabled`、`signatureEmotions`、`holdSeconds`、`decaySeconds`、`defaultIntensity`、`allowInlinePalette`；
+- [x] 字段：`signatureEnabled`、`reuseSignature`、`replayEnabled`、`calibrationEnabled`、`signatureEmotions`、`holdSeconds`、`decaySeconds`、`defaultIntensity`、`allowInlinePalette`；
 - [x] Host 提示词与签名调用跟随配置；客户端对同一组值再夹紧；
 - [x] `allowInlinePalette: false` 时客户端忽略 inline 色板、提示词禁止自定义色板。
 

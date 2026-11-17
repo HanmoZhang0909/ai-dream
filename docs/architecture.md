@@ -124,7 +124,7 @@ interface EmotionState {
 
 - Host 在会话首条真人消息时把解析后的配置写成 `plugin:ai-dream/config` 记录（与上次相同则跳过；必须 `setTimeout(0)` 延后提交，否则会撞上 `session/event` 的发布重入限制），`aiDreamConfig` projection 下发客户端；
 - Host 用它调整系统提示（签名情绪数量、是否允许 inline 色板）和签名调用的产出要求；
-- 客户端对同一组值再夹紧，用于衰减曲线、基线强度与 inline 色板开关。
+- 客户端对同一组值再夹紧，用于衰减曲线、基线强度、inline 色板开关，以及 `replayEnabled`（滚动回看）与 `calibrationEnabled`（校准按钮）两个行为开关。
 
 ### 4.3 状态、记忆与用户校准（v1.0，客户端实现）
 

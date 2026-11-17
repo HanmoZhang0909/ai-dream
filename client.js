@@ -163,6 +163,8 @@ window.__ModuleLoader__.load({
       decaySeconds: 3,
       defaultIntensity: 0.6,
       allowInlinePalette: true,
+      replayEnabled: true,
+      calibrationEnabled: true,
     }
 
     function applyConfig(raw) {
@@ -176,6 +178,8 @@ window.__ModuleLoader__.load({
       CONFIG.decaySeconds = num(raw.decaySeconds, 0.5, 30, CONFIG.decaySeconds)
       CONFIG.defaultIntensity = num(raw.defaultIntensity, 0.2, 1, CONFIG.defaultIntensity)
       CONFIG.allowInlinePalette = raw.allowInlinePalette !== false
+      CONFIG.replayEnabled = raw.replayEnabled !== false
+      CONFIG.calibrationEnabled = raw.calibrationEnabled !== false
     }
 
     function signatureEntry(name) {
@@ -1127,7 +1131,8 @@ window.__ModuleLoader__.load({
       const wire = props.useProjection ? props.useProjection('emotionSignature') : undefined
       const wireConfig = props.useProjection ? props.useProjection('aiDreamConfig') : undefined
       const [bump, setBump] = React.useState(0)
-      const topTurn = useTopTurn()
+      const topTurnRaw = useTopTurn()
+      const topTurn = CONFIG.replayEnabled === false ? null : topTurnRaw
 
       React.useEffect(() => {
         loadLocalState()
@@ -1233,7 +1238,7 @@ window.__ModuleLoader__.load({
           saveCalibration()
           setBump(value => value + 1)
         }
-        const controls = [['不像', -0.15], ['再强一点', 0.08], ['再淡一点', -0.08]].map(([label, delta]) => h('button', {          key: label,
+        const controls = CONFIG.calibrationEnabled === false ? [] : [['不像', -0.15], ['再强一点', 0.08], ['再淡一点', -0.08]].map(([label, delta]) => h('button', {          key: label,
           type: 'button',
           onClick: () => adjust(delta),
           style: {
@@ -1290,8 +1295,7 @@ window.__ModuleLoader__.load({
               justifyContent: 'center',
               gap: 6,
             },
-          }, controls))
-      }
+          }, controls))      }
 
       return h('div', {
         style: {

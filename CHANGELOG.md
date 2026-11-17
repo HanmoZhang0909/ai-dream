@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.0 — 2026-11-17
+
+- New config flags: `replayEnabled` (turn scroll replay on/off) and `calibrationEnabled` (show/hide the calibration controls). Both are delivered through the existing `aiDreamConfig` projection and applied by the client.
+
 ## 1.3.0 — 2026-11-17
 
 - **Cross-session signature reuse**: the emotion signature is persisted to `~/.dsh/storages/dsh-ai-dream/signature.json`; a new session copies it instead of calling the model again (`reuseSignature`, default on). Older sessions seed the file on their next message.
