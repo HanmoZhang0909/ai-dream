@@ -1,7 +1,7 @@
 # AI Dream
 
 > **A**rtificial **I**ntelligence **D**riven **R**eal-time **E**motional **A**mbient **M**edium
-> Giving every AI's feelings a shape.
+> A shape for every feeling.
 
 An **emotional outlet for AI** in [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
 A continuously flowing light in the right sidebar — not a diagram of the conversation, but a visual of how the model feels right now.
@@ -24,9 +24,13 @@ A pure-visual window for an AI to express its own emotional state:
 
 Requires the DSH Web GUI (`profile=web`).
 
-1. Open **Plugins → Add plugin** and pick **this directory** (absolute path);
-2. Refresh the page when prompted;
-3. Open the right sidebar and pick the **AI Dream** card on the guide page.
+| Option | How |
+|---|---|
+| **Local directory** | **Plugins → Add plugin** → pick **this directory** (absolute path) |
+| **npm** (once published) | Plugins → Add plugin → package name `dsh-ai-dream` |
+| **Git** | Plugins → Add plugin → `https://github.com/HanmoZhang0909/ai-dream` (or `github:HanmoZhang0909/ai-dream#main`) |
+
+Refresh the page when prompted, then open the right sidebar and pick the **AI Dream** card on the guide page.
 
 Notes:
 
@@ -89,6 +93,13 @@ node --check index.js
 ```
 
 Then refresh the page after editing (or wait for HMR to rebuild).
+
+## Distribution & ecosystem
+
+- DSH discovers third-party plugins through **Discover** (the plugin market): enable the experimental plugin-market bundle once and add an **index URL** (format 1 JSON);
+- The official plugin marketplace is under construction (announced 2026-11); today distribution leans on community indexes plus npm/Git installs;
+- Tag this repository with the `dsh-plugin` and `deepseek-harness` GitHub topics so it is discoverable;
+- Planned: publish npm package `dsh-ai-dream` and ship a ready-to-add market index JSON.
 
 ## Known limitations
 
