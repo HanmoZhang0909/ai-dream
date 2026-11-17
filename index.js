@@ -43,14 +43,14 @@ Rules: one block per reply; at most 10 nodes / 14 edges / 6 cards; ids are short
 
 const RECORD_TYPE = 'plugin:ai-dream/signature'
 const PROJECTION_KEY = 'emotionSignature'
-const INIT_TIMEOUT_MS = 20000
+const INIT_TIMEOUT_MS = 25000
 const HISTORY_LIMIT = 16
-const MAX_TOKENS = 900
+const MAX_TOKENS = 3500
 
 const SIGNATURE_SYSTEM = [
   'You design the emotional language of an AI assistant for one conversation.',
-  'Read the supplied conversation excerpt (JSON) and invent 8 to 14 emotions this assistant would genuinely use with this person.',
-  'Return ONLY one JSON object, with no prose and no code fences:',
+  'Read the supplied conversation excerpt (JSON) and invent 6 to 10 emotions this assistant would genuinely use with this person.',
+  'Return ONLY one compact single-line JSON object, with no prose, no code fences and no spaces between tokens:',
   '{"version":1,"emotions":[{"name":"...","palette":{"base":"#0b0a12","core":"#e8d9ff","tone":"#9a7aa6","spectrum":["#c9a3e0","#6a4b8f"]},"motion":{"speed":0.6,"amplitude":0.5,"rhythm":"breathing"},"form":"cloud"}]}',
   'Rules: names are short (max 12 characters) and in the language of the conversation; palette uses valid #rrggbb colours from one consistent family — base is the background, core the light centre, tone/spectrum the secondary hues; motion.speed is 0.2-2.0, motion.amplitude 0.1-1.0; rhythm is steady|breathing|uneven; form is cloud|ring|streak|spiral.',
 ].join('\n')
@@ -127,7 +127,7 @@ export function apply(ctx) {
     const source = event.data && event.data.source
     if (!source || source.kind !== 'user') return
     const header = session.header
-    if (header && (header.isSeeded || header.origin === 'subagent')) return
+    if (header && header.origin === 'subagent') return
     if (inflight.has(session) || hasSignature(session)) return
     inflight.add(session)
     void generateSignature(ctx, session)
@@ -208,7 +208,12 @@ function resolveRoute(ctx, session) {
 
 async function callModel(ctx, session, route, input) {
   const signal = AbortSignal.timeout(INIT_TIMEOUT_MS)
-  const call = await ctx.llm.prepareCall({ ...route, maxTokens: MAX_TOKENS }, signal, controls => controls)
+  const call = await ctx.llm.prepareCall({ ...route, maxTokens: MAX_TOKENS }, signal, (controls, model) => {
+    const effort = model && model.reasoning && Array.isArray(model.reasoning.efforts) && model.reasoning.efforts[0]
+      ? model.reasoning.efforts[0].id
+      : undefined
+    return effort === undefined ? controls : { ...controls, reasoningEffort: effort }
+  })
   const messages = [dsh.createUserMessage({
     content: [{ type: 'text', text: input }],
     source: { kind: 'dsh-ai-dream' },
@@ -226,7 +231,9 @@ async function callModel(ctx, session, route, input) {
     if (chunk.type === 'text-delta') text += chunk.text || ''
     else if (chunk.type === 'finish') finish = chunk.reason
   }
-  if (finish && finish.kind !== 'stop') throw new Error(`signature model finished with ${finish.kind}`)
+  if (finish && finish.kind !== 'stop' && finish.kind !== 'max-tokens') {
+    throw new Error(`signature model finished with ${finish.kind}`)
+  }
   return text
 }
 

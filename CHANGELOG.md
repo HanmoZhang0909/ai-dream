@@ -1,12 +1,14 @@
 # Changelog
 
-## Unreleased — 0.5.0
+## 0.5.0 — 2026-11-17
 
-- Client half of the emotion signature: a session signature store, the resolution order `mood.name` → signature → inline override → built-in mood → neutral, and `define` blocks that merge new emotion definitions mid-conversation.
-- The canvas tab now folds the **whole loaded timeline** in order (all `canvas` fences), so a `define` block from an earlier turn still applies after a refresh; the last non-define block stays on screen.
-- The canvas fence shows "已定义 N 个情绪" for `define` blocks; the glow keeps its last mood until the next mood block arrives.
+- **Emotion signature (Host)**: on the first human message of a session the host asks the model to design this assistant's own emotional vocabulary from the conversation (6–10 emotions with palette/motion/form), validates it, and commits it as the experimental plugin record `plugin:ai-dream/signature`.
+- A session projection (`emotionSignature`) plus `wire.view` delivers the signature to the client; `mood.name` resolves against it (signature → inline override → built-in → neutral).
+- Client half of the signature: session signature store and `define` blocks that merge new emotion definitions mid-conversation; the canvas fence shows "已定义 N 个情绪".
+- The canvas tab folds the **whole loaded timeline** in order (all `canvas` fences), so a `define` from an earlier turn still applies after a refresh.
 - Prompt: the model is taught the `define` block.
 - CI: examples check (`scripts/check-examples.mjs`).
+- Known limits: the signature is stored in the session log (survives refresh and resume), not yet across sessions; init is one auxiliary model call per session.
 
 ## 0.4.0 — 2026-11-17
 

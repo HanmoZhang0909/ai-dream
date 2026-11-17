@@ -92,20 +92,20 @@ interface EmotionState {
 - **跨会话**：基线（签名）与历史存 profile 存储（v1.0）；
 - **校准**：`不像/更强/更弱` → intensity 偏置 + 色板偏好，写入 `feedback`，影响后续目标值。
 
-### 4.1 情绪签名（v0.5，Host 侧）
+### 4.1 情绪签名（v0.5，已实现）
 
 "AI 定义自己的情绪语言"的落地方式：**会话初始化时生成一次签名**，之后每轮只引用。
 
-1. **触发**：会话第一个 `turn/start`（每会话一次；用 projection 里的初始化标记去重）；
-2. **读历史**：截断到 token 预算的最近 user/assistant 消息；
-3. **调用**：`ctx.llm.stream(...)`（声明 purpose），要求返回 JSON 签名；
-4. **校验**：8–14 个情绪、hex 色板、夹紧数值，非法条目丢弃；
-5. **下发**：写入 session store，经 `sessionProjections` 的 `wire.view` 到客户端；
-6. **降级**：调用失败/超时 → 回退内置词表，不阻塞对话，下一会话重试；
-7. **动态新增**：AI 在回复里用 `define` 块追加情绪，客户端合并进会话签名；
-8. **成本**：每会话一次小调用；初始化期间客户端先显示基线，签名到达后平滑切换。
+1. **触发**：会话第一个真人 `user/message`（`origin !== subagent`；已有签名记录则跳过）；
+2. **读历史**：`session.snapshotEvents()` 里最近 16 条 user/assistant 文本；
+3. **调用**：`ctx.llm.prepareCall` + `call.stream`（`maxTokens 3500`、最低推理强度、25 秒超时），要求返回紧凑 JSON 签名；
+4. **校验**：6–10 个情绪、hex 色板、数值夹紧、未知枚举丢弃；
+5. **提交**：`appendPluginRecord(session, 'plugin:ai-dream/signature', data)`（实验 API；经 `process.argv` 推导 DSH 安装根后以绝对路径导入 `@deepseek-ai/dsh-session`，因为链接插件无法用裸包名解析）；
+6. **下发**：`sessionProjections.register({ key: 'emotionSignature', wire: { view } })` 折叠该记录，客户端 `props.useProjection('emotionSignature')` 读取；
+7. **降级**：调用失败/超时只记 warn，回退内置词表，下一会话重试；
+8. **动态新增**：AI 在回复里用 `define` 块追加情绪，客户端合并进会话签名。
 
-**客户端 define 合并已实现（v0.5 客户端）**：画布面板折叠已加载时间线里的全部 `canvas` 块，`define` 定义在刷新后仍可恢复（只要对应消息还在已加载窗口内）；Host 初始化调用与 projection 下发进行中。
+客户端折叠已加载时间线里的全部 `canvas` 块，签名在刷新/恢复后从会话日志恢复（实验记录跨格式迁移为 best-effort）。
 
 ## 5. 情绪时间轴（滚动回看，v1.1）
 

@@ -57,7 +57,8 @@ Notes:
 Notes:
 
 - **It does not draw every turn** by design — only when there is something to express; otherwise the glow decays back to baseline.
-- **Not persistent**: the canvas reads the newest `canvas` block from the loaded conversation only.
+- **Signature is generated automatically**: after the first message of a session the host designs this assistant's own emotional vocabulary (6-10 emotions) from the conversation so far; later blocks reference it by name, and the model may add emotions with a `define` block ("已定义 N 个情绪").
+- **Not persistent**: the canvas reads the newest `canvas` block from the loaded conversation only; the signature lives in the session log.
 - **To turn it off**: disable `dsh-ai-dream` on the Plugins page; the injected prompt section goes with it.
 
 ## Troubleshooting
