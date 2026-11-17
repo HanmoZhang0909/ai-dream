@@ -324,12 +324,12 @@ window.__ModuleLoader__.load({
     // inline mentions like "emit a ```canvas block" must not match.
     const FENCE = /^ {0,3}```canvas[^\n]*\n([\s\S]*?)^ {0,3}```/gm
 
-    function lastCanvasFence(text) {
-      if (typeof text !== 'string' || text.indexOf('canvas') < 0) return null
-      let found = null
+    function canvasFences(text) {
+      const found = []
+      if (typeof text !== 'string' || text.indexOf('canvas') < 0) return found
+      const pattern = new RegExp(FENCE.source, 'gm')
       let match
-      FENCE.lastIndex = 0
-      while ((match = FENCE.exec(text)) !== null) found = match[1]
+      while ((match = pattern.exec(text)) !== null) found.push(match[1])
       return found
     }
 
@@ -342,42 +342,43 @@ window.__ModuleLoader__.load({
       return out
     }
 
-    /**
-     * Selector: the newest ```canvas fence anywhere in the loaded transcript.
-     * Walks the immutable order backwards and stops at the first hit, so a
-     * streaming session costs one pass over the newest step, not the transcript.
-     */
-    function latestCanvasCode(snapshot) {
-      if (!snapshot) return null
+    // Blocks from different turns are joined by this separator so the feed stays
+    // a cheap, stable string for useChat selectors.
+    const FEED_SEP = '\n\u0000\n'
 
-      const partial = snapshot.legacy && snapshot.legacy.partial
-      if (partial) {
-        const streaming = lastCanvasFence(blocksText(partial.blocks))
-        if (streaming) return streaming
-      }
+    /**
+     * Selector: every ```canvas fence in the loaded transcript, in order.
+     * `define` blocks can appear in any turn, so the canvas tab folds the whole
+     * timeline instead of only the newest block.
+     */
+    function canvasFeed(snapshot) {
+      if (!snapshot) return null
+      const codes = []
 
       const store = snapshot.nodes
       const order = snapshot.order
       if (store && Array.isArray(order)) {
-        for (let index = order.length - 1; index >= 0; index -= 1) {
+        for (let index = 0; index < order.length; index += 1) {
           const node = store.get(order[index])
           if (!node || node.kind !== 'assistant-step' || !node.data) continue
-          const code = lastCanvasFence(blocksText(node.data.blocks))
-          if (code) return code
+          for (const code of canvasFences(blocksText(node.data.blocks))) codes.push(code)
         }
       }
 
       const legacyNodes = snapshot.legacy && snapshot.legacy.nodes
       if (Array.isArray(legacyNodes)) {
-        for (let index = legacyNodes.length - 1; index >= 0; index -= 1) {
-          const node = legacyNodes[index]
+        for (const node of legacyNodes) {
           if (!node || node.kind !== 'assistant') continue
-          const code = lastCanvasFence(blocksText(node.blocks))
-          if (code) return code
+          for (const code of canvasFences(blocksText(node.blocks))) codes.push(code)
         }
       }
 
-      return null
+      const partial = snapshot.legacy && snapshot.legacy.partial
+      if (partial) {
+        for (const code of canvasFences(blocksText(partial.blocks))) codes.push(code)
+      }
+
+      return codes.length ? codes.join(FEED_SEP) : null
     }
 
     // ---------------------------------------------------------------- layout
@@ -965,25 +966,32 @@ window.__ModuleLoader__.load({
     }
 
     function CanvasBody(props) {
-      const code = props.useChat(latestCanvasCode)
-      const parsed = React.useMemo(() => parseCanvas(code), [code])
-      const lastGood = React.useRef(null)
-      const mergedCode = React.useRef(null)
+      const feed = props.useChat(canvasFeed)
 
-      // A `define` / `signature` block updates the session signature only: the
-      // visible glow keeps its last mood until the next mood block arrives.
-      React.useEffect(() => {
-        if (!parsed || mergedCode.current === code) return
-        if (parsed.kind !== 'define' && parsed.kind !== 'signature') return
-        for (const entry of parsed.emotions) SIGNATURE.set(entry.name, entry)
-        mergedCode.current = code
-      }, [parsed, code])
+      // Fold the whole timeline in order: `define`/`signature` blocks register
+      // emotions, and the last non-define block is what belongs on screen.
+      const timeline = React.useMemo(() => {
+        if (feed == null) return { latest: null, parsedAny: false }
+        let latest = null
+        let parsedAny = false
+        for (const code of feed.split(FEED_SEP)) {
+          const block = parseCanvas(code)
+          if (!block) continue
+          parsedAny = true
+          if (block.kind === 'define' || block.kind === 'signature') {
+            for (const entry of block.emotions) SIGNATURE.set(entry.name, entry)
+          } else {
+            latest = block
+          }
+        }
+        return { latest, parsedAny }
+      }, [feed])
 
-      const mood = parsed && parsed.kind === 'mood' ? parsed : null
-      if (mood) lastGood.current = mood
+      const shown = React.useRef(null)
+      if (timeline.latest) shown.current = timeline.latest
 
-      const failed = !parsed && code != null && lastGood.current == null
-      const model = mood || lastGood.current || (failed ? null : MOOD_DEFAULT)
+      const failed = feed != null && !timeline.parsedAny && shown.current == null
+      const model = shown.current || (failed ? null : MOOD_DEFAULT)
 
       // Every distinct model bumps `revision`; the glide itself is driven by the
       // rAF engine and needs no scene remount.

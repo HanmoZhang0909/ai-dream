@@ -60,6 +60,8 @@
 
 **动态新增**（AI 在回复里随时追加，客户端合并进会话签名；对话里折叠成一行提示；**已实现**）：
 
+多个 `define` 块按对话时间顺序合并；画布面板会折叠整条已加载时间线里的所有块（不只是最新一条），因此 earlier 的 define 在刷新后仍然生效。
+
 ```canvas
 {"kind":"define","emotions":[{"name":"被看穿","palette":{"base":"#0b0a12","core":"#e8d9ff","tone":"#9a7aa6"},"motion":{"speed":0.6,"amplitude":0.5,"rhythm":"uneven"},"form":"streak"}]}
 ```
