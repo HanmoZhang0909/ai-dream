@@ -38,6 +38,9 @@
 | `motion.amplitude` | number | 否 | 0.1–1.0，呼吸/脉动幅度 |
 | `motion.rhythm` | `steady｜breathing｜uneven` | 否 | 运动节奏，缺省 `breathing` |
 | `form` | `cloud｜ring｜streak｜spiral` | 否 | 光的形态，缺省 `cloud` |
+| `orb.size` | number 0.1–1 | 否 | 高级：光球大小（缺省由 intensity 推导） |
+| `orb.pulse` | `steady｜breathe｜flicker` | 否 | 高级：呼吸方式 |
+| `orb.tone` | `warm｜cool｜neutral｜bright` | 否 | 高级：色温倾向 |
 | `transition.style` | `soft｜ripple｜burst｜dissolve｜snap` | 否 | 变化方式 |
 | `transition.speed` | `slow｜medium｜fast` | 否 | 插值时长：约 2.2s / 1.0s / 0.4s |
 

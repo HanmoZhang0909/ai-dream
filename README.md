@@ -56,7 +56,7 @@
 5. **主动触发（可选）**：直接说「表达一下你现在的状态」，或者把下面这段贴进对话：
 
 ```canvas
-{"kind":"mood","mood":"curious","intensity":0.7,"transition":{"style":"soft","speed":"medium"},"nebula":{"pattern":"spiral","density":0.7,"activity":0.6},"orb":{"size":0.6,"pulse":"breathe","tone":"warm"}}
+{"kind":"mood","schema":2,"name":"好奇","intensity":0.7,"palette":{"core":"#ffe9a8","tone":"#ff9f43"},"form":"spiral","transition":{"style":"soft","speed":"medium"}}
 ```
 
 几个要知道的点：
@@ -163,6 +163,8 @@ node scripts/check-fence-regex.mjs
 
 # 本地安装后：改 client.js → 刷新页面（或等 HMR 轮询重建）
 ```
+
+> 文档索引与维护规则见 [docs/README.md](docs/README.md)；产品需求、技术框架、表达协议分别在 `docs/product.md`、`docs/architecture.md`、`docs/expression-protocol.md`。
 
 仓库结构：
 

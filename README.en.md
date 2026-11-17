@@ -51,7 +51,7 @@ Notes:
 5. **Trigger it manually (optional)**: say "express your current state", or paste:
 
 ```canvas
-{"kind":"mood","mood":"curious","intensity":0.7,"transition":{"style":"soft","speed":"medium"},"nebula":{"pattern":"spiral","density":0.7,"activity":0.6},"orb":{"size":0.6,"pulse":"breathe","tone":"warm"}}
+{"kind":"mood","schema":2,"name":"curious","intensity":0.7,"palette":{"core":"#ffe9a8","tone":"#ff9f43"},"form":"spiral","transition":{"style":"soft","speed":"medium"}}
 ```
 
 Notes:

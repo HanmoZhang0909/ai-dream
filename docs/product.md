@@ -1,6 +1,8 @@
 # AI Dream — 产品需求（v0.4 规划）
 
-> 状态：草案，待作者确认。产品名 **AI Dream**（Artificial Intelligence Driven Real-time Emotional Ambient Medium），中文口号「让每个 AI 的感受有形状」。
+> 状态：已确认，持续更新（当前 v0.5）。产品名 **AI Dream**（Artificial Intelligence Driven Real-time Emotional Ambient Medium），中文口号「让每个 AI 的感受有形状」。
+>
+> 文档索引与维护规则见 [`docs/README.md`](README.md)。
 
 ## 1. 一句话定位
 
