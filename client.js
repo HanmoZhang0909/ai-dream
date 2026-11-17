@@ -467,6 +467,8 @@ window.__ModuleLoader__.load({
      */
     const timelineStore = { turn: null, listeners: new Set() }
     const sentinelTops = new Map()
+    let sentinelMounts = 0
+    let slotError = ''
 
     function setTopTurn(turn) {
       if (timelineStore.turn === turn) return
@@ -504,7 +506,12 @@ window.__ModuleLoader__.load({
     /** 1px sentinel in the turn-tail row; reports whether this turn is near the viewport top. */
     function TurnSentinel(props) {
       const ref = React.useRef(null)
-      const turn = props && typeof props.turn === 'number' ? props.turn : null
+      sentinelMounts += 1
+      // `turnTail` receives a TurnLocation object ({ turn, status, ... }), not a bare number.
+      const rawTurn = props ? props.turn : undefined
+      const turn = rawTurn && typeof rawTurn === 'object' && typeof rawTurn.turn === 'number'
+        ? rawTurn.turn
+        : typeof rawTurn === 'number' ? rawTurn : null
       React.useEffect(() => {
         const element = ref.current
         if (!element || turn === null || typeof IntersectionObserver === 'undefined') return undefined
@@ -523,6 +530,7 @@ window.__ModuleLoader__.load({
       return h('div', {
         ref,
         'aria-hidden': true,
+        'data-ai-dream-sentinel': String(turn === null ? 'none' : turn),
         style: {
           height: 1,
           marginTop: -8,
@@ -1228,8 +1236,7 @@ window.__ModuleLoader__.load({
           saveCalibration()
           setBump(value => value + 1)
         }
-        const controls = [['不像', -0.15], ['再强一点', 0.08], ['再淡一点', -0.08]].map(([label, delta]) => h('button', {
-          key: label,
+        const controls = [['不像', -0.15], ['再强一点', 0.08], ['再淡一点', -0.08]].map(([label, delta]) => h('button', {          key: label,
           type: 'button',
           onClick: () => adjust(delta),
           style: {
@@ -1244,8 +1251,22 @@ window.__ModuleLoader__.load({
             opacity: 0.72,
           },
         }, label))
+        const timelineDebug = 'turn=' + String(topTurn) + ' latest=' + String(timeline.latestTurn)
+          + ' turns=[' + Array.from(timeline.turnModels.keys()).join(',') + '] sentinels=' + sentinelTops.size
+          + ' mounts=' + sentinelMounts + ' err=' + slotError.slice(0, 80)
+        if (typeof window !== 'undefined') {
+          window.__aiDreamTimeline = {
+            topTurn,
+            latestTurn: timeline.latestTurn,
+            turnModels: Array.from(timeline.turnModels.keys()),
+            sentinelTops: sentinelTops.size,
+            mounts: sentinelMounts,
+            err: slotError,
+          }
+        }
         return h('div', { style: { height: '100%', background: BG, position: 'relative' } },
           h(MoodView, { model, revision: revision.current + bump }),
+          h('div', { style: { position: 'absolute', left: 8, bottom: 30, font: '10px/1.4 ui-monospace, monospace', color: 'rgba(255,255,255,0.6)', pointerEvents: 'none' } }, timelineDebug),
           h('div', {
             style: {
               position: 'absolute',
@@ -1373,15 +1394,22 @@ window.__ModuleLoader__.load({
           CanvasBody,
         ))
 
-        ctx.slots.inject('conversation.chat.turnTail', () => ctx.slots.register(
-          { name: 'conversation.chat.turnTail', id: PKG, order: 120 },
-          TurnSentinel,
-        ))
-
         ctx.slots.inject('conversation.chat.markdown.fence', () => ctx.slots.register(
           { name: 'conversation.chat.markdown.fence', id: PKG, key: 'canvas' },
           CanvasFence,
         ))
+
+        const safeRegister = (name, options, component) => {
+          ctx.slots.inject(name, () => {
+            try {
+              return ctx.slots.register(options, component)
+            } catch (error) {
+              slotError = name + ': ' + String(error && error.message ? error.message : error)
+              return () => {}
+            }
+          })
+        }
+        safeRegister('conversation.chat.turnTail', { name: 'conversation.chat.turnTail', id: PKG, order: 120 }, TurnSentinel)
       },
     }
   },
