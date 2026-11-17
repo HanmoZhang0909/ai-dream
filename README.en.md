@@ -40,6 +40,34 @@ Notes:
 - The plugin injects a canvas convention into the **system prompt of every session** in that profile (that is what lets the model express itself); disable the plugin to remove it.
 - If nothing appears, hard-refresh (Ctrl+F5); replacing client bundles may need one DSH restart.
 
+## Quick start
+
+1. **Install and refresh** using one of the options above (Ctrl+F5 if nothing changes).
+2. **Open the canvas**: right sidebar → guide page → **AI Dream** card. A neutral idle glow appears.
+3. **Just chat** — no commands needed. When something is worth feeling, the model decides to express it.
+4. **Watch it play**: a small "updated" pill appears in the conversation and the light **glides** to the new emotion (no frame cut); after a few quiet seconds it slowly settles back.
+5. **Trigger it manually (optional)**: say "express your current state", or paste:
+
+```canvas
+{"kind":"mood","mood":"curious","intensity":0.7,"transition":{"style":"soft","speed":"medium"},"nebula":{"pattern":"spiral","density":0.7,"activity":0.6},"orb":{"size":0.6,"pulse":"breathe","tone":"warm"}}
+```
+
+Notes:
+
+- **It does not draw every turn** by design — only when there is something to express; otherwise the glow decays back to baseline.
+- **Not persistent**: the canvas reads the newest `canvas` block from the loaded conversation only.
+- **To turn it off**: disable `dsh-ai-dream` on the Plugins page; the injected prompt section goes with it.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| No **AI Dream** card on the guide page | Check `profile=web`, plugin enabled; hard-refresh (Ctrl+F5); restart DSH once if needed |
+| Tab says "nothing can view this content" | That is a stale tab instance: close it and reopen from the guide card |
+| The `canvas` block did not collapse into a pill | Make sure the block opens at the **start of a line** and is closed; refresh if the plugin is not loaded |
+| Editing `client.js` changes nothing | Client bundles are cached: refresh; disable/enable the plugin, or restart DSH |
+| No animation | `prefers-reduced-motion` disables animation by design |
+
 ## Usage
 
 Chat normally. When the model feels something it may emit one `canvas` block; the block collapses into a clickable pill in the conversation and the right-sidebar ambient light performs it.
