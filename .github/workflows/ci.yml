@@ -28,7 +28,9 @@ jobs:
         run: node scripts/check-mcp-manifest.mjs
       - name: Renderer core checks
         run: node scripts/check-renderer-core.mjs
-      - name: MCP renderer check
+      # Headless Chrome is environment-dependent; run it explicitly when available.
+      - name: MCP renderer check (browser)
+        if: ${{ env.AI_DREAM_BROWSER_CHECK == '1' }}
         run: node scripts/check-mcp-renderer.mjs
       - name: JSON validation
         run: node -e "for (const f of ['package.json','locale/en.json','locale/zh.json']) JSON.parse(require('fs').readFileSync(f,'utf8')); console.log('json ok')"
