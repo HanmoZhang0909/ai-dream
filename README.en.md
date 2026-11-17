@@ -100,9 +100,10 @@ Then refresh the page after editing (or wait for HMR to rebuild).
 ## Distribution & ecosystem
 
 - DSH discovers third-party plugins through **Discover** (the plugin market): enable the experimental plugin-market bundle once and add an **index URL** (format 1 JSON);
+- This repository ships a ready-to-add market index: `https://raw.githubusercontent.com/HanmoZhang0909/ai-dream/main/index.json` (Discover → Add index source; validated with the official format-1 validator; installs from a commit-pinned git source);
 - The official plugin marketplace is under construction (announced 2026-11); today distribution leans on community indexes plus npm/Git installs;
 - Tag this repository with the `dsh-plugin` and `deepseek-harness` GitHub topics so it is discoverable;
-- Planned: publish npm package `dsh-ai-dream` and ship a ready-to-add market index JSON.
+- Planned: publish npm package `dsh-ai-dream`.
 
 ## Known limitations
 

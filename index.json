@@ -1,0 +1,43 @@
+{
+  "format": 1,
+  "title": { "en": "AI Dream", "zh": "AI Dream" },
+  "description": {
+    "en": "Emotional ambient medium for AI in the DeepSeek Harness right sidebar. A shape for every feeling.",
+    "zh": "DeepSeek Harness 右侧栏的 AI 情感氛围媒介：让每个 AI 的感受有形状。"
+  },
+  "metadata": {
+    "categories": {},
+    "labels": {},
+    "sortKeys": {}
+  },
+  "plugins": [
+    {
+      "name": "dsh-ai-dream",
+      "title": { "en": "AI Dream", "zh": "AI Dream" },
+      "description": {
+        "en": "A continuously flowing emotional glow for AI: the model decides each turn what it feels, and the canvas interpolates colour, light and form in real time.",
+        "zh": "一块给 AI 的连续流动情绪光晕：每轮由模型自己决定表达什么，画布实时插值颜色、光与形态。"
+      },
+      "author": "HanmoZhang0909",
+      "homepage": "https://github.com/HanmoZhang0909/ai-dream",
+      "repository": { "url": "https://github.com/HanmoZhang0909/ai-dream" },
+      "metadata": {
+        "keywords": ["ai-emotion", "ambient", "generative-visual", "dsh-plugin", "deepseek-harness"],
+        "labels": [],
+        "sortKeys": {}
+      },
+      "versions": [
+        {
+          "version": "0.3.0",
+          "publishTimestamp": 1794900124,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/HanmoZhang0909/ai-dream",
+            "commit": "f2561f71f8040c4ca6c62f8c819c0b62a6186ec4"
+          },
+          "engines": { "dsh": ">=0.2.2-rc.3" }
+        }
+      ]
+    }
+  ]
+}

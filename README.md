@@ -138,9 +138,10 @@ node scripts/check-fence-regex.mjs
 ## 分发与生态
 
 - DSH 的第三方插件通过 **Discover（插件市场）** 被发现：启用实验性插件市场 bundle 后，添加一个**索引 URL**（format 1 JSON）即可浏览与安装；
+- 本仓库自带一个可直接添加的市场索引：`https://raw.githubusercontent.com/HanmoZhang0909/ai-dream/main/index.json`（Discover → Add index source；已用官方校验器验证，安装规格为 commit 固定的 git 源）；
 - 官方插件市场正在建设中（2026-11 官方披露），目前生态主要靠各索引与 npm/Git 安装；
 - 本仓库建议在 GitHub 上打 `dsh-plugin`、`deepseek-harness` topics，方便按主题检索；
-- 后续计划：发布 npm 包 `dsh-ai-dream`，并附一个可直接添加的市场索引 JSON。
+- 后续计划：发布 npm 包 `dsh-ai-dream`。
 
 ## 已知限制
 
