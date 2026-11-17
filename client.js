@@ -968,10 +968,20 @@ window.__ModuleLoader__.load({
 
     function CanvasBody(props) {
       const feed = props.useChat(canvasFeed)
+      // Host-side emotion signature (v0.5): arrives over the session projection.
+      const wire = props.useProjection ? props.useProjection('emotionSignature') : undefined
 
       // Fold the whole timeline in order: `define`/`signature` blocks register
       // emotions, and the last non-define block is what belongs on screen.
       const timeline = React.useMemo(() => {
+        // The host signature supplies palettes for name-only moods; transcript
+        // `define` blocks are folded afterwards so the model can still add to it.
+        if (wire && Array.isArray(wire.emotions)) {
+          for (const entry of wire.emotions) {
+            const normalized = normalizeEmotionEntry(entry)
+            if (normalized) SIGNATURE.set(normalized.name, normalized)
+          }
+        }
         if (feed == null) return { latest: null, parsedAny: false }
         let latest = null
         let parsedAny = false
@@ -986,7 +996,7 @@ window.__ModuleLoader__.load({
           }
         }
         return { latest, parsedAny }
-      }, [feed])
+      }, [feed, wire])
 
       const shown = React.useRef(null)
       if (timeline.latest) shown.current = timeline.latest

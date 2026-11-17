@@ -1,11 +1,19 @@
 /**
- * Host half of the AI canvas bundle.
+ * Host half of the AI Dream bundle.
  *
- * The Web client renders the latest ```canvas block from an assistant reply as
- * a living emotional glow in a right-sidebar panel. Protocol v2 lets the model
- * define its own emotions (name, palette, motion, form) on top of the built-in
- * fallback moods. This half teaches the convention and owns no durable state.
+ * The Web client renders the newest ```canvas block from an assistant reply as a
+ * living emotional glow in a right-sidebar panel. Protocol v2 lets the model
+ * define its own emotions (name, palette, motion, form).
+ *
+ * v0.5 adds the emotion signature: on the first human message of a session the
+ * host asks the model (one small auxiliary call) to design this assistant's own
+ * emotional vocabulary from the conversation so far, validates it, and commits
+ * it as an experimental plugin record. A session projection folds that record so
+ * the client can receive it over the session-projection wire.
  */
+import fs from 'node:fs'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const INSTRUCTIONS = `## Live canvas blocks
 
@@ -33,13 +41,251 @@ Cards: {"kind":"cards","title":"optional short title","cards":[{"title":"短标�
 
 Rules: one block per reply; at most 10 nodes / 14 edges / 6 cards; ids are short latin strings; labels at most 16 CJK characters or 24 latin characters; write labels in the user's language. The block collapses into a clickable pill in the conversation that opens the canvas.`
 
-export const inject = ['systemPrompt']
+const RECORD_TYPE = 'plugin:ai-dream/signature'
+const PROJECTION_KEY = 'emotionSignature'
+const INIT_TIMEOUT_MS = 20000
+const HISTORY_LIMIT = 16
+const MAX_TOKENS = 900
 
-/** Register the prompt section that defines the canvas convention. */
+const SIGNATURE_SYSTEM = [
+  'You design the emotional language of an AI assistant for one conversation.',
+  'Read the supplied conversation excerpt (JSON) and invent 8 to 14 emotions this assistant would genuinely use with this person.',
+  'Return ONLY one JSON object, with no prose and no code fences:',
+  '{"version":1,"emotions":[{"name":"...","palette":{"base":"#0b0a12","core":"#e8d9ff","tone":"#9a7aa6","spectrum":["#c9a3e0","#6a4b8f"]},"motion":{"speed":0.6,"amplitude":0.5,"rhythm":"breathing"},"form":"cloud"}]}',
+  'Rules: names are short (max 12 characters) and in the language of the conversation; palette uses valid #rrggbb colours from one consistent family — base is the background, core the light centre, tone/spectrum the secondary hues; motion.speed is 0.2-2.0, motion.amplitude 0.1-1.0; rhythm is steady|breathing|uneven; form is cloud|ring|streak|spiral.',
+].join('\n')
+
+const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
+const FORMS = ['cloud', 'ring', 'streak', 'spiral']
+const RHYTHMS = ['steady', 'breathing', 'uneven']
+
+/**
+ * DSH packages are not resolvable by bare specifier from a linked profile
+ * plugin, so resolve them from the running installation instead.
+ */
+let dsh = null
+try {
+  const roots = []
+  const argv1 = process.argv[1]
+  if (argv1) {
+    let dir = path.dirname(argv1)
+    for (let step = 0; step < 10; step += 1) {
+      const nested = path.join(dir, 'node_modules', '@deepseek-ai', 'dsh', 'package.json')
+      if (fs.existsSync(nested)) roots.push(path.dirname(nested))
+      const parent = path.dirname(dir)
+      if (parent === dir) break
+      dir = parent
+    }
+  }
+  for (const root of roots) {
+    const base = path.join(root, 'node_modules', '@deepseek-ai')
+    const sessionLib = path.join(base, 'dsh-session', 'lib', 'index.js')
+    const llmLib = path.join(base, 'dsh-llm', 'lib', 'index.js')
+    if (!fs.existsSync(sessionLib) || !fs.existsSync(llmLib)) continue
+    try {
+      const sessionModule = await import(pathToFileURL(sessionLib).href)
+      const llmModule = await import(pathToFileURL(llmLib).href)
+      dsh = {
+        appendPluginRecord: sessionModule.appendPluginRecord,
+        createUserMessage: llmModule.createUserMessage,
+      }
+      break
+    } catch {
+      dsh = null
+    }
+  }
+} catch {
+  dsh = null
+}
+
+export const inject = ['systemPrompt', 'llm', 'sessionProjections', 'agentDefaultModel']
+
+/** Register the prompt section, the signature projection and the one-shot init. */
 export function apply(ctx) {
   ctx.systemPrompt.section({
     name: 'ai-canvas:instructions',
     order: 9500,
     text: INSTRUCTIONS,
   })
+
+  if (typeof ctx.sessionProjections?.register === 'function') {
+    Promise.resolve(ctx.sessionProjections.register({
+      key: PROJECTION_KEY,
+      stateVersion: 1,
+      stateSchema: { parse: value => value },
+      init: () => null,
+      apply: (state, event) => (event && event.type === RECORD_TYPE ? event.data : state),
+      wire: { viewSchema: { parse: value => value }, view: state => state },
+    })).catch(error => {
+      ctx.logger.warn(`ai-dream: signature projection registration failed: ${String(error)}`)
+    })
+  }
+
+  const inflight = new WeakSet()
+  ctx.on('session/event', (session, event) => {
+    if (!dsh || !event || event.type !== 'user/message') return
+    const source = event.data && event.data.source
+    if (!source || source.kind !== 'user') return
+    const header = session.header
+    if (header && (header.isSeeded || header.origin === 'subagent')) return
+    if (inflight.has(session) || hasSignature(session)) return
+    inflight.add(session)
+    void generateSignature(ctx, session)
+      .catch(error => ctx.logger.warn(`ai-dream: signature init failed: ${String(error)}`))
+      .finally(() => inflight.delete(session))
+  })
+}
+
+function snapshotEvents(session) {
+  try {
+    const events = session.snapshotEvents()
+    return Array.isArray(events) ? events : []
+  } catch {
+    return []
+  }
+}
+
+function hasSignature(session) {
+  return snapshotEvents(session).some(event => event && event.type === RECORD_TYPE)
+}
+
+function textOfContent(content) {
+  if (!Array.isArray(content)) return ''
+  return content
+    .filter(block => block && block.type === 'text' && typeof block.text === 'string')
+    .map(block => block.text)
+    .join('\n')
+}
+
+/** Recent human + assistant text turns, oldest first, capped. */
+function collectHistory(session) {
+  const turns = []
+  for (const event of snapshotEvents(session)) {
+    if (!event) continue
+    if (event.type === 'user/message') {
+      const source = event.data && event.data.source
+      if (!source || source.kind !== 'user') continue
+      const text = textOfContent(event.data.content).trim()
+      if (text) turns.push({ role: 'user', text: text.slice(0, 1200) })
+    } else if (event.type === 'assistant/message') {
+      const message = event.data && event.data.message
+      const text = textOfContent(message && message.content).trim()
+      if (text) turns.push({ role: 'assistant', text: text.slice(0, 800) })
+    }
+  }
+  return turns.slice(-HISTORY_LIMIT)
+}
+
+async function generateSignature(ctx, session) {
+  const route = resolveRoute(ctx, session)
+  const history = collectHistory(session)
+  if (history.length === 0) return
+  const text = await callModel(ctx, session, route, 'Conversation excerpt (JSON):\n' + JSON.stringify(history))
+  const signature = parseSignature(text, route)
+  if (!signature) throw new Error('model returned an invalid signature')
+  dsh.appendPluginRecord(session, RECORD_TYPE, signature)
+  ctx.logger.info(`ai-dream: emotion signature committed (${signature.emotions.length} emotions)`)
+}
+
+function resolveRoute(ctx, session) {
+  try {
+    if (typeof session.requestHeader === 'function') {
+      const header = session.requestHeader()
+      const config = header && header.config
+      if (config && config.provider && config.model) return { provider: config.provider, model: config.model }
+    }
+  } catch {
+    // fall through to the default selection
+  }
+  if (ctx.agentDefaultModel && typeof ctx.agentDefaultModel.currentSelection === 'function') {
+    const selection = ctx.agentDefaultModel.currentSelection()
+    if (selection && selection.provider && selection.model) {
+      return { provider: selection.provider, model: selection.model }
+    }
+  }
+  throw new Error('no model route is available')
+}
+
+async function callModel(ctx, session, route, input) {
+  const signal = AbortSignal.timeout(INIT_TIMEOUT_MS)
+  const call = await ctx.llm.prepareCall({ ...route, maxTokens: MAX_TOKENS }, signal, controls => controls)
+  const messages = [dsh.createUserMessage({
+    content: [{ type: 'text', text: input }],
+    source: { kind: 'dsh-ai-dream' },
+  })]
+  let text = ''
+  let finish
+  for await (const chunk of call.stream({
+    ...call.config,
+    messages,
+    system: SIGNATURE_SYSTEM,
+    sessionId: session.id,
+    signal,
+  })) {
+    if (!chunk) continue
+    if (chunk.type === 'text-delta') text += chunk.text || ''
+    else if (chunk.type === 'finish') finish = chunk.reason
+  }
+  if (finish && finish.kind !== 'stop') throw new Error(`signature model finished with ${finish.kind}`)
+  return text
+}
+
+function hexColor(value) {
+  return typeof value === 'string' && HEX.test(value.trim()) ? value.trim().toLowerCase() : null
+}
+
+function clampNumber(value, min, max, fallback) {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback
+}
+
+function normalizeEmotion(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const name = typeof raw.name === 'string' ? raw.name.trim().slice(0, 12) : ''
+  if (!name) return null
+  const palette = raw.palette && typeof raw.palette === 'object' ? raw.palette : {}
+  const core = hexColor(palette.core) || '#eef4ff'
+  const tone = hexColor(palette.tone) || core
+  const spectrum = Array.isArray(palette.spectrum)
+    ? palette.spectrum.map(hexColor).filter(Boolean).slice(0, 4)
+    : []
+  while (spectrum.length < 2) spectrum.push(spectrum.length === 0 ? core : tone)
+  const motion = raw.motion && typeof raw.motion === 'object' ? raw.motion : {}
+  return {
+    name,
+    palette: {
+      base: hexColor(palette.base) || '#05070c',
+      core,
+      tone,
+      spectrum,
+    },
+    motion: {
+      speed: clampNumber(motion.speed, 0.2, 2, 1),
+      amplitude: clampNumber(motion.amplitude, 0.1, 1, 0.5),
+      rhythm: RHYTHMS.includes(motion.rhythm) ? motion.rhythm : 'breathing',
+    },
+    form: FORMS.includes(raw.form) ? raw.form : 'cloud',
+  }
+}
+
+function parseSignature(text, route) {
+  if (typeof text !== 'string') return null
+  const cleaned = text.replace(/```[a-zA-Z]*\n?/g, '').replace(/```/g, '').trim()
+  const start = cleaned.indexOf('{')
+  const end = cleaned.lastIndexOf('}')
+  if (start < 0 || end <= start) return null
+  let raw
+  try {
+    raw = JSON.parse(cleaned.slice(start, end + 1))
+  } catch {
+    return null
+  }
+  const list = Array.isArray(raw.emotions) ? raw.emotions : []
+  const emotions = list.map(normalizeEmotion).filter(Boolean).slice(0, 14)
+  if (emotions.length < 3) return null
+  return {
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    model: { provider: route.provider, model: route.model },
+    emotions,
+  }
 }
