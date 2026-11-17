@@ -33,11 +33,23 @@
 - **发版**：`package.json` version + `CHANGELOG` + git tag + `docs/index.json`（新版本 + pinned commit）+ 本文档「当前状态」；
 - **本地独有文档**（设计调研等）不放进仓库：避免被 npm 打包或误提交（参考 `.gitignore`）。
 
+## 每次功能更新的 Definition of Done
+
+一个功能不算完成，除非四件事都做了：
+
+1. **文案全量巡检**：逐篇过 `README` / `DETAIL` / `product` / `architecture` / `protocol` / `examples`，确认与实现一致；
+2. **冲突检查**：同一概念只在一个权威文档定义，其他文档引用；两处描述不一致必须先合并再继续；
+3. **历史遗留删除**：被替换的字段/方案/过时状态头直接删掉，不留"旧版兼容说明"（兼容只允许写在协议文档的版本节）；
+4. **可复用性检查**：新能力先判断属于哪一层（协议/渲染/宿主/状态），写进 `architecture.md` 再写代码；能被别的宿主复用的逻辑不要绑死 DSH。
+
+自动化：`node scripts/check-docs.mjs` 会检查版本一致性、遗留术语、相对链接、状态行；CI 已接入，不通过不允许合并。
+
 ## 发布检查清单
 
 - [ ] `node --check client.js`
 - [ ] `node --input-type=module -e "await import('./index.js')"`
 - [ ] `node scripts/check-fence-regex.mjs`
+- [ ] `node scripts/check-docs.mjs`
 - [ ] 协议示例可解析（用 `examples/moods.md` 里的块手动过一遍）
 - [ ] 对照「改动同步清单」检查文档一致
 - [ ] `package.json` version / `CHANGELOG` / tag 三者一致

@@ -34,7 +34,7 @@
 
 思维（次要模式）：`diagram` / `cards`，上限 10 个节点 / 14 条边 / 6 张卡片。
 
-> 完整协议、签名与降级规则见 [docs/expression-protocol.md](docs/expression-protocol.md)。
+> 完整协议、签名与降级规则见 [expression-protocol.md](expression-protocol.md)。
 
 ## 已知限制
 
