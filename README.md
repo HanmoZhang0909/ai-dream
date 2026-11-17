@@ -11,7 +11,9 @@
 
 ![AI Dream 情绪循环演示](docs/demo.gif)
 
-> 上图为 `docs/demo.html` 独立复刻页渲染的 6 秒循环（calm → warm → curious → calm），**不是 DSH 界面截图**；真实界面截图欢迎 PR 补到 `docs/screenshot.png`。想交互看效果，直接浏览器打开 `docs/demo.html`。
+> 上图为 `docs/demo.html` 独立复刻页渲染的 6 秒循环（calm → warm → curious → calm），**不是 DSH 界面截图**；真实界面截图欢迎 PR 补到 `docs/screenshot.png`。
+>
+> **在线交互预览**：<https://hanmozhang0909.github.io/ai-dream/demo.html>（浏览器直接打开即有效果，不需要装 DSH）
 
 ## 它是什么
 

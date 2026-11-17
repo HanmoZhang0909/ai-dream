@@ -10,7 +10,9 @@ A continuously flowing light in the right sidebar — not a diagram of the conve
 
 ![AI Dream mood loop](docs/demo.gif)
 
-> The clip is rendered from `docs/demo.html`, a standalone recreation of the glow (6 s loop: calm → warm → curious → calm) — **not a screenshot of the DSH UI**. A real UI screenshot is welcome via PR at `docs/screenshot.png`. Open `docs/demo.html` in a browser for the interactive version.
+> The clip is rendered from `docs/demo.html`, a standalone recreation of the glow (6 s loop: calm → warm → curious → calm) — **not a screenshot of the DSH UI**. A real UI screenshot is welcome via PR at `docs/screenshot.png`.
+>
+> **Live preview**: <https://hanmozhang0909.github.io/ai-dream/demo.html> (open in a browser, no DSH required)
 
 ## What it is
 
