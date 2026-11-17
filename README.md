@@ -163,8 +163,7 @@ node scripts/check-fence-regex.mjs
 ├── docs/
 │   ├── DETAIL.md         插件管理器详情页
 │   ├── demo.html         独立复刻页（浏览器直接打开即可交互预览）
-│   ├── demo.gif          README 演示动图（由 demo.html 渲染）
-│   └── design-notes.md   设计背景与开源方案调研
+│   └── demo.gif          README 演示动图（由 demo.html 渲染）
 ├── scripts/
 │   └── check-fence-regex.mjs   fence 提取器回归测试
 └── icon.svg
