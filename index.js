@@ -12,6 +12,7 @@
  * the client can receive it over the session-projection wire.
  */
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
@@ -52,6 +53,7 @@ const MAX_TOKENS = 3500
 /** Plugin configuration defaults; every value is clamped again by the client. */
 const DEFAULT_CONFIG = {
   signatureEnabled: true,
+  reuseSignature: true,
   signatureEmotions: 8,
   holdSeconds: 6,
   decaySeconds: 3,
@@ -69,6 +71,7 @@ export function resolveConfig(raw) {
   )
   return Object.freeze({
     signatureEnabled: source.signatureEnabled !== false,
+    reuseSignature: source.reuseSignature !== false,
     signatureEmotions: Math.round(clamp(source.signatureEmotions, 4, 12, DEFAULT_CONFIG.signatureEmotions)),
     holdSeconds: clamp(source.holdSeconds, 1, 60, DEFAULT_CONFIG.holdSeconds),
     decaySeconds: clamp(source.decaySeconds, 0.5, 30, DEFAULT_CONFIG.decaySeconds),
@@ -126,13 +129,16 @@ try {
     const base = path.join(root, 'node_modules', '@deepseek-ai')
     const sessionLib = path.join(base, 'dsh-session', 'lib', 'index.js')
     const llmLib = path.join(base, 'dsh-llm', 'lib', 'index.js')
+    const homeLib = path.join(base, 'dsh-home-paths', 'lib', 'index.js')
     if (!fs.existsSync(sessionLib) || !fs.existsSync(llmLib)) continue
     try {
       const sessionModule = await import(pathToFileURL(sessionLib).href)
       const llmModule = await import(pathToFileURL(llmLib).href)
+      const homeModule = fs.existsSync(homeLib) ? await import(pathToFileURL(homeLib).href) : null
       dsh = {
         appendPluginRecord: sessionModule.appendPluginRecord,
         createUserMessage: llmModule.createUserMessage,
+        homePath: homeModule && typeof homeModule.dshHomePath === 'function' ? homeModule.dshHomePath : null,
       }
       break
     } catch {
@@ -177,15 +183,82 @@ export function apply(ctx, config) {
     const source = event.data && event.data.source
     if (!source || source.kind !== 'user') return
     syncConfig(session, settings)
+    if (!readPersistedSignature()) {
+      const existing = lastSignatureOf(snapshotEvents(session))
+      if (existing) persistSignature(existing)
+    }
+    if (!settings.signatureEnabled || inflight.has(session) || hasSignature(session)) return
     const header = session.header
-    if (header && header.origin === 'subagent') return
-    if (!settings.signatureEnabled) return
-    if (inflight.has(session) || hasSignature(session)) return
+    const subagent = Boolean(header && header.origin === 'subagent')
     inflight.add(session)
-    void generateSignature(ctx, session, settings)
+    void (async () => {
+      if (settings.reuseSignature && await reuseSignature(ctx, session)) return
+      if (!subagent) await generateSignature(ctx, session, settings)
+    })()
       .catch(error => ctx.logger.warn(`ai-dream: signature init failed: ${String(error)}`))
       .finally(() => inflight.delete(session))
   })
+}
+
+/** Latest valid `plugin:ai-dream/signature` payload in one event list, or null. */
+export function lastSignatureOf(events) {
+  if (!Array.isArray(events)) return null
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index]
+    if (!event || event.type !== RECORD_TYPE) continue
+    const data = event.data
+    if (data && Array.isArray(data.emotions) && data.emotions.length > 0) return data
+  }
+  return null
+}
+
+/** Directory for persisted plugin state inside the DSH home. */
+function storageDir(override) {
+  if (override) return override
+  try {
+    if (dsh && dsh.homePath) return path.join(dsh.homePath('storages'), 'dsh-ai-dream')
+  } catch {
+    // fall through to the conventional location
+  }
+  return path.join(os.homedir(), '.dsh', 'storages', 'dsh-ai-dream')
+}
+
+/** Path of the persisted emotion signature. */
+export function signatureFilePath(override) {
+  return path.join(storageDir(override), 'signature.json')
+}
+
+/** Read the signature persisted by a previous session, or null. */
+export function readPersistedSignature(override) {
+  try {
+    const data = JSON.parse(fs.readFileSync(signatureFilePath(override), 'utf8'))
+    return data && Array.isArray(data.emotions) && data.emotions.length > 0 ? data : null
+  } catch {
+    return null
+  }
+}
+
+/** Persist the emotion signature for future sessions. Returns the file path, or null. */
+export function persistSignature(signature, override) {
+  try {
+    const pathToFile = signatureFilePath(override)
+    fs.mkdirSync(path.dirname(pathToFile), { recursive: true })
+    fs.writeFileSync(pathToFile, JSON.stringify(signature))
+    return pathToFile
+  } catch {
+    return null
+  }
+}
+
+/** Copy the persisted signature into this session. Returns false when none exists. */
+async function reuseSignature(ctx, session) {
+  const signature = readPersistedSignature()
+  if (!signature) return false
+  // A plugin record must be committed outside the session/event publication.
+  await new Promise(resolve => setTimeout(resolve, 0))
+  dsh.appendPluginRecord(session, RECORD_TYPE, signature)
+  ctx.logger.info('ai-dream: reused persisted emotion signature')
+  return true
 }
 
 /** Commit the resolved configuration once per session, and again whenever it changes. */
@@ -255,6 +328,7 @@ async function generateSignature(ctx, session, settings) {
   const signature = parseSignature(text, route)
   if (!signature) throw new Error('model returned an invalid signature')
   dsh.appendPluginRecord(session, RECORD_TYPE, signature)
+  persistSignature(signature)
   ctx.logger.info(`ai-dream: emotion signature committed (${signature.emotions.length} emotions)`)
 }
 

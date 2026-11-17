@@ -133,6 +133,13 @@ interface EmotionState {
 - **用户校准**：画布底部三个轻量按钮「不像 / 再强一点 / 再淡一点」，调整 `CALIBRATION.intensityBias`（-0.4–0.4），立即作用于渲染并写入 `localStorage`；
 - **边界（诚实）**：校准是**客户端视觉偏置**，不写回模型提示词，也不改历史；按浏览器 localStorage 持久化，换浏览器/清缓存会丢。模型侧学习与 Host 侧跨会话复用留到 1.0.x。
 
+### 4.4 跨会话签名持久化（v1.3，已实现）
+
+- 签名生成成功后写入 `dshHomePath('storages')/dsh-ai-dream/signature.json`（`dsh-home-paths` 以绝对路径导入，失败回退 `~/.dsh/storages/...`）；
+- 新会话首条消息时，若 `reuseSignature` 开启：读文件 → `setTimeout(0)` 延后 → `appendPluginRecord` 复制进本会话，**跳过模型调用**；无文件则照常生成；
+- 已存在签名的旧会话在下一条消息时会把签名补写进文件（迁移）；
+- 边界：单份"最新签名"，不区分模型/工作区；换模型后仍复用上一份，需要时可关 `reuseSignature` 或删除文件。
+
 ## 5. 情绪时间轴（滚动回看，v1.1）
 
 **数据**：表达块已经在每条助手消息的文本里（`canvas` fence），因此**无需额外存储**——从 `ChatSnapshot` 中按 `messageId` 解析出该轮的表达规格即可。更早的历史需要 Host projection 分页加载（后续）。

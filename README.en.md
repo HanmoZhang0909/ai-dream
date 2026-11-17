@@ -175,6 +175,7 @@ Add a config block to the plugin row in your profile's `cordis.patch.yml` (for e
 | Field | Default | Range | Meaning |
 |---|---|---|---|
 | `signatureEnabled` | true | boolean | Automatically design the emotion signature at session start |
+| `reuseSignature` | true | boolean | Reuse the last persisted signature in new sessions (saves one model call) |
 | `signatureEmotions` | 8 | 4–12 | How many emotions the signature holds |
 | `holdSeconds` | 6 | 1–60 | How long the current state is held without new expressions |
 | `decaySeconds` | 3 | 0.5–30 | How long the glow takes to settle back to baseline |

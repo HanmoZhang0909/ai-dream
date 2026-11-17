@@ -1,6 +1,9 @@
 // Configuration and signature parsing regression tests (no dependencies).
 import assert from 'node:assert/strict'
-import { resolveConfig, parseSignature } from '../index.js'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { resolveConfig, parseSignature, lastSignatureOf, persistSignature, readPersistedSignature, signatureFilePath } from '../index.js'
 
 const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i
 const emotion = (name, overrides = {}) => ({
@@ -17,12 +20,14 @@ const route = { provider: 'test-provider', model: 'test-model' }
 {
   const defaults = resolveConfig(undefined)
   assert.equal(defaults.signatureEnabled, true)
+  assert.equal(defaults.reuseSignature, true)
   assert.equal(defaults.signatureEmotions, 8)
   assert.equal(defaults.holdSeconds, 6)
   assert.equal(defaults.decaySeconds, 3)
   assert.equal(defaults.defaultIntensity, 0.6)
   assert.equal(defaults.allowInlinePalette, true)
   assert.ok(Object.isFrozen(defaults), 'settings must be immutable')
+  assert.equal(resolveConfig({ reuseSignature: false }).reuseSignature, false)
 }
 
 {
@@ -92,6 +97,30 @@ const route = { provider: 'test-provider', model: 'test-model' }
   assert.equal(parseSignature(undefined, route), null)
   const tooFew = { version: 1, emotions: emotions.slice(0, 2) }
   assert.equal(parseSignature(JSON.stringify(tooFew), route), null, 'fewer than 3 emotions is rejected')
+}
+
+// --- cross-session signature persistence -------------------------------------
+{
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-dream-test-'))
+  try {
+    assert.equal(readPersistedSignature(dir), null, 'missing file reads null')
+    assert.equal(signatureFilePath(dir).startsWith(dir), true)
+    const signature = { version: 1, generatedAt: '2026-01-01T00:00:00.000Z', model: route, emotions }
+    assert.equal(persistSignature(signature, dir), signatureFilePath(dir))
+    const loaded = readPersistedSignature(dir)
+    assert.ok(loaded, 'persisted signature reads back')
+    assert.equal(loaded.emotions.length, 6)
+    assert.equal(lastSignatureOf([
+      { type: 'other' },
+      { type: 'plugin:ai-dream/signature', data: { emotions: [] } },
+      { type: 'plugin:ai-dream/signature', data: { emotions } },
+      { type: 'plugin:ai-dream/signature', data: null },
+    ]).emotions.length, 6)
+    assert.equal(lastSignatureOf(undefined), null)
+    assert.equal(lastSignatureOf([{ type: 'plugin:ai-dream/signature', data: { emotions: [] } }]), null)
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
 }
 
 console.log('config/signature checks OK')

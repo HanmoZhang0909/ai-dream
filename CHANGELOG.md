@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0 — 2026-11-17
+
+- **Cross-session signature reuse**: the emotion signature is persisted to `~/.dsh/storages/dsh-ai-dream/signature.json`; a new session copies it instead of calling the model again (`reuseSignature`, default on). Older sessions seed the file on their next message.
+- New `scripts/check-config.mjs` coverage for persistence round-trips and `lastSignatureOf`.
+- Config table documents `reuseSignature`; architecture notes the single-file, model-agnostic boundary.
+
 ## 1.2.0 — 2026-11-17
 
 - Scroll replay now shows a hint while reviewing: 「回看 · 第 N 轮 · 回到最新」. Clicking it scrolls the transcript back to the bottom and returns to live mode.

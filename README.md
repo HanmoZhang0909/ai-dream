@@ -215,6 +215,7 @@ node scripts/check-fence-regex.mjs
 | 字段 | 默认 | 范围 | 含义 |
 |---|---|---|---|
 | `signatureEnabled` | true | 布尔 | 是否在会话开始时自动生成情绪签名 |
+| `reuseSignature` | true | 布尔 | 新会话优先复用上次持久化的签名（省一次模型调用） |
 | `signatureEmotions` | 8 | 4–12 | 签名里的情绪数量 |
 | `holdSeconds` | 6 | 1–60 | 无新表达后保持当前状态的时间 |
 | `decaySeconds` | 3 | 0.5–30 | 回落到基线的时长 |
