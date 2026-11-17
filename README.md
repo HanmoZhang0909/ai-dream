@@ -189,6 +189,9 @@ node scripts/check-fence-regex.mjs
 │   └── core.mjs         与宿主无关的渲染核心（协议规范化/插值参数，MCP 渲染器共用）
 ├── resources/
 │   └── ai-dream.html    MCP App 渲染器骨架（`?t=` 定格 / `#probe` 自检）
+├── mcp/
+│   ├── app-manifest.json 可移植工具契约（`express_emotion`）
+│   └── server.mjs        stdio JSON-RPC MCP server
 └── icon.svg
 ```
 

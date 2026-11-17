@@ -58,5 +58,5 @@ DSH 里的 `canvas` 围栏协议与 `express_emotion` 的入参是**同一份字
 2. [x] 产出 `resources/ai-dream.html`（`?t=` 定格、`?spec=` 覆盖、`#probe` 输出计算后的渲染目标）并用无头 Chrome 验证（`scripts/check-mcp-renderer.mjs`，截图见下）：
 
    ![MCP renderer](mcp-renderer.png)
-3. [ ] 写 MCP server 骨架（stdio，`express_emotion` + resource）；
+3. [x] 写 MCP server 骨架（stdio，`express_emotion` + renderer resource；`mcp/server.mjs`，handler 纯函数可单测：`scripts/check-mcp-server.mjs`）；
 4. [ ] 在 ChatGPT 开发者模式/Claude 连接器里做一次真机验证（需要用户账号，记录为待办）。

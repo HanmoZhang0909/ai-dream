@@ -27,6 +27,7 @@ const required = [
   'docs/DETAIL.md',
   'docs/mcp-app.md',
   'mcp/app-manifest.json',
+  'mcp/server.mjs',
   'renderer/core.mjs',
   'resources/ai-dream.html',
   'examples/moods.md',

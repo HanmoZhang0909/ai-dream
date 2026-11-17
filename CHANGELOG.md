@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.0 — 2026-11-17
+
+- MCP server skeleton `mcp/server.mjs`: stdio JSON-RPC with `initialize`, `ping`, `tools/list`, `tools/call`, `resources/list`, `resources/read`; `express_emotion` normalizes through `renderer/core.mjs` and the renderer HTML is served as an `ai-dream://renderer` resource.
+- New `scripts/check-mcp-server.mjs` (CI) covers the handler: protocol handshake, tool schema, clamping, error codes, resource reads.
+- Package `files` now ships `mcp/`, `renderer/` and `resources/`.
+
 ## 1.7.1 — 2026-11-17
 
 - Fix CI: the headless-Chrome MCP renderer check now runs only when `AI_DREAM_BROWSER_CHECK=1` (GitHub runners are environment-dependent); protocol/renderer semantics stay covered by the manifest and renderer-core unit tests. The screenshot remains committed as evidence.

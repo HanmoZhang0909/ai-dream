@@ -25,6 +25,7 @@
 | `docs/index.json` | 插件市场索引 | 每次发版（版本 + pinned commit） |
 | `docs/mcp-app.md` | MCP App（ChatGPT/Claude）移植说明 | 移植形态、宿主限制、验收清单变化 |
 | `mcp/app-manifest.json` | 可移植的工具契约（`express_emotion`） | 协议字段/枚举/范围变化（CI 校验） |
+| `mcp/server.mjs` | stdio JSON-RPC MCP server（handler 纯函数） | 工具/资源/协议方法变化（CI 单测） |
 | `renderer/core.mjs` | 与宿主无关的渲染核心（协议规范化/插值参数；MCP 渲染器共用） | 渲染语义变化（CI 单测 + 与客户端同步复制） |
 | `resources/ai-dream.html` | MCP App 渲染器骨架（`?t=` 定格、`#probe` 自检） | 渲染目标/宿主适配方式变化（CI 无头 Chrome 探针） |
 | `docs/demo.html` | 独立视觉复刻页 | 视觉参数/内置色板变化 |
@@ -72,5 +73,5 @@
 
 ## 当前状态
 
-- **最近发布**：`1.7.1` —— MCP 渲染器骨架（浏览器验证改为显式开关，CI 只跑语义单测）；
-- **下一步**：MCP server 骨架 → 回看体验 / 模型侧校准通道。
+- **最近发布**：`1.8.0` —— MCP server 骨架（stdio JSON-RPC：工具、资源、初始化，handler 单测）；
+- **下一步**：MCP 真机验证（需用户账号）/ 回看体验 / 模型侧校准通道。
