@@ -971,20 +971,25 @@ window.__ModuleLoader__.load({
       // Fold the whole timeline in order: `define`/`signature` blocks register
       // emotions, and the last non-define block is what belongs on screen.
       const timeline = React.useMemo(() => {
-        if (feed == null) return { latest: null, parsedAny: false }
+        if (feed == null) return { latest: null, parsedAny: false, kinds: [] }
         let latest = null
         let parsedAny = false
+        const kinds = []
         for (const code of feed.split(FEED_SEP)) {
           const block = parseCanvas(code)
-          if (!block) continue
+          if (!block) {
+            kinds.push('?')
+            continue
+          }
           parsedAny = true
+          kinds.push(block.kind)
           if (block.kind === 'define' || block.kind === 'signature') {
             for (const entry of block.emotions) SIGNATURE.set(entry.name, entry)
           } else {
             latest = block
           }
         }
-        return { latest, parsedAny }
+        return { latest, parsedAny, kinds }
       }, [feed])
 
       const shown = React.useRef(null)
@@ -992,6 +997,16 @@ window.__ModuleLoader__.load({
 
       const failed = feed != null && !timeline.parsedAny && shown.current == null
       const model = shown.current || (failed ? null : MOOD_DEFAULT)
+
+      if (typeof window !== 'undefined') {
+        window.__aiDreamDebug = {
+          rev: 'fold-v1',
+          feedLength: feed ? feed.length : 0,
+          kinds: timeline.kinds,
+          signature: Array.from(SIGNATURE.keys()),
+          model: model ? { kind: model.kind, name: model.name || '', mood: model.mood || '' } : null,
+        }
+      }
 
       // Every distinct model bumps `revision`; the glide itself is driven by the
       // rAF engine and needs no scene remount.
@@ -1016,7 +1031,22 @@ window.__ModuleLoader__.load({
       }
 
       if (model.kind === 'mood') {
-        return h('div', { style: { height: '100%', background: BG } }, h(MoodView, { model, revision: revision.current }))
+        const debugLine = 'feed ' + (feed ? feed.length : 0) + ' · sig ' + SIGNATURE.size
+          + ' · ' + timeline.kinds.join(',') + ' · ' + (model.name || model.mood || '?')
+        return h('div', { style: { height: '100%', background: BG, position: 'relative' } },
+          h(MoodView, { model, revision: revision.current }),
+          h('div', {
+            style: {
+              position: 'absolute',
+              left: 10,
+              bottom: 8,
+              right: 10,
+              font: '10px/1.4 ui-monospace, monospace',
+              color: 'rgba(255,255,255,0.55)',
+              pointerEvents: 'none',
+              wordBreak: 'break-all',
+            },
+          }, debugLine))
       }
 
       return h('div', {
