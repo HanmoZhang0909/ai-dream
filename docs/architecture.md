@@ -105,7 +105,7 @@ interface EmotionState {
 7. **动态新增**：AI 在回复里用 `define` 块追加情绪，客户端合并进会话签名；
 8. **成本**：每会话一次小调用；初始化期间客户端先显示基线，签名到达后平滑切换。
 
-客户端解析顺序：`mood.name` → 会话签名 → 块内 inline `palette` → 内置 mood → neutral。
+**客户端 define 合并已实现（v0.5 客户端）**；Host 初始化调用与 projection 下发进行中。
 
 ## 5. 情绪时间轴（滚动回看，v1.1）
 

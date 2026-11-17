@@ -149,6 +149,44 @@ window.__ModuleLoader__.load({
       }
     }
 
+    /**
+     * Session emotion signature (v0.5): name -> palette/motion/form.
+     * Fed by the host projection (host-side init) and by `define` blocks (the
+     * model adding an emotion mid-conversation). Client memory only for now.
+     */
+    const SIGNATURE = new Map()
+
+    function signatureEntry(name) {
+      return name ? SIGNATURE.get(name) || null : null
+    }
+
+    /** Validate one signature entry (shared by `signature` and `define` blocks). */
+    function normalizeEmotionEntry(raw) {
+      if (!raw || typeof raw !== 'object') return null
+      const name = cut(raw.name, 40)
+      if (!name) return null
+      const palette = raw.palette && typeof raw.palette === 'object' ? raw.palette : {}
+      const colors = {
+        base: hexColor(palette.base),
+        core: hexColor(palette.core),
+        tone: hexColor(palette.tone),
+        spectrum: Array.isArray(palette.spectrum)
+          ? palette.spectrum.map(hexColor).filter(Boolean).slice(0, 4)
+          : [],
+      }
+      if (!colors.base && !colors.core && !colors.tone && !colors.spectrum.length) return null
+      const motion = raw.motion && typeof raw.motion === 'object' ? raw.motion : {}
+      return {
+        name,
+        palette: colors,
+        motion: {
+          speed: clamp(motion.speed, 0.2, 2, 1),
+          amplitude: clamp(motion.amplitude, 0.1, 1, 0.5),
+        },
+        form: pick(raw.form, NEBULA_PATTERNS, 'cloud'),
+      }
+    }
+
     function normalize(raw) {
       if (!raw || typeof raw !== 'object') return null
       const kind = raw.kind
@@ -186,20 +224,37 @@ window.__ModuleLoader__.load({
       }
       if (kind === 'mood') {
         const name = cut(raw.name, 40)
-        const moodKey = Object.prototype.hasOwnProperty.call(MOODS, raw.mood)
-          ? raw.mood
+        // A signed emotion supplies palette/motion/form; inline values win field by field.
+        const entry = signatureEntry(name)
+        const merged = entry
+          ? {
+            ...entry,
+            ...raw,
+            palette: {
+              ...(entry.palette || {}),
+              ...(raw.palette && typeof raw.palette === 'object' ? raw.palette : {}),
+            },
+            motion: {
+              ...(entry.motion || {}),
+              ...(raw.motion && typeof raw.motion === 'object' ? raw.motion : {}),
+            },
+            form: raw.form || entry.form,
+          }
+          : raw
+        const moodKey = Object.prototype.hasOwnProperty.call(MOODS, merged.mood)
+          ? merged.mood
           : Object.prototype.hasOwnProperty.call(MOODS, name) ? name : 'neutral'
-        const transition = raw.transition && typeof raw.transition === 'object' ? raw.transition : {}
-        const nebula = raw.nebula && typeof raw.nebula === 'object' ? raw.nebula : {}
-        const orb = raw.orb && typeof raw.orb === 'object' ? raw.orb : {}
-        const motion = raw.motion && typeof raw.motion === 'object' ? raw.motion : {}
-        const form = typeof raw.form === 'string' && NEBULA_PATTERNS.indexOf(raw.form) >= 0 ? raw.form : null
+        const transition = merged.transition && typeof merged.transition === 'object' ? merged.transition : {}
+        const nebula = merged.nebula && typeof merged.nebula === 'object' ? merged.nebula : {}
+        const orb = merged.orb && typeof merged.orb === 'object' ? merged.orb : {}
+        const motion = merged.motion && typeof merged.motion === 'object' ? merged.motion : {}
+        const form = typeof merged.form === 'string' && NEBULA_PATTERNS.indexOf(merged.form) >= 0 ? merged.form : null
         return {
           kind,
           name,
           mood: moodKey,
-          colors: resolveColors(raw, moodKey),
-          intensity: clamp(raw.intensity, 0.2, 1, 0.6),
+          colors: resolveColors(merged, moodKey),
+          intensity: clamp(merged.intensity, 0.2, 1, 0.6),
           motion: {
             speed: clamp(motion.speed, 0.2, 2, 1),
             amplitude: clamp(motion.amplitude, 0.1, 1, 0.5),
@@ -219,6 +274,14 @@ window.__ModuleLoader__.load({
             tone: pick(orb.tone, ORB_TONES, 'neutral'),
           },
         }
+      }
+      if (kind === 'signature' || kind === 'define') {
+        const limit = kind === 'signature' ? 32 : 12
+        const emotions = (Array.isArray(raw.emotions) ? raw.emotions : [])
+          .map(normalizeEmotionEntry)
+          .filter(Boolean)
+          .slice(0, limit)
+        return emotions.length ? { kind, emotions } : null
       }
       if (kind === 'cards') {
         const source = Array.isArray(raw.cards) ? raw.cards : []
@@ -905,10 +968,22 @@ window.__ModuleLoader__.load({
       const code = props.useChat(latestCanvasCode)
       const parsed = React.useMemo(() => parseCanvas(code), [code])
       const lastGood = React.useRef(null)
-      if (parsed) lastGood.current = parsed
+      const mergedCode = React.useRef(null)
+
+      // A `define` / `signature` block updates the session signature only: the
+      // visible glow keeps its last mood until the next mood block arrives.
+      React.useEffect(() => {
+        if (!parsed || mergedCode.current === code) return
+        if (parsed.kind !== 'define' && parsed.kind !== 'signature') return
+        for (const entry of parsed.emotions) SIGNATURE.set(entry.name, entry)
+        mergedCode.current = code
+      }, [parsed, code])
+
+      const mood = parsed && parsed.kind === 'mood' ? parsed : null
+      if (mood) lastGood.current = mood
 
       const failed = !parsed && code != null && lastGood.current == null
-      const model = parsed || lastGood.current || (failed ? null : MOOD_DEFAULT)
+      const model = mood || lastGood.current || (failed ? null : MOOD_DEFAULT)
 
       // Every distinct model bumps `revision`; the glide itself is driven by the
       // rAF engine and needs no scene remount.
@@ -964,9 +1039,20 @@ window.__ModuleLoader__.load({
 
     /** Fence layer: replace the raw canvas JSON with a compact, clickable pill. */
     function CanvasFence(props) {
-      const ok = React.useMemo(() => parseCanvas(props.code) !== null, [props.code])
+      const parsed = React.useMemo(() => parseCanvas(props.code), [props.code])
+      const ok = parsed !== null
       const failed = !props.streaming && !ok
-      const status = failed ? '画布数据无法解析，原文保留' : props.streaming ? '画布生成中…' : '已更新到 ' + NAME
+      const kind = parsed ? parsed.kind : null
+      const count = parsed && Array.isArray(parsed.emotions) ? parsed.emotions.length : 0
+      const status = failed
+        ? '画布数据无法解析，原文保留'
+        : props.streaming
+          ? '画布生成中…'
+          : kind === 'define'
+            ? '已定义 ' + count + ' 个情绪'
+            : kind === 'signature'
+              ? '情绪签名已同步'
+              : '已更新到 ' + NAME
       const onClick = failed ? undefined : () => openCanvas()
 
       const children = [

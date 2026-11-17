@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — 0.5.0
+
+- Client half of the emotion signature: a session signature store, the resolution order `mood.name` → signature → inline override → built-in mood → neutral, and `define` blocks that merge new emotion definitions mid-conversation.
+- The canvas fence shows "已定义 N 个情绪" for `define` blocks; the glow keeps its last mood until the next mood block arrives.
+- Prompt: the model is taught the `define` block.
+- CI: examples check (`scripts/check-examples.mjs`).
+
 ## 0.4.0 — 2026-11-17
 
 - **Protocol v2**: the model can define its own emotion — `name`, `palette` (base/core/tone/spectrum), `motion` (speed/amplitude/rhythm) and `form`; built-in moods stay as palette fallback.

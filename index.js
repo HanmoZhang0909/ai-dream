@@ -20,6 +20,9 @@ Rules:
 - \`palette\` is optional: omit it to reuse a built-in palette; if you define colours use 2-4 hex colours — \`base\` is the background, \`core\` the light core, \`tone\`/\`spectrum\` the secondary hues.
 - \`motion.speed\` scales how fast the light moves; \`amplitude\` how strongly it breathes.
 - Strong shifts: \`burst\`/\`fast\`; subtle ones: \`dissolve\`/\`slow\`. Vary them; do not always use the defaults.
+- To add a new emotion definition, emit a \`define\` block instead of a mood block (it merges into your session signature and stays available by name):
+{"kind":"define","emotions":[{"name":"被看穿","palette":{"base":"#0b0a12","core":"#e8d9ff","tone":"#9a7aa6"},"motion":{"speed":0.6,"amplitude":0.5},"form":"streak"}]}
+  A define block does not change the visible glow by itself; a later mood block can reference the new name.
 - Keep it compact. One block per reply, opening at the start of a line, info string \`canvas\`.
 - If nothing is strong, emit neutral at low intensity; emit no block to keep the current expression. The canvas settles back towards a calm baseline on its own.
 

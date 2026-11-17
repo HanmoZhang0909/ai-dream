@@ -50,7 +50,7 @@
 - [ ] `node --input-type=module -e "await import('./index.js')"`
 - [ ] `node scripts/check-fence-regex.mjs`
 - [ ] `node scripts/check-docs.mjs`
-- [ ] 协议示例可解析（用 `examples/moods.md` 里的块手动过一遍）
+- [ ] `node scripts/check-examples.mjs`
 - [ ] 对照「改动同步清单」检查文档一致
 - [ ] `package.json` version / `CHANGELOG` / tag 三者一致
 - [ ] `docs/index.json` 新版本 pinned commit 已存在远端
@@ -67,5 +67,5 @@
 ## 当前状态
 
 - **最近发布**：`0.4.0` —— 协议 v2（AI 自定义情绪）；
-- **进行中**：`0.5.0` —— 情绪签名（Host 初始化 LLM → projection → 客户端），支持 AI 在对话中动态新增情绪定义；
+- **进行中**：`0.5.0` —— 情绪签名：客户端 `define` 合并与解析顺序已实现，Host 初始化 LLM → projection 待接入；
 - **下一步**：`v1.0` 状态与记忆 + 用户校准；`v1.1` 情绪时间轴（滚动回看）。

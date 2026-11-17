@@ -1,8 +1,8 @@
 # 表达协议（Expression Protocol）
 
-> 版本：v2 **已实现**（v0.4，2026-11）；v1 = 之前发布的 9 情绪枚举。协议是 AI Dream 的核心资产：**AI 定义表达，渲染器负责安全与连续性**。
+> 版本：v2 已实现（v0.4）；v2.1 进行中——`define` 块（AI 随时新增情绪）已实现（v0.5 客户端），Host 初始化签名待接入。
 >
-> 实现说明：`client.js` 的 `normalize()` 负责校验与降级，`resolveColors()` 负责调色板解析；`index.js` 的提示词是协议对模型可见的那一侧。
+> 实现说明：`client.js` 的 `normalize()` 负责校验与降级，`resolveColors()` 负责调色板解析，`SIGNATURE` 负责会话签名；`index.js` 的提示词是协议对模型可见的那一侧。
 
 ## 1. 目标
 
@@ -16,7 +16,7 @@
 
 ````
 ```canvas
-{"kind":"mood", ...}
+{"kind":"mood","schema":2,"name":"平静","intensity":0.5,"form":"cloud"}
 ```
 ````
 
@@ -46,7 +46,7 @@
 
 ## 3.1 情绪签名与动态定义（v0.5）
 
-**签名文档**（Host 初始化时生成，不经过聊天消息，直接下发客户端）：
+**签名文档**（Host 初始化时生成，不经过聊天消息，直接下发客户端；**Host 侧进行中**）：
 
 ```json
 {
@@ -58,7 +58,7 @@
 }
 ```
 
-**动态新增**（AI 在回复里随时追加，客户端合并进会话签名；对话里折叠成一行提示）：
+**动态新增**（AI 在回复里随时追加，客户端合并进会话签名；对话里折叠成一行提示；**已实现**）：
 
 ```canvas
 {"kind":"define","emotions":[{"name":"被看穿","palette":{"base":"#0b0a12","core":"#e8d9ff","tone":"#9a7aa6"},"motion":{"speed":0.6,"amplitude":0.5,"rhythm":"uneven"},"form":"streak"}]}

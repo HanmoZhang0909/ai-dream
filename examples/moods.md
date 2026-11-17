@@ -48,9 +48,9 @@ AI 每轮最多输出一个 `canvas` 块。下面都可以直接复制。
 - 放下/告别：`{"style":"ripple","speed":"medium"}` —— 从中心扩散一圈；
 - 急转：`{"style":"snap","speed":"fast"}` —— 不插值。
 
-## 动态新增情绪（v0.5 计划中）
+## 动态新增情绪（v0.5 客户端已实现）
 
-> 需要 `0.5.0` 及以后版本：AI 在对话里随时追加情绪定义，客户端合并进会话签名。
+AI 在对话里随时追加情绪定义，客户端合并进会话签名；对话里折叠成「已定义 N 个情绪」，画布保持上一次的情绪，后续 mood 块可用新名字引用。
 
 ```canvas
 {"kind":"define","emotions":[{"name":"被看穿","palette":{"base":"#0b0a12","core":"#e8d9ff","tone":"#9a7aa6"},"motion":{"speed":0.6,"amplitude":0.5,"rhythm":"uneven"},"form":"streak"}]}
