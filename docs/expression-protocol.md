@@ -41,13 +41,40 @@
 | `transition.style` | `soft｜ripple｜burst｜dissolve｜snap` | 否 | 变化方式 |
 | `transition.speed` | `slow｜medium｜fast` | 否 | 插值时长：约 2.2s / 1.0s / 0.4s |
 
+## 3.1 情绪签名与动态定义（v0.5）
+
+**签名文档**（Host 初始化时生成，不经过聊天消息，直接下发客户端）：
+
+```json
+{
+  "kind": "signature",
+  "version": 1,
+  "emotions": [
+    { "name": "心疼", "palette": { "base": "#0d0906", "core": "#ffe3d1", "tone": "#ff9a6b" }, "motion": { "speed": 0.7, "amplitude": 0.5, "rhythm": "breathing" }, "form": "cloud" }
+  ]
+}
+```
+
+**动态新增**（AI 在回复里随时追加，客户端合并进会话签名；对话里折叠成一行提示）：
+
+```canvas
+{"kind":"define","emotions":[{"name":"被看穿","palette":{"base":"#0b0a12","core":"#e8d9ff","tone":"#9a7aa6"},"motion":{"speed":0.6,"amplitude":0.5,"rhythm":"uneven"},"form":"streak"}]}
+```
+
+**解析顺序**（逐字段）：
+
+1. `mood.name` 命中**会话签名** → 用签名里的 palette/motion/form；
+2. 块内 **inline `palette`/`motion`/`form`** 覆盖签名（允许单次微调）；
+3. 命中**内置词表**（按 `mood` 或 `name`）；
+4. 全部未命中 → neutral 基线。
+
 ## 4. 降级与校验
 
 优先级（逐字段独立）：
 
-1. **AI 显式给出的合法值**；
-2. **AI 情绪签名**（该模型跨会话的基线色板/运动偏好，v1.0）；
-3. **内置词表**（v1 的 9 种情绪，按 `name` 模糊匹配）；
+1. **块内 inline 值**（AI 本次显式给出且合法）；
+2. **会话情绪签名**（初始化生成 / `define` 追加，v0.5）；
+3. **内置词表**（9 种情绪，按 `mood` 或 `name` 命中）；
 4. **neutral 基线**。
 
 校验规则：
