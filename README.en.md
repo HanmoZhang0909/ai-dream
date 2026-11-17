@@ -156,7 +156,7 @@ Then refresh the page after editing (or wait for HMR to rebuild).
 ## Known limitations
 
 - Canvas state is derived from loaded chat nodes only — not persisted across sessions;
-- The mood vocabulary is a controlled list of nine; the visuals are not freely generated;
+- Built-in moods are a fallback vocabulary; AI-authored palettes are validated and clamped, with per-field fallback;
 - Only `canvas` fenced blocks are rendered;
 - A failed block keeps the previous visual and leaves the raw text in the conversation;
 - Replacing client bundles may require one DSH restart.
