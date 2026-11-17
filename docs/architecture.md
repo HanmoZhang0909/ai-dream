@@ -146,6 +146,8 @@ interface EmotionState {
 
 已知限制：turn-tail 行有 16px gap，用负 margin 抵消；折叠/分页可能让哨兵暂时不可见，此时保持实时模式。
 
+回看提示（v1.2）：`topTurn < latestTurn` 时面板底部显示「回看 · 第 N 轮 · 回到最新」，点击把 `[data-conversation-scroll]` 滚到底部（自动退出回看）。
+
 **模式与渲染**：
 
 - `mode: live | replay`：滚到底部 → live（跟随最新表达，保留 AI 选择的 transition）；离开底部 → replay；

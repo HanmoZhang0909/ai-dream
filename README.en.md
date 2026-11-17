@@ -60,6 +60,7 @@ Notes:
 - **Signature is generated automatically**: after the first message of a session the host designs this assistant's own emotional vocabulary (6-10 emotions) from the conversation so far; later blocks reference it by name, and the model may add emotions with a `define` block ("已定义 N 个情绪").
 - **Not persistent**: the canvas reads the newest `canvas` block from the loaded conversation only; the signature lives in the session log.
 - **You can calibrate it**: three quiet controls under the canvas — 「不像」/「再强一点」/「再淡一点」 — apply immediately and are remembered locally.
+- **Replay emotions**: scroll up and the canvas follows that turn's emotion; a 「回看 · 第 N 轮 · 回到最新」 hint appears at the bottom — click it to jump back to live.
 - **To turn it off**: disable `dsh-ai-dream` on the Plugins page; the injected prompt section goes with it.
 
 ## Troubleshooting

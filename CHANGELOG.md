@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.0 — 2026-11-17
+
+- Scroll replay now shows a hint while reviewing: 「回看 · 第 N 轮 · 回到最新」. Clicking it scrolls the transcript back to the bottom and returns to live mode.
+
 ## 1.1.1 — 2026-11-17
 
 - Fix scroll replay never activating: `conversation.chat.turnTail` passes a `TurnLocation` object (read `.turn`), and the sentinel is now visible to `IntersectionObserver` (no negative margins, full-viewport observation, topmost visible turn wins).

@@ -1248,8 +1248,38 @@ window.__ModuleLoader__.load({
             opacity: 0.72,
           },
         }, label))
+        const replaying = topTurn !== null && timeline.latestTurn !== null && topTurn < timeline.latestTurn
+        const backToLatest = () => {
+          try {
+            const scroll = document.querySelector('[data-conversation-scroll]')
+            if (scroll) scroll.scrollTop = scroll.scrollHeight
+          } catch {
+            // no transcript surface: nothing to scroll
+          }
+        }
         return h('div', { style: { height: '100%', background: BG, position: 'relative' } },
           h(MoodView, { model, revision: revision.current + bump }),
+          replaying
+            ? h('button', {
+              type: 'button',
+              onClick: backToLatest,
+              style: {
+                position: 'absolute',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                bottom: 34,
+                border: '0.5px solid ' + BORDER,
+                background: 'rgba(8,12,20,0.6)',
+                color: LABEL_2,
+                borderRadius: 999,
+                padding: '3px 10px',
+                fontSize: 11,
+                font: 'inherit',
+                cursor: 'pointer',
+                opacity: 0.8,
+              },
+            }, '回看 · 第 ' + String(topTurn) + ' 轮 · 回到最新')
+            : null,
           h('div', {
             style: {
               position: 'absolute',
