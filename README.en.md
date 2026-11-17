@@ -121,9 +121,6 @@ Design notes:
 node --check client.js
 node --input-type=module -e "await import('./index.js')"
 node scripts/check-fence-regex.mjs
-
-# regenerate the README clip (requires Chrome + ffmpeg)
-powershell -File scripts/render-demo-gif.ps1
 ```
 
 Then refresh the page after editing (or wait for HMR to rebuild).

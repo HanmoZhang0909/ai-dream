@@ -148,9 +148,6 @@ node --input-type=module -e "await import('./index.js')"
 # fence 提取器回归测试（防止行内 ```canvas 被误识别）
 node scripts/check-fence-regex.mjs
 
-# 重新生成 README 演示动图（需要 Chrome + ffmpeg）
-powershell -File scripts/render-demo-gif.ps1
-
 # 本地安装后：改 client.js → 刷新页面（或等 HMR 轮询重建）
 ```
 
@@ -166,11 +163,10 @@ powershell -File scripts/render-demo-gif.ps1
 ├── docs/
 │   ├── DETAIL.md         插件管理器详情页
 │   ├── demo.html         独立复刻页（浏览器直接打开即可交互预览）
-│   ├── demo.gif          README 演示动图
+│   ├── demo.gif          README 演示动图（由 demo.html 渲染）
 │   └── design-notes.md   设计背景与开源方案调研
 ├── scripts/
-│   ├── check-fence-regex.mjs   fence 提取器回归测试
-│   └── render-demo-gif.ps1     重新生成 README 动图
+│   └── check-fence-regex.mjs   fence 提取器回归测试
 └── icon.svg
 ```
 
