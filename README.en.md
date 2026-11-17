@@ -154,6 +154,33 @@ Then refresh the page after editing (or wait for HMR to rebuild).
 - Tag this repository with the `dsh-plugin` and `deepseek-harness` GitHub topics so it is discoverable;
 - Planned: publish npm package `dsh-ai-dream`.
 
+## Configuration
+
+Add a config block to the plugin row in your profile's `cordis.patch.yml` (for example `~/.dsh/profiles/web/cordis.patch.yml`):
+
+```yaml
+- id: ai-canvas
+  name: dsh-ai-dream
+  config:
+    signatureEmotions: 8
+    holdSeconds: 6
+    decaySeconds: 3
+    defaultIntensity: 0.6
+    allowInlinePalette: true
+    signatureEnabled: true
+```
+
+| Field | Default | Range | Meaning |
+|---|---|---|---|
+| `signatureEnabled` | true | boolean | Automatically design the emotion signature at session start |
+| `signatureEmotions` | 8 | 4–12 | How many emotions the signature holds |
+| `holdSeconds` | 6 | 1–60 | How long the current state is held without new expressions |
+| `decaySeconds` | 3 | 0.5–30 | How long the glow takes to settle back to baseline |
+| `defaultIntensity` | 0.6 | 0.2–1 | Intensity used when a block omits it |
+| `allowInlinePalette` | true | boolean | Allow the model to emit palettes inline |
+
+Configuration applies on the session's next message (the host commits a config record; the client clamps the same values).
+
 ## Known limitations
 
 - Canvas state is derived from loaded chat nodes only — not persisted across sessions;
