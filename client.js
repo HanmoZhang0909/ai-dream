@@ -11,12 +11,12 @@
  * renders it as an SVG diagram or a card grid. No durable state.
  */
 window.__ModuleLoader__.load({
-  id: '@local/dsh-ai-canvas',
+  id: 'dsh-ai-canvas',
   factory(require) {
     const React = require('react')
     const h = React.createElement
 
-    const PKG = '@local/dsh-ai-canvas'
+    const PKG = 'dsh-ai-canvas'
     const KIND = 'ai-canvas'
     const NAME = '画布'
 
