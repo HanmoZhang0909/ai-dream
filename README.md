@@ -9,9 +9,9 @@
 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 **AI 情感出口**：
 右侧栏一块连续流动的光——不是解释对话，而是表达 AI 自己的情绪状态。
 
-> 截图位待补：把画布跑起来截一张放在 `docs/screenshot.png`，然后取消下面这行的注释。
->
-> `<!-- ![状态截图](docs/screenshot.png) -->`
+![AI Dream 情绪循环演示](docs/demo.gif)
+
+> 上图为 `docs/demo.html` 独立复刻页渲染的 6 秒循环（calm → warm → curious → calm），**不是 DSH 界面截图**；真实界面截图欢迎 PR 补到 `docs/screenshot.png`。想交互看效果，直接浏览器打开 `docs/demo.html`。
 
 ## 它是什么
 
@@ -148,6 +148,9 @@ node --input-type=module -e "await import('./index.js')"
 # fence 提取器回归测试（防止行内 ```canvas 被误识别）
 node scripts/check-fence-regex.mjs
 
+# 重新生成 README 演示动图（需要 Chrome + ffmpeg）
+powershell -File scripts/render-demo-gif.ps1
+
 # 本地安装后：改 client.js → 刷新页面（或等 HMR 轮询重建）
 ```
 
@@ -162,7 +165,12 @@ node scripts/check-fence-regex.mjs
 ├── locale/{en,zh}.json
 ├── docs/
 │   ├── DETAIL.md         插件管理器详情页
+│   ├── demo.html         独立复刻页（浏览器直接打开即可交互预览）
+│   ├── demo.gif          README 演示动图
 │   └── design-notes.md   设计背景与开源方案调研
+├── scripts/
+│   ├── check-fence-regex.mjs   fence 提取器回归测试
+│   └── render-demo-gif.ps1     重新生成 README 动图
 └── icon.svg
 ```
 

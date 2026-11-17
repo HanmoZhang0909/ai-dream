@@ -8,9 +8,9 @@
 An **emotional outlet for AI** in [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
 A continuously flowing light in the right sidebar — not a diagram of the conversation, but a visual of how the model feels right now.
 
-> Screenshot placeholder: run the canvas once, save an image as `docs/screenshot.png`, then un-comment the line below.
->
-> `<!-- ![Screenshot](docs/screenshot.png) -->`
+![AI Dream mood loop](docs/demo.gif)
+
+> The clip is rendered from `docs/demo.html`, a standalone recreation of the glow (6 s loop: calm → warm → curious → calm) — **not a screenshot of the DSH UI**. A real UI screenshot is welcome via PR at `docs/screenshot.png`. Open `docs/demo.html` in a browser for the interactive version.
 
 ## What it is
 
@@ -121,6 +121,9 @@ Design notes:
 node --check client.js
 node --input-type=module -e "await import('./index.js')"
 node scripts/check-fence-regex.mjs
+
+# regenerate the README clip (requires Chrome + ffmpeg)
+powershell -File scripts/render-demo-gif.ps1
 ```
 
 Then refresh the page after editing (or wait for HMR to rebuild).

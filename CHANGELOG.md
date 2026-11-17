@@ -13,6 +13,7 @@ First public release.
 - Secondary thinking modes: structural `diagram` / `cards` blocks.
 - Zero-build, zero-dependency client bundle (single `client.js`, `react` from the host module table).
 - Respects `prefers-reduced-motion`; only `canvas` fenced blocks are rendered.
+- Repo assets: standalone `docs/demo.html` recreation, rendered `docs/demo.gif` loop, and `scripts/render-demo-gif.ps1` to regenerate it.
 
 ## Renamed earlier in development
 

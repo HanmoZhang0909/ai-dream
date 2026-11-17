@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Dream — ambient light demo</title>
+<style>
+  html, body { margin: 0; width: 100%; height: 100%; background: #05060a; overflow: hidden; }
+  #stage {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 46%, var(--c4) 0%, var(--c5) 70%);
+  }
+  #wrap {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(0deg);
+    width: min(calc(var(--w) * 1%), calc(var(--px) * 1px));
+    aspect-ratio: 1;
+  }
+  .glow {
+    position: absolute;
+    inset: 0;
+    background: var(--grad);
+    filter: blur(calc(var(--blur) * 1px));
+    opacity: var(--op);
+    transform: scale(1);
+  }
+  #vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.5) 100%);
+  }
+  #grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.42'/%3E%3C/svg%3E");
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="wrap">
+    <div class="glow" id="glowA"></div>
+    <div class="glow" id="glowB"></div>
+  </div>
+  <div id="vignette"></div>
+  <div id="grain"></div>
+</div>
+<script>
+  // Standalone recreation of the AI Dream glow, used to render the README demo.
+  // Mirrors the palettes and parameters in client.js (Host + Client halves are not
+  // involved). Deterministic mode: ?t=SECONDS renders one frame; otherwise it loops.
+
+  const MOODS = {
+    neutral: { base: '#05070c', tint: '#5f7bb8', spectrum: ['#dbe8ff', '#8fb0d9', '#5f7bb8', '#c9d6ff'], core: '#eef4ff' },
+    calm: { base: '#03070c', tint: '#2f9fb5', spectrum: ['#5fd0e0', '#2f8fa6', '#4aa8ff', '#8ee6d8'], core: '#e6fbff' },
+    curious: { base: '#0a0702', tint: '#d08a1e', spectrum: ['#ffc247', '#f2b93f', '#ff9f43', '#ffe9a8'], core: '#fff6dd' },
+    uneasy: { base: '#0b0710', tint: '#7a4f9e', spectrum: ['#a06bb0', '#6a4b8f', '#d9534f', '#c9a3e0'], core: '#f2e6ff' },
+    warm: { base: '#100705', tint: '#c2563a', spectrum: ['#ff9a6b', '#ff7aa8', '#d9534f', '#ffd9c5'], core: '#fff0e8' },
+    tired: { base: '#0a0c0f', tint: '#5b6672', spectrum: ['#8f98a6', '#6b7482', '#b9c2cc', '#4a5361'], core: '#eef2f6' },
+    excited: { base: '#120518', tint: '#b2308f', spectrum: ['#ff4f86', '#7d63ff', '#66e0ff', '#ffb02e'], core: '#fff0f8' },
+    focused: { base: '#030712', tint: '#3b6fe0', spectrum: ['#6fa8ff', '#3b6fe0', '#1d3a8a', '#b7d4ff'], core: '#eaf2ff' },
+    amused: { base: '#0d0710', tint: '#c2557e', spectrum: ['#ffb3c9', '#aef0d2', '#ffe6a3', '#ff9ec4'], core: '#fff5fa' },
+  };
+
+  const PATTERN_BLUR = { cloud: 46, ring: 30, streak: 34, spiral: 52 };
+
+  // One beat of the loop: mood, intensity, pattern, pulse, tone, orb size.
+  const KEYS = [
+    { at: 0.0, mood: 'calm', intensity: 0.45, pattern: 'cloud', pulse: 0.5, tone: 'cool', size: 0.5 },
+    { at: 1.8, mood: 'warm', intensity: 0.7, pattern: 'cloud', pulse: 2.2, tone: 'warm', size: 0.68 },
+    { at: 3.6, mood: 'curious', intensity: 0.8, pattern: 'cloud', pulse: 2.2, tone: 'warm', size: 0.62 },
+    { at: 5.2, mood: 'calm', intensity: 0.45, pattern: 'cloud', pulse: 0.5, tone: 'cool', size: 0.5 },
+  ];
+  const LOOP = 6.0;
+
+  const hexToRgb = hex => {
+    const v = hex.replace('#', '');
+    const n = parseInt(v.length === 3 ? v.split('').map(c => c + c).join('') : v, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  };
+  const mix = (a, b, u) => a.map((v, i) => v + (b[i] - v) * u);
+  const rgb = c => `rgb(${Math.round(c[0])} ${Math.round(c[1])} ${Math.round(c[2])})`;
+  const mixHex = (a, b, u) => {
+    const A = hexToRgb(a), B = hexToRgb(b);
+    return '#' + mix(A, B, u).map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+  };
+  const smooth = u => u * u * (3 - 2 * u);
+
+  function toneColor(mood, tone) {
+    const p = MOODS[mood];
+    return tone === 'warm' ? '#ff9a6b' : tone === 'cool' ? '#66d8ff' : tone === 'bright' ? '#ffffff' : p.core;
+  }
+
+  function gradient(pattern, c0, c1, c2, c3) {
+    if (pattern === 'ring') {
+      return `radial-gradient(circle, transparent 34%, ${c0} 43%, ${c1} 53%, ${c2} 64%, transparent 76%)`;
+    }
+    if (pattern === 'streak') {
+      return `linear-gradient(90deg, transparent 10%, ${c0} 40%, ${c1} 56%, transparent 90%)`;
+    }
+    if (pattern === 'spiral') {
+      return `conic-gradient(from 0deg, transparent 0%, ${c1} 16%, transparent 33%, ${c3} 50%, transparent 68%, ${c0} 84%, transparent 100%)`;
+    }
+    return `radial-gradient(circle, #ffffff 0%, ${c0} 22%, ${c1} 44%, ${c2} 60%, transparent 78%)`;
+  }
+
+  function stateAt(time) {
+    const t = ((time % LOOP) + LOOP) % LOOP;
+    let i = 0;
+    while (i < KEYS.length - 1 && t > KEYS[i + 1].at) i += 1;
+    const a = KEYS[i];
+    const b = KEYS[Math.min(i + 1, KEYS.length - 1)];
+    const span = Math.max(0.001, b.at - a.at);
+    const u = smooth(Math.min(1, Math.max(0, (t - a.at) / span)));
+    const pa = MOODS[a.mood];
+    const pb = MOODS[b.mood];
+    const c0 = mix(hexToRgb(pa.core), hexToRgb(pb.core), u);
+    const c1 = mix(hexToRgb(toneColor(a.mood, a.tone)), hexToRgb(toneColor(b.mood, b.tone)), u);
+    const c2 = mix(hexToRgb(pa.spectrum[1]), hexToRgb(pb.spectrum[1]), u);
+    const c3 = mix(hexToRgb(pa.spectrum[0]), hexToRgb(pb.spectrum[0]), u);
+    const c4 = mix(hexToRgb(mixHex(pa.tint, pa.base, 0.88)), hexToRgb(mixHex(pb.tint, pb.base, 0.88)), u);
+    const c5 = mix(hexToRgb(pa.base), hexToRgb(pb.base), u);
+    const intensity = a.intensity + (b.intensity - a.intensity) * u;
+    const size = a.size + (b.size - a.size) * u;
+    const pulseSpeed = a.pulse + (b.pulse - a.pulse) * u;
+    const pulseAmp = pulseSpeed > 4 ? 0.05 : 0.025 * (0.5 + intensity);
+    return {
+      t,
+      a,
+      b,
+      u,
+      c0, c1, c2, c3, c4, c5,
+      w: 44 + size * 54,
+      px: 230 + size * 380,
+      op: 0.6 + intensity * 0.3,
+      patternFrom: a.pattern,
+      patternTo: b.pattern,
+      blend: u,
+      pulse: 1 + Math.sin(t * pulseSpeed * Math.PI * 2) * pulseAmp,
+      rot: a.pattern === 'streak' ? -16 : b.pattern === 'streak' ? -16 : 0,
+    };
+  }
+
+  function render(time) {
+    const s = stateAt(time);
+    const stage = document.getElementById('stage');
+    const style = stage.style;
+    style.setProperty('--c4', rgb(s.c4));
+    style.setProperty('--c5', rgb(s.c5));
+    style.setProperty('--w', s.w.toFixed(2));
+    style.setProperty('--px', s.px.toFixed(2));
+    style.setProperty('--op', (s.op * s.blend + s.op * (1 - s.blend)).toFixed(3));
+    style.setProperty('--blur', String(PATTERN_BLUR[s.patternTo] || 46));
+    style.setProperty('--grad', gradient(s.patternTo, rgb(s.c0), rgb(s.c1), rgb(s.c2), rgb(s.c3)));
+    const wrap = document.getElementById('wrap');
+    wrap.style.transform = `translate(-50%,-50%) rotate(${s.rot}deg)`;
+    const glowA = document.getElementById('glowA');
+    const glowB = document.getElementById('glowB');
+    glowA.style.background = gradient(s.patternTo, rgb(s.c0), rgb(s.c1), rgb(s.c2), rgb(s.c3));
+    glowB.style.background = gradient(s.patternFrom, rgb(s.c0), rgb(s.c1), rgb(s.c2), rgb(s.c3));
+    glowA.style.opacity = String(s.blend);
+    glowB.style.opacity = String(1 - s.blend);
+    glowA.style.transform = `scale(${s.pulse.toFixed(4)})`;
+    glowB.style.transform = `scale(${s.pulse.toFixed(4)})`;
+  }
+
+  const fixed = new URLSearchParams(location.search).get('t');
+  if (fixed !== null) {
+    render(parseFloat(fixed));
+  } else {
+    const start = performance.now();
+    const tick = () => {
+      render((performance.now() - start) / 1000);
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+</script>
+</body>
+</html>
