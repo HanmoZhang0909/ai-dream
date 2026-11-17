@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "AI 画布",
+    "description": "把助手回复里的 canvas 块渲染成右侧栏图解。",
+    "detail": "docs/DETAIL.md"
+  }
+}

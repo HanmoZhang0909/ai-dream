@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="AI canvas">
+  <rect x="4" y="8" width="56" height="48" rx="10" fill="#eef3ff" stroke="#4c8dff" stroke-width="2"/>
+  <path d="M18 24h10M32 24h14M18 24v8" stroke="#9db6e8" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+  <circle cx="18" cy="24" r="3.2" fill="#4c8dff"/>
+  <circle cx="32" cy="24" r="3.2" fill="#4c8dff"/>
+  <circle cx="46" cy="24" r="3.2" fill="#4c8dff"/>
+  <rect x="12" y="34" width="16" height="9" rx="3" fill="#ffffff" stroke="#4c8dff" stroke-width="1.4"/>
+  <path d="M20 34v-4" stroke="#4c8dff" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M44 20l1.6-3.2L48.8 15l-3.2-1.6L44 10l-1.6 3.4L39.2 15l3.2 1.8L44 20z" fill="#ffd166"/>
+</svg>

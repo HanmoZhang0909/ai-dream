@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "AI canvas",
+    "description": "Renders the assistant's canvas blocks as a diagram in the right sidebar.",
+    "detail": "docs/DETAIL.md"
+  }
+}
