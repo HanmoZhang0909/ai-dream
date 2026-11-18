@@ -157,7 +157,7 @@ export const TIMELINE_LAYOUT = Object.freeze({
   dotHitSize: 24,
   dotVisualSize: 9,
   dotGap: 2,
-  nearBottomThreshold: 24,
+  nearBottomThreshold: 48,
 })
 
 /**

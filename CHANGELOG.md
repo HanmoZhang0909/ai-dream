@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.11.3 — 2026-11-18
+
+- Fix CI: `TIMELINE_LAYOUT.nearBottomThreshold` now matches the client (48px) and the parity assertion checks the shipped value, so the layout invariant and the zero-build copy cannot drift again.
+
 ## 1.11.2 — 2026-11-18
 
 - Real-GUI verified fixes for the mini emotion timeline (driven through the authenticated GUI with Chrome DevTools Protocol, screenshots captured):

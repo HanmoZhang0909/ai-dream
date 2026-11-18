@@ -161,7 +161,7 @@ assert.equal(inReplayMode(5, null), false)
 {
   assert.equal(TIMELINE_LAYOUT.dotHitSize >= 24, true, 'dot hit target must be at least 24px')
   assert.equal(TIMELINE_LAYOUT.dotVisualSize < TIMELINE_LAYOUT.dotHitSize, true)
-  assert.equal(TIMELINE_LAYOUT.nearBottomThreshold > 0, true)
+  assert.equal(TIMELINE_LAYOUT.nearBottomThreshold, 48, 'near-bottom threshold matches the client')
 
   const rows = timelineRowRects({ dotCount: 8 })
   assert.deepEqual(rows.map(row => row.id), ['controls', 'dots', 'hint'])
@@ -191,7 +191,7 @@ assert.equal(inReplayMode(5, null), false)
   assert.ok(client.includes('width: 24'), 'client keeps the 24px dot hit area')
   assert.ok(client.includes('height: 22'), 'client keeps the reserved hint height')
   assert.ok(client.includes('gap: 2'), 'client keeps the compact dot gap')
-  assert.ok(client.includes('scrollHeight - 24'), 'client keeps the near-bottom threshold')
+  assert.ok(client.includes('scrollHeight - 48'), 'client keeps the near-bottom threshold')
 }
 
 console.log('renderer core checks OK')
