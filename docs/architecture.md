@@ -164,7 +164,7 @@ interface EmotionState {
 
 回看提示（v1.2）：`topTurn < latestTurn` 时面板底部显示「回看 · 第 N 轮 · 回到最新」，点击把 `[data-conversation-scroll]` 滚到底部（自动退出回看）。
 
-迷你情绪时间轴（v1.11）：底部为**单一 flex column 栈**（回看提示占位 22px + 颜色点行 + 校准按钮行，gap 7，栈 `pointerEvents:none`、行 `auto`），杜绝重叠与点击遮挡；圆点 24×24 命中区 + 9px 视觉点；点击锚点 `block:'center'` 且遵循 `prefers-reduced-motion`；滚动接近底部（24px 内）视为 live，避免短末轮误判；`replayEnabled: false` 时整体隐藏。数据逻辑由 `renderer/core.mjs` 的 `buildTimelineDots`/`inReplayMode`/`sentinelSelector` 单测覆盖，client 内联副本有文本一致性断言。**布局不变量（v1.11.1）**：`TIMELINE_LAYOUT` 与 `timelineRowRects()` 把 24px 命中区、行不重叠、提示占位、近底阈值固化为 CI 断言——这类 UI 重叠/误触 bug 不再只能靠人眼发现。
+迷你情绪时间轴（v1.11 / v1.11.2）：底部为**单一 flex column 栈**（回看提示占位 22px + 颜色点行 + 校准按钮行，gap 7，栈 `pointerEvents:none`、行 `auto`），杜绝重叠与点击遮挡；圆点 24×24 命中区 + 9px 视觉点；点击锚点 `block:'center'` 且遵循 `prefers-reduced-motion`，**并在历史懒加载期间持续吸附到目标轮次**（约 2.4s，稳定后停止）；「回到最新」**持续 pin 到底部**直到滚动高度不再增长；距底部 48px 内视为 live，避免短末轮误判；回看胶囊近白文字 + 深色底保证光晕上的可读性；`replayEnabled: false` 时整体隐藏。数据逻辑由 `renderer/core.mjs` 的 `buildTimelineDots`/`inReplayMode`/`sentinelSelector` 单测覆盖，client 内联副本有文本一致性断言。**布局不变量（v1.11.1）**：`TIMELINE_LAYOUT` 与 `timelineRowRects()` 把 24px 命中区、行不重叠、提示占位、近底阈值固化为 CI 断言——这类 UI 重叠/误触 bug 不再只能靠人眼发现。**真实 GUI 自测（v1.11.2，本地）**：通过 CDP 驱动已认证页面，断言圆点命中自身、行不重叠、跳转落到目标轮次、回到最新后提示消失；测试标识为 `data-ai-dream-canvas|stack|dot|hint`。
 
 **模式与渲染**：
 

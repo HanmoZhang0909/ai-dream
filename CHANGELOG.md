@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.11.2 — 2026-11-18
+
+- Real-GUI verified fixes for the mini emotion timeline (driven through the authenticated GUI with Chrome DevTools Protocol, screenshots captured):
+  - dot jumps now settle the anchor while lazy-loaded history keeps shifting it (turn 116 lands on turn 116 instead of drifting to an older turn);
+  - "回到最新" keeps pinning to the bottom until the transcript stops growing, so the hint reliably disappears in long sessions;
+  - the near-bottom threshold is 48px, and the hint pill uses near-white text on a dark backdrop for readability over the glow;
+  - UI gains stable `data-ai-dream-*` hooks used by the self-test (canvas, stack, dot, hint, sentinel already existed).
+
 ## 1.11.1 — 2026-11-17
 
 - UI-testability hardening: the bottom-stack layout invariants (24px dot hit targets, non-overlapping rows, reserved hint height, near-bottom threshold) are encoded in `renderer/core.mjs` as `TIMELINE_LAYOUT` + `timelineRowRects()` and asserted in CI, so the overlap / tiny-hit-target bug class is caught without a browser. The client copy gains parity assertions for the same constants.

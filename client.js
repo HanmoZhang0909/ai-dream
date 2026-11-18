@@ -1167,7 +1167,7 @@ window.__ModuleLoader__.load({
         let timer = 0
         const update = () => {
           if (!scroll) return
-          setAtBottom(scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 24)
+          setAtBottom(scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 48)
         }
         const attach = () => {
           scroll = document.querySelector('[data-conversation-scroll]')
@@ -1308,19 +1308,42 @@ window.__ModuleLoader__.load({
         const backToLatest = () => {
           try {
             const scroll = document.querySelector('[data-conversation-scroll]')
-            if (scroll) scroll.scrollTop = scroll.scrollHeight
+            if (!scroll) return
+            setAtBottom(true)
+            // History lazy-loads while we scroll; keep pinning until we actually reach the bottom.
+            let attempts = 0
+            const pin = () => {
+              attempts += 1
+              scroll.scrollTop = scroll.scrollHeight
+              const atEnd = scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 2
+              if (!atEnd && attempts < 30) setTimeout(pin, 80)
+            }
+            pin()
           } catch {
             // no transcript surface: nothing to scroll
           }
         }
         const jumpToTurn = turn => {
           try {
-            const sentinel = document.querySelector('[data-ai-dream-sentinel="' + String(turn) + '"]')
-            if (sentinel && typeof sentinel.scrollIntoView === 'function') {
-              const reduced = typeof window !== 'undefined' && window.matchMedia
-                && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-              sentinel.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' })
+            const reduced = typeof window !== 'undefined' && window.matchMedia
+              && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            const behavior = reduced ? 'auto' : 'smooth'
+            // Lazy-loaded history keeps shifting the anchor; hold the target near the
+            // viewport centre until the transcript settles (bounded, ~2.4s).
+            let attempts = 0
+            const settle = () => {
+              const sentinel = document.querySelector('[data-ai-dream-sentinel="' + String(turn) + '"]')
+              attempts += 1
+              if (sentinel && attempts < 20) {
+                const rect = sentinel.getBoundingClientRect()
+                const centre = (typeof window !== 'undefined' ? window.innerHeight : 800) / 2
+                if (Math.abs(rect.top - centre) > 24 || attempts < 6) {
+                  sentinel.scrollIntoView({ block: 'center', behavior: attempts === 1 ? behavior : 'auto' })
+                }
+                setTimeout(settle, 120)
+              }
             }
+            settle()
             setFlashTurn(turn)
             setTimeout(() => setFlashTurn(current => (current === turn ? null : current)), 900)
           } catch {
@@ -1339,6 +1362,7 @@ window.__ModuleLoader__.load({
             dots.push(h('button', {
               key: 'dot-' + turn,
               type: 'button',
+              'data-ai-dream-dot': String(turn),
               title: label,
               'aria-label': label,
               'aria-current': turn === topTurn ? 'true' : undefined,
@@ -1382,17 +1406,18 @@ window.__ModuleLoader__.load({
         }, replaying
           ? h('button', {
             type: 'button',
+            'data-ai-dream-hint': '1',
             onClick: backToLatest,
             style: {
-              border: '0.5px solid ' + BORDER,
-              background: 'rgba(8,12,20,0.6)',
-              color: LABEL_2,
+              border: '0.5px solid rgba(255,255,255,0.28)',
+              background: 'rgba(4,6,12,0.92)',
+              color: '#e9f0ff',
+              fontWeight: 500,
               borderRadius: 999,
               padding: '3px 10px',
               fontSize: 11,
               font: 'inherit',
               cursor: 'pointer',
-              opacity: 0.8,
             },
           }, '回看 · 第 ' + String(topTurn) + ' 轮 · 回到最新')
           : null))
@@ -1408,10 +1433,11 @@ window.__ModuleLoader__.load({
             style: { display: 'flex', gap: 6, justifyContent: 'center', pointerEvents: 'auto' },
           }, controls))
         }
-        return h('div', { style: { height: '100%', background: BG, position: 'relative' } },
+        return h('div', { 'data-ai-dream-canvas': '1', style: { height: '100%', background: BG, position: 'relative' } },
           h(MoodView, { model, revision: revision.current + bump }),
           bottomRows.length
             ? h('div', {
+              'data-ai-dream-stack': '1',
               style: {
                 position: 'absolute',
                 left: 0,
