@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import {
   BUILTIN_PALETTES,
   FORMS,
+  TIMELINE_LAYOUT,
   TRANSITION_STYLES,
   buildTimelineDots,
   clamp,
@@ -18,6 +19,7 @@ import {
   sentinelSelector,
   targetFrom,
   tauFor,
+  timelineRowRects,
 } from '../renderer/core.mjs'
 
 // --- primitives ---------------------------------------------------------------
@@ -155,6 +157,29 @@ assert.equal(inReplayMode(5, null), false)
   assert.deepEqual(buildTimelineDots(new Map()), [])
 }
 
+// --- bottom stack layout invariants (overlap / hit-target bug class) ---------
+{
+  assert.equal(TIMELINE_LAYOUT.dotHitSize >= 24, true, 'dot hit target must be at least 24px')
+  assert.equal(TIMELINE_LAYOUT.dotVisualSize < TIMELINE_LAYOUT.dotHitSize, true)
+  assert.equal(TIMELINE_LAYOUT.nearBottomThreshold > 0, true)
+
+  const rows = timelineRowRects({ dotCount: 8 })
+  assert.deepEqual(rows.map(row => row.id), ['controls', 'dots', 'hint'])
+  assert.equal(rows[0].bottom, TIMELINE_LAYOUT.bottomOffset)
+  for (let index = 1; index < rows.length; index += 1) {
+    assert.ok(rows[index].bottom >= rows[index - 1].top, 'stack rows must not overlap')
+  }
+  const dots = rows.find(row => row.id === 'dots')
+  assert.equal(dots.height, TIMELINE_LAYOUT.dotHitSize, 'dots row is the hit-target height')
+
+  const noDots = timelineRowRects({ dotCount: 0 })
+  assert.equal(noDots.some(row => row.id === 'dots'), false, 'no dots row without expressed turns')
+  const noControls = timelineRowRects({ dotCount: 3, hasControls: false })
+  assert.equal(noControls.some(row => row.id === 'controls'), false)
+  const compact = timelineRowRects({ dotCount: 3, hintHeight: 0 })
+  assert.equal(compact.some(row => row.id === 'hint'), false)
+}
+
 // --- client.js parity (the zero-build copy must not silently drift) ----------
 {
   const client = fs.readFileSync(new URL('../client.js', import.meta.url), 'utf8')
@@ -163,6 +188,10 @@ assert.equal(inReplayMode(5, null), false)
   assert.ok(client.includes('data-ai-dream-sentinel="'), 'client queries the same sentinel attribute')
   assert.ok(client.includes("block: 'center'"), 'client anchors jumps the same way')
   assert.ok(client.includes('prefers-reduced-motion'), 'client honours reduced motion')
+  assert.ok(client.includes('width: 24'), 'client keeps the 24px dot hit area')
+  assert.ok(client.includes('height: 22'), 'client keeps the reserved hint height')
+  assert.ok(client.includes('gap: 2'), 'client keeps the compact dot gap')
+  assert.ok(client.includes('scrollHeight - 24'), 'client keeps the near-bottom threshold')
 }
 
 console.log('renderer core checks OK')

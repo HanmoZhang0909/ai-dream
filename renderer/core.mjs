@@ -147,6 +147,44 @@ export function sentinelSelector(turn) {
 }
 
 /**
+ * Bottom-stack layout invariants (mirrors the client's inline styles).
+ * Encoded here so the overlap / hit-target bug class is testable without a browser.
+ */
+export const TIMELINE_LAYOUT = Object.freeze({
+  bottomOffset: 10,
+  stackGap: 7,
+  hintReservedHeight: 22,
+  dotHitSize: 24,
+  dotVisualSize: 9,
+  dotGap: 2,
+  nearBottomThreshold: 24,
+})
+
+/**
+ * Vertical rectangles of the bottom stack, measured from the container's bottom
+ * edge (bottom-up). Rows must never overlap and dot hit targets must stay at
+ * least 24px, which the unit tests assert.
+ */
+export function timelineRowRects(options = {}) {
+  const layout = TIMELINE_LAYOUT
+  const gap = options.gap ?? layout.stackGap
+  const hintHeight = options.hasHint === false ? 0 : (options.hintHeight ?? layout.hintReservedHeight)
+  const dotHeight = options.dotCount > 0 ? (options.dotHitSize ?? layout.dotHitSize) : 0
+  const controlsHeight = options.hasControls === false ? 0 : (options.controlsHeight ?? 22)
+  const rows = []
+  let cursor = options.bottomOffset ?? layout.bottomOffset
+  const push = (id, height) => {
+    if (height <= 0) return
+    rows.push({ id, bottom: cursor, top: cursor + height, height })
+    cursor += height + gap
+  }
+  push('controls', controlsHeight)
+  push('dots', dotHeight)
+  push('hint', hintHeight)
+  return rows
+}
+
+/**
  * Whether the canvas shows a historical turn instead of the newest expression.
  * Replay needs a numeric viewport turn below the newest expressed turn.
  */

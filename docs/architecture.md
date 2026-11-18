@@ -164,7 +164,7 @@ interface EmotionState {
 
 回看提示（v1.2）：`topTurn < latestTurn` 时面板底部显示「回看 · 第 N 轮 · 回到最新」，点击把 `[data-conversation-scroll]` 滚到底部（自动退出回看）。
 
-迷你情绪时间轴（v1.11）：底部为**单一 flex column 栈**（回看提示占位 22px + 颜色点行 + 校准按钮行，gap 7，栈 `pointerEvents:none`、行 `auto`），杜绝重叠与点击遮挡；圆点 24×24 命中区 + 9px 视觉点；点击锚点 `block:'center'` 且遵循 `prefers-reduced-motion`；滚动接近底部（24px 内）视为 live，避免短末轮误判；`replayEnabled: false` 时整体隐藏。数据逻辑由 `renderer/core.mjs` 的 `buildTimelineDots`/`inReplayMode`/`sentinelSelector` 单测覆盖，client 内联副本有文本一致性断言。
+迷你情绪时间轴（v1.11）：底部为**单一 flex column 栈**（回看提示占位 22px + 颜色点行 + 校准按钮行，gap 7，栈 `pointerEvents:none`、行 `auto`），杜绝重叠与点击遮挡；圆点 24×24 命中区 + 9px 视觉点；点击锚点 `block:'center'` 且遵循 `prefers-reduced-motion`；滚动接近底部（24px 内）视为 live，避免短末轮误判；`replayEnabled: false` 时整体隐藏。数据逻辑由 `renderer/core.mjs` 的 `buildTimelineDots`/`inReplayMode`/`sentinelSelector` 单测覆盖，client 内联副本有文本一致性断言。**布局不变量（v1.11.1）**：`TIMELINE_LAYOUT` 与 `timelineRowRects()` 把 24px 命中区、行不重叠、提示占位、近底阈值固化为 CI 断言——这类 UI 重叠/误触 bug 不再只能靠人眼发现。
 
 **模式与渲染**：
 

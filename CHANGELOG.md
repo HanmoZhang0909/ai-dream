@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.11.1 — 2026-11-17
+
+- UI-testability hardening: the bottom-stack layout invariants (24px dot hit targets, non-overlapping rows, reserved hint height, near-bottom threshold) are encoded in `renderer/core.mjs` as `TIMELINE_LAYOUT` + `timelineRowRects()` and asserted in CI, so the overlap / tiny-hit-target bug class is caught without a browser. The client copy gains parity assertions for the same constants.
+
 ## 1.11.0 — 2026-11-17
 
 - Fixed the mini emotion timeline: the hint, dots and calibration rows are now one bottom flex stack (no absolute overlap), dots have 24×24 hit targets with a 9px visual dot, jumps anchor `center` and honour `prefers-reduced-motion`, the replay hint reserves its height (no layout shift), near-bottom scrolling returns to live mode, and clicking a dot flashes it for feedback.
