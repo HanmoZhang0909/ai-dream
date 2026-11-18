@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.11.0 — 2026-11-17
+
+- Fixed the mini emotion timeline: the hint, dots and calibration rows are now one bottom flex stack (no absolute overlap), dots have 24×24 hit targets with a 9px visual dot, jumps anchor `center` and honour `prefers-reduced-motion`, the replay hint reserves its height (no layout shift), near-bottom scrolling returns to live mode, and clicking a dot flashes it for feedback.
+- Testability: `renderer/core.mjs` gained `buildTimelineDots` / `inReplayMode` / `sentinelSelector` with unit tests, plus a client-copy parity assertion so the inline implementation cannot silently drift.
+- UX review: one subagent UI/UX review was run before delivery (per `references/verification.md`); visual verification in a live GUI remains unavailable in this environment and is reported as such.
+
 ## 1.10.1 — 2026-11-17
 
 - Added `docs/iterations.md`: the ten-round autonomous iteration record (per-round increment, self-test evidence, engineering lessons, remaining backlog).

@@ -1,17 +1,21 @@
 // Portable renderer core checks (no dependencies).
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
 import {
   BUILTIN_PALETTES,
   FORMS,
   TRANSITION_STYLES,
+  buildTimelineDots,
   clamp,
   cut,
   hexColor,
   hexToRgb,
+  inReplayMode,
   mixHex,
   normalizeMood,
   pick,
   resolveColors,
+  sentinelSelector,
   targetFrom,
   tauFor,
 } from '../renderer/core.mjs'
@@ -118,6 +122,47 @@ assert.ok(tauFor('medium', 'burst') < tauFor('medium', 'soft'))
   const custom = targetFrom({ colors: resolveColors({ palette: { base: '#101010', core: '#202020', tone: '#303030', spectrum: ['#404040', '#505050'] } }, 'neutral') })
   assert.deepEqual(custom.c0, [32, 32, 32])
   assert.deepEqual(custom.c5, [16, 16, 16])
+}
+
+// --- scroll replay (mini timeline) -------------------------------------------
+assert.equal(sentinelSelector(42), '[data-ai-dream-sentinel="42"]')
+assert.equal(sentinelSelector(0), '[data-ai-dream-sentinel="0"]')
+assert.equal(inReplayMode(5, 10), true)
+assert.equal(inReplayMode(10, 10), false)
+assert.equal(inReplayMode(11, 10), false)
+assert.equal(inReplayMode(5, 10, false), false, 'replayEnabled:false disables replay')
+assert.equal(inReplayMode(null, 10), false)
+assert.equal(inReplayMode(5, null), false)
+
+{
+  const models = new Map([
+    [3, { colors: { core: '#111111' } }],
+    [5, { colors: { core: '#222222' } }],
+    [4, {}],
+    [2, { colors: {} }],
+  ])
+  const dots = buildTimelineDots(models)
+  assert.deepEqual(dots.map(dot => dot.turn), [2, 3, 4, 5], 'dots ascend by turn')
+  assert.equal(dots[0].core, '#9a7aa6', 'missing colour falls back')
+  assert.equal(dots[1].core, '#111111')
+  assert.equal(dots[2].core, '#9a7aa6')
+  const many = new Map(Array.from({ length: 12 }, (_, index) => [index + 1, { colors: { core: '#123456' } }]))
+  const limited = buildTimelineDots(many)
+  assert.equal(limited.length, 8, 'at most eight dots')
+  assert.deepEqual(limited.map(dot => dot.turn), [5, 6, 7, 8, 9, 10, 11, 12], 'newest eight turns')
+  assert.deepEqual(buildTimelineDots(models, { limit: 2 }).map(dot => dot.turn), [4, 5])
+  assert.deepEqual(buildTimelineDots(null), [])
+  assert.deepEqual(buildTimelineDots(new Map()), [])
+}
+
+// --- client.js parity (the zero-build copy must not silently drift) ----------
+{
+  const client = fs.readFileSync(new URL('../client.js', import.meta.url), 'utf8')
+  assert.ok(client.includes('.slice(-8)'), 'client applies the same dot limit')
+  assert.ok(client.includes("'#9a7aa6'"), 'client applies the same fallback colour')
+  assert.ok(client.includes('data-ai-dream-sentinel="'), 'client queries the same sentinel attribute')
+  assert.ok(client.includes("block: 'center'"), 'client anchors jumps the same way')
+  assert.ok(client.includes('prefers-reduced-motion'), 'client honours reduced motion')
 }
 
 console.log('renderer core checks OK')

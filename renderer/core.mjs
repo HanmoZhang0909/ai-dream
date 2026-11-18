@@ -141,6 +141,36 @@ export function tauFor(speed, style) {
   return style === 'snap' ? 0 : base * factor
 }
 
+/** DOM selector the client uses to find the sentinel of one turn. */
+export function sentinelSelector(turn) {
+  return '[data-ai-dream-sentinel="' + String(turn) + '"]'
+}
+
+/**
+ * Whether the canvas shows a historical turn instead of the newest expression.
+ * Replay needs a numeric viewport turn below the newest expressed turn.
+ */
+export function inReplayMode(topTurn, latestTurn, replayEnabled = true) {
+  if (replayEnabled === false) return false
+  if (typeof topTurn !== 'number' || typeof latestTurn !== 'number') return false
+  return topTurn < latestTurn
+}
+
+/** Build the mini emotion timeline dots: the newest expressed turns, ascending. */
+export function buildTimelineDots(turnModels, options = {}) {
+  const limit = Number.isInteger(options.limit) && options.limit > 0 ? options.limit : 8
+  if (!turnModels || typeof turnModels.keys !== 'function' || typeof turnModels.get !== 'function') return []
+  return Array.from(turnModels.keys())
+    .filter(turn => typeof turn === 'number' && Number.isFinite(turn))
+    .sort((a, b) => a - b)
+    .slice(-limit)
+    .map(turn => {
+      const model = turnModels.get(turn)
+      const core = model && model.colors && typeof model.colors.core === 'string' ? model.colors.core : '#9a7aa6'
+      return { turn, core }
+    })
+}
+
 /** Numeric target the rAF engine interpolates towards (same shape as client.js). */
 export function targetFrom(model) {
   const palette = model.colors || BUILTIN_PALETTES[model.mood] || BUILTIN_PALETTES.neutral

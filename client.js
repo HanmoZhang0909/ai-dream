@@ -469,13 +469,23 @@ window.__ModuleLoader__.load({
      * Scroll-replay store (v1.1): turn sentinels report their viewport position,
      * and the canvas renders the emotion of the turn nearest the viewport top.
      */
-    const timelineStore = { turn: null, listeners: new Set() }
+    const timelineStore = { turn: null, atBottom: false, listeners: new Set() }
     const sentinelTops = new Map()
+
+    function notifyTimeline() {
+      for (const listener of timelineStore.listeners) listener()
+    }
 
     function setTopTurn(turn) {
       if (timelineStore.turn === turn) return
       timelineStore.turn = turn
-      for (const listener of timelineStore.listeners) listener()
+      notifyTimeline()
+    }
+
+    function setAtBottom(value) {
+      if (timelineStore.atBottom === value) return
+      timelineStore.atBottom = value
+      notifyTimeline()
     }
 
     function reportSentinel(turn, top) {
@@ -503,6 +513,20 @@ window.__ModuleLoader__.load({
         }
       }, [])
       return turn
+    }
+
+    /** Whether the transcript is scrolled near its bottom (live mode). */
+    function useTimelineAtBottom() {
+      const [atBottom, setLocal] = React.useState(timelineStore.atBottom)
+      React.useEffect(() => {
+        const listener = () => setLocal(timelineStore.atBottom)
+        timelineStore.listeners.add(listener)
+        listener()
+        return () => {
+          timelineStore.listeners.delete(listener)
+        }
+      }, [])
+      return atBottom
     }
 
     /** 1px sentinel in the turn-tail row; reports whether this turn is near the viewport top. */
@@ -1131,8 +1155,35 @@ window.__ModuleLoader__.load({
       const wire = props.useProjection ? props.useProjection('emotionSignature') : undefined
       const wireConfig = props.useProjection ? props.useProjection('aiDreamConfig') : undefined
       const [bump, setBump] = React.useState(0)
+      const [flashTurn, setFlashTurn] = React.useState(null)
       const topTurnRaw = useTopTurn()
-      const topTurn = CONFIG.replayEnabled === false ? null : topTurnRaw
+      const atBottom = useTimelineAtBottom()
+      const topTurn = CONFIG.replayEnabled === false || atBottom ? null : topTurnRaw
+
+      // Track "near the bottom" so a short last turn cannot keep replay mode alive.
+      React.useEffect(() => {
+        if (typeof document === 'undefined') return undefined
+        let scroll = null
+        let timer = 0
+        const update = () => {
+          if (!scroll) return
+          setAtBottom(scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 24)
+        }
+        const attach = () => {
+          scroll = document.querySelector('[data-conversation-scroll]')
+          if (!scroll) {
+            timer = setTimeout(attach, 1200)
+            return
+          }
+          update()
+          scroll.addEventListener('scroll', update, { passive: true })
+        }
+        attach()
+        return () => {
+          if (timer) clearTimeout(timer)
+          if (scroll) scroll.removeEventListener('scroll', update)
+        }
+      }, [])
 
       React.useEffect(() => {
         loadLocalState()
@@ -1264,10 +1315,14 @@ window.__ModuleLoader__.load({
         }
         const jumpToTurn = turn => {
           try {
-            const sentinel = document.querySelector('[data-ai-dream-sentinel="' + turn + '"]')
+            const sentinel = document.querySelector('[data-ai-dream-sentinel="' + String(turn) + '"]')
             if (sentinel && typeof sentinel.scrollIntoView === 'function') {
-              sentinel.scrollIntoView({ block: 'start', behavior: 'smooth' })
+              const reduced = typeof window !== 'undefined' && window.matchMedia
+                && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+              sentinel.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' })
             }
+            setFlashTurn(turn)
+            setTimeout(() => setFlashTurn(current => (current === turn ? null : current)), 900)
           } catch {
             // no transcript surface: nothing to scroll
           }
@@ -1279,73 +1334,98 @@ window.__ModuleLoader__.load({
           for (const turn of turns) {
             const dotModel = timeline.turnModels.get(turn)
             const core = dotModel && dotModel.colors && dotModel.colors.core ? dotModel.colors.core : '#9a7aa6'
+            const label = '回看第 ' + String(turn) + ' 轮' + (dotModel && dotModel.name ? ' · ' + dotModel.name : '')
+            const active = turn === topTurn || turn === flashTurn
             dots.push(h('button', {
               key: 'dot-' + turn,
               type: 'button',
-              title: '第 ' + String(turn) + ' 轮',
-              'aria-label': '第 ' + String(turn) + ' 轮',
+              title: label,
+              'aria-label': label,
+              'aria-current': turn === topTurn ? 'true' : undefined,
               onClick: () => jumpToTurn(turn),
               style: {
-                width: 7,
-                height: 7,
+                width: 24,
+                height: 24,
                 padding: 0,
                 border: '0',
                 borderRadius: '50%',
-                background: core,
-                opacity: turn === topTurn ? 0.95 : 0.45,
+                background: 'transparent',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 cursor: 'pointer',
+                outline: active ? '1px solid rgba(255,255,255,0.5)' : 'none',
               },
-            }))
+            }, h('span', {
+              style: {
+                width: 9,
+                height: 9,
+                borderRadius: '50%',
+                background: core,
+                opacity: active ? 0.95 : 0.45,
+              },
+            })))
           }
+        }
+        // One bottom stack so hint, dots and calibration controls can never overlap.
+        const bottomRows = []
+        // The hint row reserves its height in both modes so switching does not shift the dots.
+        bottomRows.push(h('div', {
+          key: 'replay-hint',
+          style: {
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: 22,
+            pointerEvents: replaying ? 'auto' : 'none',
+          },
+        }, replaying
+          ? h('button', {
+            type: 'button',
+            onClick: backToLatest,
+            style: {
+              border: '0.5px solid ' + BORDER,
+              background: 'rgba(8,12,20,0.6)',
+              color: LABEL_2,
+              borderRadius: 999,
+              padding: '3px 10px',
+              fontSize: 11,
+              font: 'inherit',
+              cursor: 'pointer',
+              opacity: 0.8,
+            },
+          }, '回看 · 第 ' + String(topTurn) + ' 轮 · 回到最新')
+          : null))
+        if (dots.length) {
+          bottomRows.push(h('div', {
+            key: 'dots',
+            style: { display: 'flex', gap: 2, justifyContent: 'center', alignItems: 'center', pointerEvents: 'auto' },
+          }, dots))
+        }
+        if (controls.length) {
+          bottomRows.push(h('div', {
+            key: 'controls',
+            style: { display: 'flex', gap: 6, justifyContent: 'center', pointerEvents: 'auto' },
+          }, controls))
         }
         return h('div', { style: { height: '100%', background: BG, position: 'relative' } },
           h(MoodView, { model, revision: revision.current + bump }),
-          replaying
-            ? h('button', {
-              type: 'button',
-              onClick: backToLatest,
-              style: {
-                position: 'absolute',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                bottom: 46,
-                border: '0.5px solid ' + BORDER,
-                background: 'rgba(8,12,20,0.6)',
-                color: LABEL_2,
-                borderRadius: 999,
-                padding: '3px 10px',
-                fontSize: 11,
-                font: 'inherit',
-                cursor: 'pointer',
-                opacity: 0.8,
-              },
-            }, '回看 · 第 ' + String(topTurn) + ' 轮 · 回到最新')
-            : null,
-          dots.length
+          bottomRows.length
             ? h('div', {
               style: {
                 position: 'absolute',
                 left: 0,
                 right: 0,
-                bottom: 24,
+                bottom: 10,
                 display: 'flex',
-                gap: 5,
-                justifyContent: 'center',
+                flexDirection: 'column',
                 alignItems: 'center',
+                gap: 7,
+                pointerEvents: 'none',
               },
-            }, dots)
-            : null,
-          h('div', {
-            style: {
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              bottom: 8,
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 6,
-            },
-          }, controls))      }
+            }, bottomRows)
+            : null)
+      }
 
       return h('div', {
         style: {

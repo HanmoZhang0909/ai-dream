@@ -25,6 +25,11 @@
 4. **Windows 沙箱下管道捕获会被挡**：Chrome `--dump-dom` 用 `Start-Process -RedirectStandardOutput` 落文件，再用离线校验模式验证；
 5. **浏览器验证不能放默认 CI**：环境依赖强，用 `AI_DREAM_BROWSER_CHECK=1` 显式开启。
 
+## 后续回归修复（v1.11.0）
+
+- 迷你时间轴 bug（用户反馈：圆点与按钮重叠、点击无反应）：根因是三组控件各自绝对定位且按钮行作为全宽命中层遮挡；改为单一底部栈 + 24×24 命中区 + 居中锚点 + 救回底部判定 + reduced-motion。
+- 自测能力补齐：`buildTimelineDots`/`inReplayMode`/`sentinelSelector` 单测 + `client.js` 内联副本文本一致性断言 + DSH 政策要求的 UX 子智能体评审（本次评审提出 5 条问题，均已处理或记录）。
+
 ## 剩余待办（需要用户或后续轮次）
 
 - **MCP 真机验证**：需要用户的 ChatGPT 开发者模式 / Claude 连接器账号（已写好规格与 server 骨架）；
