@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.20.1 — 2026-11-18
+
+- Documented the local GUI self-test workflow in `docs/iterations.md`: the `run-ui-selftest.ps1` wrapper (Chrome lifecycle + one automatic retry), the exit-code map, and why the driver/screenshots stay out of the open-source repository.
+
 ## 1.20.0 — 2026-11-18
 
 - "Sync to AI" export (first step toward two-way calibration): the calibration row gains a compact 「同步给 AI」 button that opens an anchored panel with the current bias (e.g. 画布偏强 0.40), a read-only copy-ready JSON snippet (`{"tone":"画布偏好更亮/更强","intensity":1}`), a 全选 button (Range selection, no clipboard permission needed), and explicit warnings: it overwrites the whole file, affects every session and the AI's replies, needs a plugin reload to take effect, invalid JSON is ignored, and it shows both the Windows and macOS/Linux paths.
