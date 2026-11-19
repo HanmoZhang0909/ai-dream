@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.21.2 — 2026-11-18
+
+- Autonomous-loop wrap-up: `docs/iterations.md` now carries a twelve-round summary (v1.12.0 → v1.21.1, ten releases), the three-layer verification method, and the remaining backlog. Final full GUI self-test passed all 15 checks with zero console errors.
+
 ## 1.21.1 — 2026-11-18
 
 - Release-chain verification + package trim: GitHub Pages market index serves 1.21.0 and the demo page answers 200; the npm `files` list now ships only markdown docs, `docs/index.json`, `demo.html` and the runtime/MCP assets, dropping the 2.5MB demo GIF and ~1.3MB screenshots from the plugin tarball (4.15MB → about 0.3MB).

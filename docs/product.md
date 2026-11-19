@@ -72,8 +72,7 @@
 ### v1.x — 平台移植与形态扩展
 
 - [x] MCP App 移植规格 + 可移植工具契约（`docs/mcp-app.md`、`mcp/app-manifest.json`，CI 校验字段与协议一致）；
-- [x] 可移植渲染核心 `renderer/core.mjs`（协议规范化 / 调色板解析 / 插值参数）+ 单测；
-- [x] MCP 渲染器骨架 `resources/ai-dream.html`（吃 `express_emotion` 同构规格，无头 Chrome 探针 + 截图验证）；
+- [x] 可移植渲染核心 `renderer/core.mjs`（协议规范化 / 调色板解析 / 插值参数）+ 单测；- [x] MCP 渲染器骨架 `resources/ai-dream.html`（吃 `express_emotion` 同构规格，无头 Chrome 探针 + 截图验证）；
 - [x] MCP server 骨架 `mcp/server.mjs`（stdio JSON-RPC：`initialize`/`tools/list`/`tools/call`/`resources/*`，handler 单测）；
 - [ ] MCP App 渲染器 HTML 与 MCP server 骨架；
 - [ ] 视觉形态扩展：天气语义（晴/阴/雾/雨）、角色形象（远期）；
