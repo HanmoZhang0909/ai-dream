@@ -245,6 +245,20 @@ export function parsePartialMood(code) {
   if (palette.core || palette.base || palette.tone) partial.palette = palette
   return partial
 }
+/** Move focus between the timeline dots without changing the replay target. */
+export function nextDotTurn(turns, currentTurn, direction) {
+  if (!Array.isArray(turns) || turns.length === 0) return null
+  const index = turns.indexOf(currentTurn)
+  if (index < 0) return turns[0]
+  if (direction === 'home') return turns[0]
+  if (direction === 'end') return turns[turns.length - 1]
+  const step = direction === 'previous' ? -1 : 1
+  const next = index + step
+  if (next < 0 || next >= turns.length) return currentTurn
+  return turns[next]
+}
+
+/** Interpolation time constant: how fast the glow glides to a new target. */
 export function tauFor(speed, style) {
   const base = speed === 'slow' ? 1600 : speed === 'fast' ? 380 : 900
   const factor = style === 'dissolve' ? 1.4 : style === 'burst' ? 0.45 : style === 'ripple' ? 0.9 : 1.1
@@ -263,7 +277,7 @@ export function sentinelSelector(turn) {
 export const TIMELINE_LAYOUT = Object.freeze({
   bottomOffset: 10,
   stackGap: 7,
-  hintReservedHeight: 22,
+  hintReservedHeight: 24,
   dotHitSize: 24,
   dotVisualSize: 11,
   dotGap: 2,

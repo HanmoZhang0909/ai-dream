@@ -21,6 +21,7 @@ import {
   isEmptyState,
   mixHex,
   nextCalibrationBias,
+  nextDotTurn,
   normalizeMood,
   parsePartialMood,
   pick,
@@ -208,6 +209,16 @@ assert.equal(extractPartialCanvas('```canvas\n{"a":1}\n```\nafter'), null)
   assert.equal(parsePartialMood('{"kind":"mood"'), null, 'kind alone is not enough to preview')
 }
 
+// --- keyboard dot navigation --------------------------------------------------
+assert.equal(nextDotTurn([], 5, 'next'), null)
+assert.equal(nextDotTurn([10, 11, 12], 10, 'next'), 11)
+assert.equal(nextDotTurn([10, 11, 12], 12, 'next'), 12, 'stays on the last dot')
+assert.equal(nextDotTurn([10, 11, 12], 10, 'previous'), 10, 'stays on the first dot')
+assert.equal(nextDotTurn([10, 11, 12], 11, 'previous'), 10)
+assert.equal(nextDotTurn([10, 11, 12], 12, 'home'), 10)
+assert.equal(nextDotTurn([10, 11, 12], 10, 'end'), 12)
+assert.equal(nextDotTurn([10, 11, 12], 99, 'next'), 10, 'unknown turns start at the first dot')
+
 // --- signature viewer chips ---------------------------------------------------
 {
   const entries = [
@@ -260,12 +271,17 @@ assert.equal(extractPartialCanvas('```canvas\n{"a":1}\n```\nafter'), null)
   assert.ok(client.includes("block: 'center'"), 'client anchors jumps the same way')
   assert.ok(client.includes('prefers-reduced-motion'), 'client honours reduced motion')
   assert.ok(client.includes('width: 24'), 'client keeps the 24px dot hit area')
-  assert.ok(client.includes('height: 22'), 'client keeps the reserved hint height')
+  assert.ok(client.includes('height: 24'), 'client keeps the reserved hint height')
+  assert.equal(TIMELINE_LAYOUT.hintReservedHeight, 24, 'hint row keeps a 24px target height')
   assert.ok(client.includes('gap: 2'), 'client keeps the compact dot gap')
   assert.ok(client.includes('scrollHeight - 48'), 'client keeps the near-bottom threshold')
   assert.ok(client.includes('ai-dream:onboarded:v1'), 'client keeps the onboarding flag key')
   assert.ok(client.includes('data-ai-dream-onboarding'), 'client keeps the onboarding hook')
-  assert.ok(client.includes("role: 'group'"), 'client groups the dots for assistive tech')
+  assert.ok(client.includes("role: 'toolbar'"), 'client groups the dots as a toolbar')
+  assert.ok(client.includes('aria-orientation'), 'client exposes the toolbar orientation')
+  assert.ok(client.includes('aria-keyshortcuts'), 'client advertises the Esc shortcut')
+  assert.ok(client.includes("aria-live"), 'client announces replay state')
+  assert.ok(client.includes('tabIndex'), 'client uses roving tabindex for the dots')
   assert.ok(client.includes('最近几轮情绪，点击回看'), 'client keeps the dots group label')
   assert.ok(client.includes('minHeight: 24'), 'client keeps the calibration hit height')
   assert.ok(client.includes('width: 11'), 'client keeps the 11px visual dot')
@@ -282,6 +298,8 @@ assert.equal(extractPartialCanvas('```canvas\n{"a":1}\n```\nafter'), null)
   assert.ok(client.includes('PARTIAL_MARK'), 'client keeps the streaming marker')
   assert.ok(client.includes('extractPartialCanvas'), 'client keeps the partial fence extractor')
   assert.ok(client.includes('parsePartialMood'), 'client keeps the partial mood parser')
+  assert.ok(client.includes('nextDotTurn'), 'client keeps the dot keyboard navigation')
+  assert.ok(client.includes('data-ai-dream-hint'), 'client keeps the replay hint hook for Esc')
 }
 
 console.log('renderer core checks OK')

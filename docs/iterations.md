@@ -35,6 +35,7 @@
 - 空/等待态（v1.14.0）：无表达时显示"睡着的微光" + 呼吸虚线环 + 文案，隐藏控件；修复空态消耗首次引导；GUI 自测覆盖空态与引导记忆。
 - 情绪签名查看器（v1.15.0）：右上角「情绪词表 · N」胶囊 + 锚定浮层列出 AI 自定义情绪；`signatureChips` 纯函数 + GUI 断言（label/chips/focus/Esc/✕）；「回到最新」pin 上限延长到 12s 以适配超长会话。
 - 流式表达第一部分（v1.16.0）：未闭合 canvas 块按 partial mood 渐进预览并平滑过渡到完整模型；`extractPartialCanvas`/`parsePartialMood` 纯函数 + 单测 + 纹理断言；GUI 回归全绿。
+- 键盘/读屏（v1.17.0）：圆点 toolbar + roving tabindex + 方向键/Home/End、Esc 退出回看（输入法/输入框/词表面板感知）、aria-live 播报、双色 focus 环、提示行 24px；「回到最新」改为底部保持 1.5s 才结束 pin；GUI 断言方向键/Home/End/Esc 与完整回看流。
 
 ## 剩余待办（需要用户或后续轮次）
 

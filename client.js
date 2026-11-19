@@ -238,6 +238,8 @@ window.__ModuleLoader__.load({
       style.textContent = '@keyframes aiDreamEmptyPulse{0%,100%{opacity:.3}50%{opacity:.65}}'
         + 'button[data-ai-dream-signature-btn]:focus-visible,button[data-ai-dream-signature-close]:focus-visible'
         + '{outline:1px solid rgba(255,255,255,0.6) !important; outline-offset:2px}'
+        + 'button[data-ai-dream-dot]:focus-visible'
+        + '{outline:2px solid rgba(255,255,255,0.95) !important; outline-offset:2px; box-shadow:0 0 0 3px rgba(0,0,0,0.65) !important}'
         + '@media (prefers-reduced-motion: reduce){[data-ai-dream-empty-ring]{animation:none !important}}'
       document.head.appendChild(style)
     }
@@ -1268,6 +1270,19 @@ window.__ModuleLoader__.load({
       return chips
     }
 
+    // Mirror of renderer/core.mjs nextDotTurn (unit-tested there).
+    function nextDotTurn(turns, currentTurn, direction) {
+      if (!Array.isArray(turns) || turns.length === 0) return null
+      const index = turns.indexOf(currentTurn)
+      if (index < 0) return turns[0]
+      if (direction === 'home') return turns[0]
+      if (direction === 'end') return turns[turns.length - 1]
+      const step = direction === 'previous' ? -1 : 1
+      const next = index + step
+      if (next < 0 || next >= turns.length) return currentTurn
+      return turns[next]
+    }
+
     /**
      * "Emotion signature" viewer (v1.15): top-right pill that anchors a small
      * popover listing the emotions the AI defined for this session.
@@ -1401,7 +1416,9 @@ window.__ModuleLoader__.load({
       const [onboardingFading, setOnboardingFading] = React.useState(false)
       const [returning, setReturning] = React.useState(false)
       const [calibrationNote, setCalibrationNote] = React.useState(null)
+      const [dotFocusTurn, setDotFocusTurn] = React.useState(null)
       const calibrationNoteTimer = React.useRef(0)
+      const backToLatestRef = React.useRef(null)
       // The onboarding hint is only "used up" once it has actually been rendered.
       const onboardingShownRef = React.useRef(false)
       const topTurnRaw = useTopTurn()
@@ -1413,6 +1430,27 @@ window.__ModuleLoader__.load({
         setOnboarding(false)
         markOnboarded()
       }
+
+      // Esc while the replay hint is visible: jump back to the newest turn.
+      React.useEffect(() => {
+        if (typeof document === 'undefined') return undefined
+        const onKey = event => {
+          if (event.key !== 'Escape') return
+          if (event.isComposing) return
+          const target = event.target
+          if (target && target.closest) {
+            if (target.closest('input, textarea, select, [contenteditable="true"]')) return
+            if (target.closest('[data-ai-dream-signature-panel]')) return
+          }
+          if (!document.querySelector('[data-ai-dream-hint]')) return
+          if (backToLatestRef.current) {
+            event.preventDefault()
+            backToLatestRef.current()
+          }
+        }
+        document.addEventListener('keydown', onKey)
+        return () => document.removeEventListener('keydown', onKey)
+      }, [])
 
       React.useEffect(() => () => {
         if (calibrationNoteTimer.current) clearTimeout(calibrationNoteTimer.current)
@@ -1675,18 +1713,23 @@ window.__ModuleLoader__.load({
             if (!scroll) return
             setReturning(true)
             setAtBottom(true)
-            // History lazy-loads while we scroll; keep pinning until the bottom stays stable.
+            // History lazy-loads while we scroll; keep pinning until the bottom holds.
             let attempts = 0
-            let stable = 0
+            let stableSince = 0
             const pin = () => {
               attempts += 1
               setAtBottom(true)
               scroll.scrollTop = scroll.scrollHeight
               const atEnd = scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 2
-              stable = atEnd ? stable + 1 : 0
-              if (stable >= 2 || attempts >= 200) {
-                setTimeout(() => setReturning(false), 700)
-                return
+              const now = Date.now()
+              if (atEnd) {
+                if (!stableSince) stableSince = now
+                if (now - stableSince >= 1500 || attempts >= 400) {
+                  setTimeout(() => setReturning(false), 700)
+                  return
+                }
+              } else {
+                stableSince = 0
               }
               setTimeout(pin, 60)
             }
@@ -1695,6 +1738,7 @@ window.__ModuleLoader__.load({
             setReturning(false)
           }
         }
+        backToLatestRef.current = backToLatest
         const jumpToTurn = turn => {
           try {
             const reduced = typeof window !== 'undefined' && window.matchMedia
@@ -1726,7 +1770,11 @@ window.__ModuleLoader__.load({
         const dots = []
         if (CONFIG.replayEnabled !== false) {
           const turns = Array.from(timeline.turnModels.keys()).sort((a, b) => a - b).slice(-8)
-          for (const turn of turns) {
+          const focusTurn = dotFocusTurn !== null && turns.indexOf(dotFocusTurn) >= 0
+            ? dotFocusTurn
+            : turns[turns.length - 1]
+          for (let index = 0; index < turns.length; index += 1) {
+            const turn = turns[index]
             const dotModel = timeline.turnModels.get(turn)
             const core = dotModel && dotModel.colors && dotModel.colors.core ? dotModel.colors.core : '#9a7aa6'
             const label = '回看第 ' + String(turn) + ' 轮' + (dotModel && dotModel.name ? ' · ' + dotModel.name : '')
@@ -1738,7 +1786,25 @@ window.__ModuleLoader__.load({
               title: label,
               'aria-label': label,
               'aria-current': turn === topTurn ? 'true' : undefined,
+              tabIndex: turn === focusTurn ? 0 : -1,
+              onFocus: () => setDotFocusTurn(turn),
               onClick: () => jumpToTurn(turn),
+              onKeyDown: event => {
+                if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].indexOf(event.key) < 0) return
+                event.preventDefault()
+                const group = event.currentTarget.closest('[data-ai-dream-dots]')
+                const all = group ? Array.from(group.querySelectorAll('[data-ai-dream-dot]')) : []
+                const turnsList = all.map(node => Number(node.getAttribute('data-ai-dream-dot')))
+                const direction = event.key === 'ArrowLeft' ? 'previous'
+                  : event.key === 'ArrowRight' ? 'next'
+                    : event.key === 'Home' ? 'home' : 'end'
+                const targetTurn = nextDotTurn(turnsList, Number(event.currentTarget.getAttribute('data-ai-dream-dot')), direction)
+                const targetNode = all.find(node => Number(node.getAttribute('data-ai-dream-dot')) === targetTurn)
+                if (targetNode) {
+                  if (typeof targetNode.focus === 'function') targetNode.focus()
+                  setDotFocusTurn(targetTurn)
+                }
+              },
               style: {
                 width: 24,
                 height: 24,
@@ -1779,9 +1845,11 @@ window.__ModuleLoader__.load({
               fontWeight: 500,
               borderRadius: 999,
               padding: '3px 10px',
+              minHeight: 24,
               fontSize: 11,
               font: 'inherit',
               cursor: 'pointer',
+              'aria-keyshortcuts': 'Escape',
             },
           }, '回看 · 第 ' + String(topTurn) + ' 轮 · 回到最新')
         } else if (calibrationNote) {
@@ -1846,14 +1914,16 @@ window.__ModuleLoader__.load({
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            height: 22,
+            height: 24,
             pointerEvents: hintContent ? 'auto' : 'none',
           },
         }, hintContent))
         if (dots.length) {
           bottomRows.push(h('div', {
             key: 'dots',
-            role: 'group',
+            'data-ai-dream-dots': '1',
+            role: 'toolbar',
+            'aria-orientation': 'horizontal',
             'aria-label': '最近几轮情绪，点击回看',
             style: { display: 'flex', gap: 2, justifyContent: 'center', alignItems: 'center', pointerEvents: 'auto' },
           }, dots))
@@ -1873,6 +1943,18 @@ window.__ModuleLoader__.load({
         },
           h(MoodView, { model, revision: revision.current + bump }),
           h(SignatureBadge, { chips: signatureList }),
+          h('div', {
+            role: 'status',
+            'aria-live': 'polite',
+            style: {
+              position: 'absolute',
+              width: 1,
+              height: 1,
+              overflow: 'hidden',
+              clip: 'rect(0 0 0 0)',
+              whiteSpace: 'nowrap',
+            },
+          }, showingReplayHint ? '回看 · 第 ' + String(topTurn) + ' 轮' : ''),
           bottomRows.length
             ? h('div', {
               'data-ai-dream-stack': '1',

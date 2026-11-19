@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.17.0 — 2026-11-18
+
+- Keyboard accessibility (GUI-verified): the dot row is now `role="toolbar"` with `aria-orientation` and roving tabindex (one Tab stop); ArrowLeft/ArrowRight/Home/End move focus inside the group without jumping; Enter/Space still jump. Focus rings use a two-tone outline (white 2px + dark halo) so they stay visible over bright glow cores.
+- Esc now returns from replay to live (scoped: ignored while typing/composing or with the signature panel open); the replay capsule advertises `aria-keyshortcuts="Escape"`, and a polite live region announces 「回看 · 第 N 轮」 for screen readers.
+- Layout/a11y polish: the reserved hint row is 24px (`TIMELINE_LAYOUT.hintReservedHeight`, unit-tested) and the replay capsule has a 24px minimum height.
+- Replay robustness: "回到最新" only finishes after the bottom has held for 1.5s, so lazy-load gaps can no longer bring the replay hint back.
+
 ## 1.16.0 — 2026-11-18
 
 - Streaming expressions (part 1): while the assistant is still writing a ```canvas fence, the canvas now folds the unterminated block as a partial mood and glides towards it, so the glow starts moving before the JSON finishes. The completed fence replaces the preview seamlessly.
