@@ -16,6 +16,7 @@ import {
   calibrationSnippet,
   clamp,
   cut,
+  expressionTier,
   extractPartialCanvas,
   formLabel,
   hexColor,
@@ -28,6 +29,8 @@ import {
   normalizeMood,
   parsePartialMood,
   pick,
+  planExpressionV3,
+  resolveCapabilities,
   resolveColors,
   sentinelSelector,
   signatureChips,
@@ -260,6 +263,100 @@ assert.equal(nextDotTurn([10, 11, 12], 11, 'previous'), 10)
 assert.equal(nextDotTurn([10, 11, 12], 12, 'home'), 10)
 assert.equal(nextDotTurn([10, 11, 12], 10, 'end'), 12)
 assert.equal(nextDotTurn([10, 11, 12], 99, 'next'), 10, 'unknown turns start at the first dot')
+
+// --- protocol v3 planner (open vocabulary, safe degradation) -----------------
+{
+  const fixtures = ['minimal', 'lyrical', 'geometric', 'symbolic', 'wild']
+  const loaded = {}
+  for (const name of fixtures) {
+    const file = new URL(`../examples/v3/${name}.json`, import.meta.url)
+    loaded[name] = JSON.parse(fs.readFileSync(file, 'utf8'))
+  }
+  assert.equal(expressionTier(loaded.minimal), 'L0')
+  assert.equal(expressionTier(loaded.lyrical), 'L2')
+  assert.equal(expressionTier(loaded.symbolic), 'L3')
+  assert.equal(expressionTier(loaded.wild), 'L3')
+
+  const minimal = planExpressionV3(loaded.minimal)
+  assert.equal(minimal.tier, 'L0')
+  assert.equal(minimal.layers.length, 0)
+  assert.equal(minimal.degradations.length, 0)
+
+  const lyrical = planExpressionV3(loaded.lyrical)
+  assert.equal(lyrical.tier, 'L2')
+  assert.equal(lyrical.layers.length, 3)
+  assert.ok(lyrical.variation > 0)
+  assert.equal(lyrical.layers[1].relations[0].type, 'echo')
+  assert.ok(lyrical.afterglow && lyrical.afterglow.hold > 0)
+
+  const geometric = planExpressionV3(loaded.geometric)
+  assert.equal(geometric.layers.length, 3)
+  assert.ok(geometric.layers[0].motion.rotate.speed > 0)
+
+  const symbolic = planExpressionV3(loaded.symbolic)
+  assert.equal(symbolic.tier, 'L3')
+  assert.equal(symbolic.layers[0].primitive, 'ring', 'known macro resolves to its primitive')
+  assert.ok(symbolic.degradations.some(item => item.reason === 'macro-missing'), 'unknown-rune degrades')
+  assert.equal(symbolic.layers[1].primitive, 'spiral', 'unknown macro uses its fallback')
+
+  const wild = planExpressionV3(loaded.wild)
+  assert.equal(wild.tier, 'L3')
+  assert.equal(wild.layers[0].primitive, 'blob', 'unknown primitive falls back to blob')
+  assert.ok(wild.degradations.some(item => item.reason === 'unknown-primitive'))
+  assert.ok(wild.keyframes && wild.keyframes.length === 3)
+  assert.equal(wild.layers.length, 8)
+  assert.ok(wild.layers[0].motion.flicker.rate <= 3, 'flicker is capped for photosensitivity')
+
+  // planner never throws on junk and always yields a visible fallback
+  for (const junk of [null, undefined, 'text', 42, [], {}, { kind: 'cards' }, { palette: 'nope', layers: 'nope' }]) {
+    const planned = planExpressionV3(junk)
+    assert.equal(planned.tier, 'L0')
+    assert.ok(planned.palette && planned.palette.core, 'fallback palette is always present')
+  }
+
+  // malformed nested data is clamped, not fatal
+  const harsh = planExpressionV3({
+    kind: 'mood',
+    intensity: 5,
+    variation: 9,
+    seed: -3,
+    layers: Array.from({ length: 12 }, (_, index) => ({
+      primitive: index === 0 ? 'particles' : 'blob',
+      count: 99,
+      size: -4,
+      opacity: 7,
+      motion: { flicker: { rate: 9, depth: 9 }, bogusMotion: {} },
+      relations: [{ type: 'follow', target: 99 }, { type: 'bogus', target: 0 }],
+    })),
+  })
+  assert.equal(harsh.tier, 'L2')
+  assert.equal(harsh.layers.length, 8, 'layer budget is enforced')
+  assert.equal(harsh.intensity, 1)
+  assert.equal(harsh.variation, 1)
+  assert.equal(harsh.seed, 0)
+  assert.ok(harsh.degradations.some(item => item.reason === 'layer-limit'))
+  assert.ok(harsh.layers.every(layer => layer.opacity <= 1 && layer.size >= 0))
+  assert.ok(harsh.layers.every(layer => layer.motion.flicker.rate <= 3))
+  assert.ok(harsh.degradations.some(item => item.reason === 'unknown-motion'))
+  assert.ok(harsh.degradations.some(item => item.reason === 'unknown-relation'))
+  assert.ok(harsh.degradations.some(item => item.reason === 'relation-target'))
+
+  // capabilities negotiation: a weak renderer still gets something visible
+  const weak = resolveCapabilities({ primitives: ['blob'], motions: ['breath'], relations: [], features: [] })
+  const weakPlan = planExpressionV3(loaded.symbolic, weak)
+  assert.ok(weakPlan.layers.length > 0)
+  assert.ok(weakPlan.layers.every(layer => layer.primitive === 'blob'))
+  assert.equal(weakPlan.tier, 'L2')
+  const noVariation = planExpressionV3(loaded.lyrical, resolveCapabilities({ features: ['macros'] }))
+  assert.equal(noVariation.variation, 0)
+  assert.ok(noVariation.degradations.some(item => item.reason === 'variation-unsupported'))
+  assert.equal(noVariation.afterglow, null)
+
+  // keyframes must contain at least two usable frames
+  const single = planExpressionV3({ kind: 'mood', keyframes: [{ at: 0, values: { scale: 1 } }] })
+  assert.equal(single.keyframes, null)
+  assert.ok(single.degradations.some(item => item.reason === 'keyframes-insufficient'))
+}
 
 // --- signature viewer chips ---------------------------------------------------
 {

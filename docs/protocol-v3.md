@@ -77,7 +77,7 @@ macro 只能引用已注册原语与参数，不能执行代码；嵌套 macro �
 
 ## 6. 能力协商与降级矩阵
 
-渲染器声明：`{"protocol":3,"primitives":[...],"motions":[...],"features":["variation","macros","keyframes","relationships"],"limits":{...}}`。表达式可写 `requires`。
+渲染器声明：`{"protocol":3,"primitives":[...],"motions":[...],"features":["variation","macros","keyframes","relationships","afterglow"],"limits":{...}}`。表达式可写 `requires`。
 
 | 情况 | 行为 | 保底 |
 |---|---|---|
@@ -108,3 +108,11 @@ v3 主版本；字段只增不删；未知字段忽略；未知枚举走降级�
 5. `wild.json` —— **故意使用未注册 primitive 名 + keyframes + 极端参数**，验证"不认识也能降级渲染、程序不崩"。
 
 CI 校验 schema、合法引用与降级期望；渲染截图在 GUI 轮次补齐。
+
+## 9. 实现状态
+
+- **规划器（已实现，v1.23.0）**：`renderer/core.mjs` 的 `resolveCapabilities` / `resolvePrimitive` / `normalizeMotionV3` / `normalizeKeyframesV3` / `normalizeLayerV3` / `expressionTier` / `degradeToL0` / `planExpressionV3`；
+  - 输出 `{tier, tierRequested, palette, intensity, layers, macros, keyframes, seed, variation, afterglow, transition, degradations}`；
+  - 保证不抛错：任何非法/超限输入都会被夹紧、降级并记录 `degradations`，最差回落 L0 光晕；
+  - 单测覆盖五个风格 fixtures、能力协商（弱渲染器 / 无 variation / 无 afterglow）、层/粒子/闪烁上限、非法 keyframes、junk 输入等（`scripts/check-renderer-core.mjs`）。
+- **渲染器接入（下一步）**：客户端把 `layers/macros/keyframes/transform/mask/relations` 变成 DOM+CSS 动画；MCP schema 同步；GUI 截图。

@@ -66,6 +66,7 @@
 ## 协议 v3 循环（进行中）
 
 - 轮 1（v1.22.0）：v3 设计口径落地——开放词汇表（primitive/form/motion 任意名字、macro、keyframes、transform/mask/relations/grain/gloss/direction、seed/variation/afterglow/uneven/hold）、程序不崩硬边界（层数/粒子/元素上限、仅 transform/opacity、闪烁 ≤3Hz、reduced-motion、异常回落 L0）、能力协商与降级矩阵；机器契约 `docs/protocol-v3.schema.json` + 五份风格样例 + CI 校验 `check-protocol-v3.mjs`。
+- 轮 2（v1.23.0）：规划器实现 `planExpressionV3` 及配套纯函数（能力协商/原语降级/参数夹紧/keyframes/关系/预算/闪烁上限），永不抛错、最差回落 L0；单测覆盖五份 fixtures + 弱渲染器 + 非法输入 + 预算超限。
 
 ## GUI 自测运行方法（本地，不随仓库发布）
 

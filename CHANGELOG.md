@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.23.0 — 2026-11-18
+
+- Protocol v3 planner implemented in `renderer/core.mjs`: `planExpressionV3` resolves capabilities, maps unknown vocabulary through `fallback` → name-similarity → `blob`, applies the fallback chain for macros, clamps every parameter, enforces the safety envelope (layers/particles/animated budget, flicker ≤ 3 Hz), normalizes keyframes/motion/relations and records every degradation. It never throws: junk input degrades to a visible L0 glow.
+- Helpers `resolveCapabilities`, `resolvePrimitive`, `normalizeMotionV3`, `normalizeKeyframesV3`, `normalizeLayerV3`, `expressionTier`, `degradeToL0` exported and covered by unit tests; the five cross-style fixtures (`examples/v3/*.json`) are planned against defaults and against a deliberately weak renderer, proving graceful degradation (e.g. unknown macro → fallback → blob, variation/afterglow removed when unsupported).
+
 ## 1.22.0 — 2026-11-18
 
 - Protocol v3 foundation (docs + machine contract, renderer comes in later rounds): layered expression L0–L3 with an **open vocabulary** — `primitive`/`form`/`motion` names are free strings, unknown names degrade to `fallback` → name-similarity → `blob`; `macros` let an AI define its own composite primitives; `keyframes`, `transform`, `mask`, `relations` (follow/converge/split/echo), `grain`/`gloss`, `direction`, `seed`/`variation`, `afterglow`, `uneven`/`hold` are all part of the expression.

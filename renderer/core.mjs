@@ -194,8 +194,414 @@ export function calibrationSnippet(bias) {
   }
 }
 
-/** Copy for the empty/waiting state (no expression yet). */
-export const EMPTY_STATE = Object.freeze({
+// ---------------------------------------------------------------- protocol v3
+// Open-vocabulary expressions: anything can be named, nothing may crash. The
+// planner clamps values, resolves unknown vocabulary through a fallback chain,
+// enforces the safety envelope and records every degradation.
+
+export const V3_LIMITS = Object.freeze({
+  layers: 8,
+  layerCount: 6,
+  particles: 800,
+  animatedElements: 1200,
+  blurPx: 96,
+  durationMs: 60000,
+  flickerHz: 3,
+})
+
+export const V3_KNOWN_PRIMITIVES = Object.freeze(['blob', 'ring', 'band', 'spiral', 'lines', 'haze', 'particles', 'macro'])
+export const V3_KNOWN_MOTIONS = Object.freeze(['breath', 'drift', 'rotate', 'wobble', 'flicker', 'uneven', 'hold', 'afterglow', 'follow', 'converge', 'split', 'echo'])
+export const V3_KNOWN_RELATIONS = Object.freeze(['follow', 'converge', 'split', 'echo'])
+export const V3_KNOWN_MOTION_FIELDS = Object.freeze(['speed', 'amplitude', 'rhythm'])
+
+export const V3_DEFAULT_CAPABILITIES = Object.freeze({
+  protocol: 3,
+  primitives: V3_KNOWN_PRIMITIVES,
+  motions: V3_KNOWN_MOTIONS,
+  relations: V3_KNOWN_RELATIONS,
+  features: Object.freeze(['variation', 'macros', 'keyframes', 'relationships', 'afterglow']),
+  limits: V3_LIMITS,
+})
+
+const V3_FAMILY_HINTS = ['ring', 'spiral', 'blob', 'haze', 'particles', 'lines', 'band']
+const clamp01 = value => (typeof value === 'number' && Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : null)
+const clampRange = (value, min, max, fallback) => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
+  return Math.min(max, Math.max(min, value))
+}
+
+/** Merge declared capabilities over the defaults (unknown lists fall back). */
+export function resolveCapabilities(declared) {
+  const source = declared && typeof declared === 'object' ? declared : {}
+  const limits = Object.assign({}, V3_LIMITS, source.limits && typeof source.limits === 'object' ? source.limits : {})
+  return {
+    protocol: Number.isFinite(source.protocol) ? source.protocol : 3,
+    primitives: Array.isArray(source.primitives) ? source.primitives : V3_KNOWN_PRIMITIVES,
+    motions: Array.isArray(source.motions) ? source.motions : V3_KNOWN_MOTIONS,
+    relations: Array.isArray(source.relations) ? source.relations : V3_KNOWN_RELATIONS,
+    features: Array.isArray(source.features) ? source.features : V3_DEFAULT_CAPABILITIES.features,
+    limits,
+  }
+}
+
+function guessFamily(name) {
+  const text = String(name || '').toLowerCase()
+  for (const hint of V3_FAMILY_HINTS) {
+    if (text.includes(hint)) return hint
+  }
+  return 'blob'
+}
+
+/** Resolve one primitive through fallback → name similarity → blob. */
+export function resolvePrimitive(layer, capabilities, macros, depth = 0) {
+  const caps = resolveCapabilities(capabilities)
+  const raw = layer && typeof layer.primitive === 'string' ? layer.primitive.trim() : ''
+  const notes = []
+  const known = primitive => caps.primitives.indexOf(primitive) >= 0
+  if (known(raw)) {
+    if (raw !== 'macro') return { primitive: raw, notes }
+    const name = layer && typeof layer.name === 'string' ? layer.name : ''
+    const macro = macros && macros[name]
+    if (macro && depth < 2) {
+      const inner = resolvePrimitive(macro, caps, macros, depth + 1)
+      return { primitive: inner.primitive, notes: inner.notes.concat(inner.primitive !== 'macro' ? [] : [{ reason: 'macro-depth', name }]), macro: macro }
+    }
+    notes.push({ reason: macro ? 'macro-depth' : 'macro-missing', name })
+    const fallback = layer && typeof layer.fallback === 'string' ? layer.fallback : ''
+    const resolved = known(fallback) && fallback !== 'macro' ? fallback : guessFamily(name)
+    return { primitive: resolved, notes }
+  }
+  notes.push({ reason: 'unknown-primitive', name: raw })
+  const fallback = layer && typeof layer.fallback === 'string' ? layer.fallback : ''
+  if (known(fallback) && fallback !== 'macro') {
+    notes.push({ reason: 'fallback', from: raw, to: fallback })
+    return { primitive: fallback, notes }
+  }
+  const guessed = guessFamily(raw || (layer && layer.name))
+  notes.push({ reason: 'similarity', from: raw, to: guessed })
+  return { primitive: guessed, notes }
+}
+
+function normalizeMotionValue(primitive, value) {
+  if (!value || typeof value !== 'object') return {}
+  const out = {}
+  if (primitive === 'flicker') {
+    out.rate = clampRange(value.rate, 0.5, V3_LIMITS.flickerHz, 1.6)
+    out.depth = clampRange(value.depth, 0, 0.4, 0.1)
+    return out
+  }
+  if (primitive === 'hold') {
+    out.holdSeconds = clampRange(value.holdSeconds, 0.5, 20, 2)
+    return out
+  }
+  if (primitive === 'afterglow') {
+    out.hold = clampRange(value.hold, 0, 10, 0)
+    out.decay = clampRange(value.decay, 0.5, 20, 6)
+    return out
+  }
+  if (primitive === 'uneven') {
+    out.rate = clampRange(value.rate, 0.1, 4, 0.8)
+    out.clusters = clampRange(value.clusters, 2, 5, 3)
+    return out
+  }
+  for (const [key, child] of Object.entries(value)) {
+    if (typeof child === 'number' && Number.isFinite(child)) out[key] = Math.min(4, Math.max(-4, child))
+    else if (child && typeof child === 'object') {
+      const nested = {}
+      for (const [nestedKey, nestedValue] of Object.entries(child)) {
+        if (typeof nestedValue === 'number' && Number.isFinite(nestedValue)) nested[nestedKey] = Math.min(4, Math.max(-4, nestedValue))
+      }
+      out[key] = nested
+    }
+  }
+  return out
+}
+
+/** Normalize a motion block: known keys kept and clamped, unknown keys dropped. */
+export function normalizeMotionV3(motion, capabilities) {
+  const caps = resolveCapabilities(capabilities)
+  const notes = []
+  const out = {}
+  if (!motion || typeof motion !== 'object') return { motion: out, notes }
+  for (const [key, value] of Object.entries(motion)) {
+    if (V3_KNOWN_MOTION_FIELDS.indexOf(key) >= 0) {
+      if (key === 'speed') out.speed = clampRange(value, 0.2, 2, 1)
+      else if (key === 'amplitude') out.amplitude = clampRange(value, 0.1, 1, 0.5)
+      else if (key === 'rhythm' && typeof value === 'string') out.rhythm = value.slice(0, 24)
+      continue
+    }
+    if (V3_KNOWN_MOTIONS.indexOf(key) < 0 || caps.motions.indexOf(key) < 0) {
+      notes.push({ reason: 'unknown-motion', name: key })
+      continue
+    }
+    out[key] = normalizeMotionValue(key, value)
+  }
+  return { motion: out, notes }
+}
+
+/** Normalize keyframes: clamp time, sort, drop unusable frames, require >= 2. */
+export function normalizeKeyframesV3(keyframes) {
+  const notes = []
+  if (!Array.isArray(keyframes)) return { keyframes: null, notes }
+  const frames = []
+  for (const frame of keyframes.slice(0, 12)) {
+    if (!frame || typeof frame !== 'object') continue
+    const at = clamp01(frame.at)
+    if (at === null) continue
+    const values = {}
+    if (frame.values && typeof frame.values === 'object') {
+      for (const [key, value] of Object.entries(frame.values)) {
+        if (typeof value === 'number' && Number.isFinite(value)) values[key] = Math.min(10, Math.max(-10, value))
+      }
+    }
+    const easing = typeof frame.easing === 'string' ? frame.easing.slice(0, 32) : null
+    frames.push(easing ? { at, values, easing } : { at, values })
+  }
+  frames.sort((a, b) => a.at - b.at)
+  if (frames.length < 2) notes.push({ reason: 'keyframes-insufficient' })
+  return { keyframes: frames.length >= 2 ? frames : null, notes }
+}
+
+/** Normalize one layer (resolved primitive, clamped parameters, relations). */
+export function normalizeLayerV3(layer, index, capabilities, macros, layerTotal) {
+  const caps = resolveCapabilities(capabilities)
+  const notes = []
+  const source = layer && typeof layer === 'object' ? layer : {}
+  const resolved = resolvePrimitive(source, caps, macros)
+  notes.push.apply(notes, resolved.notes.map(note => Object.assign({ layer: index }, note)))
+  const out = {
+    primitive: resolved.primitive,
+    paletteSlot: typeof source.paletteSlot === 'string' ? source.paletteSlot : null,
+    count: Math.round(clampRange(source.count, 1, V3_LIMITS.layerCount, 1)),
+    size: clampRange(source.size, 0, 1, 0.5),
+    height: clampRange(source.height, 0, 1, 0.5),
+    thickness: clampRange(source.thickness, 0, 1, 0.08),
+    softness: clampRange(source.softness, 0, 1, 0.5),
+    opacity: clampRange(source.opacity, 0, 1, 0.7),
+    angle: clampRange(source.angle, -180, 180, 0),
+    offset: [0, 0],
+    blend: typeof source.blend === 'string' ? source.blend : 'normal',
+    grain: clampRange(source.grain, 0, 1, 0),
+    gloss: clampRange(source.gloss, 0, 1, 0),
+    direction: typeof source.direction === 'string' ? source.direction : null,
+    fromMacro: Boolean(resolved.macro),
+  }
+  if (Array.isArray(source.offset) && source.offset.length === 2) {
+    out.offset = [clampRange(source.offset[0], -1, 1, 0), clampRange(source.offset[1], -1, 1, 0)]
+  }
+  if (source.transform && typeof source.transform === 'object') {
+    const transform = {}
+    if (Number.isFinite(source.transform.scale)) transform.scale = clampRange(source.transform.scale, 0.05, 4, 1)
+    if (Number.isFinite(source.transform.rotate)) transform.rotate = clampRange(source.transform.rotate, -180, 180, 0)
+    if (Number.isFinite(source.transform.skew)) transform.skew = clampRange(source.transform.skew, -45, 45, 0)
+    if (Array.isArray(source.transform.translate) && source.transform.translate.length === 2) {
+      transform.translate = [
+        clampRange(source.transform.translate[0], -1, 1, 0),
+        clampRange(source.transform.translate[1], -1, 1, 0),
+      ]
+    }
+    out.transform = transform
+  }
+  if (source.mask && typeof source.mask === 'object') {
+    out.mask = {
+      type: typeof source.mask.type === 'string' ? source.mask.type.slice(0, 24) : 'radial',
+      softness: clampRange(source.mask.softness, 0, 1, 0.5),
+      angle: clampRange(source.mask.angle, -180, 180, 0),
+    }
+  }
+  const motion = normalizeMotionV3(source.motion, caps)
+  out.motion = motion.motion
+  notes.push.apply(notes, motion.notes.map(note => Object.assign({ layer: index }, note)))
+  const keyframes = normalizeKeyframesV3(source.keyframes)
+  out.keyframes = keyframes.keyframes
+  notes.push.apply(notes, keyframes.notes.map(note => Object.assign({ layer: index }, note)))
+  if (Array.isArray(source.relations)) {
+    out.relations = []
+    for (const relation of source.relations.slice(0, 3)) {
+      if (!relation || typeof relation !== 'object') continue
+      if (V3_KNOWN_RELATIONS.indexOf(relation.type) < 0 || caps.relations.indexOf(relation.type) < 0) {
+        notes.push({ layer: index, reason: 'unknown-relation', name: relation.type })
+        continue
+      }
+      const target = Number.isFinite(relation.target) ? Math.round(relation.target) : -1
+      if (target < 0 || target >= layerTotal) {
+        notes.push({ layer: index, reason: 'relation-target', target })
+        continue
+      }
+      out.relations.push({
+        type: relation.type,
+        target,
+        delay: clampRange(relation.delay, 0, 2, 0),
+        strength: clampRange(relation.strength, 0, 1, 0.5),
+      })
+    }
+  }
+  return { layer: out, notes }
+}
+
+/** Detect the highest tier the expression meaningfully uses. */
+export function expressionTier(expression) {
+  const source = expression && typeof expression === 'object' ? expression : {}
+  if (Array.isArray(source.macros) || (source.macros && typeof source.macros === 'object')) {
+    if (Array.isArray(source.layers) && source.layers.some(layer => layer && layer.primitive === 'macro')) return 'L3'
+  }
+  if (Array.isArray(source.keyframes) && source.keyframes.length >= 2) return 'L3'
+  if (Array.isArray(source.layers) && source.layers.length > 0) return 'L2'
+  if (typeof source.form === 'string' || (source.motion && typeof source.motion === 'object')) return 'L1'
+  return 'L0'
+}
+
+/** Minimum guaranteed expression: a visible L0 glow. */
+export function degradeToL0(expression) {
+  const source = expression && typeof expression === 'object' ? expression : {}
+  const palette = source.palette && typeof source.palette === 'object' ? source.palette : {}
+  const hex = value => (typeof value === 'string' && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value.trim()) ? value.trim().toLowerCase() : null)
+  return {
+    tier: 'L0',
+    name: typeof source.name === 'string' ? source.name.slice(0, 40) : '',
+    intensity: clampRange(source.intensity, 0.2, 1, 0.6),
+    palette: { base: hex(palette.base) || '#05070c', core: hex(palette.core) || '#cfe0ff' },
+    form: 'cloud',
+    motion: {},
+    layers: [],
+    macros: {},
+    seed: 0,
+    variation: 0,
+    afterglow: null,
+    keyframes: null,
+  }
+}
+
+/**
+ * Plan one v3 expression against renderer capabilities. Never throws: malformed
+ * input degrades to L0, over-budget input is clamped, unknown vocabulary is
+ * resolved and recorded. Returns normalized data plus degradation notes.
+ */
+export function planExpressionV3(expression, capabilities) {
+  const caps = resolveCapabilities(capabilities)
+  const degradations = []
+  try {
+    if (!expression || typeof expression !== 'object' || Array.isArray(expression)) {
+      return Object.assign(degradeToL0(null), { tierRequested: 'L0', degradations: [{ reason: 'not-an-object' }] })
+    }
+    const tierRequested = expressionTier(expression)
+    const planned = {
+      tier: tierRequested,
+      name: typeof expression.name === 'string' ? expression.name.slice(0, 40) : '',
+      intensity: clampRange(expression.intensity, 0.2, 1, 0.6),
+      palette: (() => {
+        const source = expression.palette && typeof expression.palette === 'object' ? expression.palette : {}
+        const hex = value => (typeof value === 'string' && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value.trim()) ? value.trim().toLowerCase() : null)
+        const spectrum = Array.isArray(source.spectrum) ? source.spectrum.map(hex).filter(Boolean).slice(0, 4) : []
+        return {
+          base: hex(source.base) || '#05070c',
+          core: hex(source.core) || '#cfe0ff',
+          tone: hex(source.tone) || null,
+          spectrum,
+        }
+      })(),
+      form: typeof expression.form === 'string' ? expression.form.slice(0, 40) : 'cloud',
+      transition: {
+        style: expression.transition && typeof expression.transition === 'object'
+          && ['soft', 'ripple', 'burst', 'dissolve', 'snap'].indexOf(expression.transition.style) >= 0
+          ? expression.transition.style
+          : 'soft',
+        speed: expression.transition && typeof expression.transition === 'object'
+          && ['slow', 'medium', 'fast'].indexOf(expression.transition.speed) >= 0
+          ? expression.transition.speed
+          : 'medium',
+      },
+      seed: Number.isFinite(expression.seed) ? Math.max(0, Math.round(expression.seed)) : 0,
+      variation: clampRange(expression.variation, 0, 1, 0),
+      afterglow: expression.afterglow && typeof expression.afterglow === 'object'
+        ? {
+          hold: clampRange(expression.afterglow.hold, 0, 10, 0),
+          decay: clampRange(expression.afterglow.decay, 0.5, 20, 6),
+        }
+        : null,
+      keyframes: null,
+      layers: [],
+      macros: {},
+    }
+    if (!caps.features.includes('variation') && planned.variation > 0) {
+      degradations.push({ reason: 'variation-unsupported' })
+      planned.variation = 0
+    }
+    if (planned.afterglow && !caps.features.includes('afterglow')) {
+      degradations.push({ reason: 'afterglow-unsupported' })
+      planned.afterglow = null
+    }
+    if (caps.features.includes('macros') && expression.macros && typeof expression.macros === 'object' && !Array.isArray(expression.macros)) {
+      for (const [name, macro] of Object.entries(expression.macros).slice(0, 12)) {
+        if (!macro || typeof macro !== 'object') continue
+        if (typeof name !== 'string' || name.length === 0 || name.length > 40) continue
+        const normalized = normalizeLayerV3(macro, 0, caps, {}, 1)
+        planned.macros[name] = normalized.layer
+      }
+    }
+    if (Array.isArray(expression.keyframes) && caps.features.includes('keyframes')) {
+      const keyframes = normalizeKeyframesV3(expression.keyframes)
+      planned.keyframes = keyframes.keyframes
+      degradations.push.apply(degradations, keyframes.notes)
+    } else if (Array.isArray(expression.keyframes)) {
+      degradations.push({ reason: 'keyframes-unsupported' })
+    }
+    if (Array.isArray(expression.layers) && expression.layers.length > 0) {
+      const sorted = expression.layers.slice(0, 12).map((layer, index) => ({ layer, index }))
+      sorted.sort((a, b) => {
+        const pa = a.layer && Number.isFinite(a.layer.priority) ? a.layer.priority : 5
+        const pb = b.layer && Number.isFinite(b.layer.priority) ? b.layer.priority : 5
+        return pa === pb ? a.index - b.index : pa - pb
+      })
+      let kept = sorted
+      if (kept.length > caps.limits.layers) {
+        degradations.push({ reason: 'layer-limit', from: kept.length, to: caps.limits.layers })
+        kept = kept.slice(0, caps.limits.layers)
+      }
+      let macroUsed = false
+      for (const entry of kept) {
+        const normalized = normalizeLayerV3(entry.layer, planned.layers.length, caps, planned.macros, kept.length)
+        if (normalized.layer.fromMacro) macroUsed = true
+        planned.layers.push(normalized.layer)
+        degradations.push.apply(degradations, normalized.notes)
+      }
+      let particles = 0
+      for (const layer of planned.layers) {
+        if (layer.primitive === 'particles') particles += layer.count
+      }
+      if (particles > caps.limits.particles) {
+        degradations.push({ reason: 'particle-limit', from: particles, to: caps.limits.particles })
+        const scale = caps.limits.particles / particles
+        for (const layer of planned.layers) {
+          if (layer.primitive === 'particles') layer.count = Math.max(1, Math.floor(layer.count * scale))
+        }
+      }
+      const animated = planned.layers.reduce((sum, layer) => sum + (layer.motion && Object.keys(layer.motion).length > 0 ? layer.count : 0), 0)
+      if (animated > caps.limits.animatedElements) {
+        degradations.push({ reason: 'animated-limit', from: animated, to: caps.limits.animatedElements })
+      }
+      if (planned.layers.length === 0) {
+        return Object.assign(degradeToL0(expression), { tierRequested, degradations })
+      }
+      planned.tier = planTierFromData(expression, planned, macroUsed)
+    } else if (tierRequested === 'L3') {
+      planned.tier = 'L3'
+    }
+    return Object.assign(planned, { tierRequested, degradations })
+  } catch (error) {
+    return Object.assign(degradeToL0(expression), {
+      tierRequested: 'L0',
+      degradations: [{ reason: 'planner-exception', message: String(error && error.message || error) }],
+    })
+  }
+}
+
+function planTierFromData(expression, planned, macroUsed) {
+  if (macroUsed || (planned.keyframes && planned.keyframes.length >= 2)) return 'L3'
+  return 'L2'
+}
+
+/** Copy for the empty/waiting state (no expression yet). */export const EMPTY_STATE = Object.freeze({
   title: '还没有感受可以成形状',
   hint: '发送消息后画布会亮起',
   intensity: 0.2,
