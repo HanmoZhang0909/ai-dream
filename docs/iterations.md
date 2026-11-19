@@ -37,6 +37,7 @@
 - 流式表达第一部分（v1.16.0）：未闭合 canvas 块按 partial mood 渐进预览并平滑过渡到完整模型；`extractPartialCanvas`/`parsePartialMood` 纯函数 + 单测 + 纹理断言；GUI 回归全绿。
 - 键盘/读屏（v1.17.0）：圆点 toolbar + roving tabindex + 方向键/Home/End、Esc 退出回看（输入法/输入框/词表面板感知）、aria-live 播报、双色 focus 环、提示行 24px；「回到最新」改为底部保持 1.5s 才结束 pin；GUI 断言方向键/Home/End/Esc 与完整回看流。
 - 天气形态（v1.18.0）：协议 v2.1 追加 `rain`/`fog`（向后兼容），词表用中文形态名标注；`formLabel`/`FORM_LABELS` 单测 + MCP manifest 枚举同步；GUI 用 `__AI_DREAM_FORCE_FORM` 渲染并截图，第一版过暗后补光核与 alpha 修正。
+- README 截图（v1.19.0）：用 GUI 自测产生的真实界面图（实时/空态/雨/回看）缩小入库并写进中英 README；这些图以后每次 UI 大改需要重拍。
 
 ## 剩余待办（需要用户或后续轮次）
 

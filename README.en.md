@@ -71,6 +71,19 @@ Notes:
 - **Weather forms**: besides cloud/ring/streak/spiral the AI can now use `rain` (fine diagonal threads) and `fog` (a wide, vertically fading haze) — protocol v2.1, additive and backward compatible.
 - **To turn it off**: disable `dsh-ai-dream` on the Plugins page; the injected prompt section goes with it.
 
+## Screenshots
+
+Real screenshots from automated GUI self-tests (the right pane is the Dream canvas; it changes with the session's emotions):
+
+<p>
+  <img src="docs/screenshot-live.png" alt="Live expression" width="48%">
+  <img src="docs/screenshot-empty.png" alt="Waiting state" width="48%">
+</p>
+<p>
+  <img src="docs/screenshot-rain.png" alt="Weather form: rain" width="48%">
+  <img src="docs/screenshot-replay.png" alt="Replaying one turn" width="48%">
+</p>
+
 ## Troubleshooting
 
 | Symptom | Fix |

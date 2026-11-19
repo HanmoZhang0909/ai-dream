@@ -77,6 +77,19 @@
 - **天气形态**：除了云/环/带/旋，AI 还可以用「雨」（斜向细光丝）和「雾」（宽而上下渐隐的雾带）来表达低落的细密感或说不清的弥漫感（协议 v2.1 追加，向后兼容）。
 - **想让它停下来**：在插件页禁用 `dsh-ai-dream` 即可，注入的提示词也会一起移除。
 
+## 界面预览
+
+真实运行截图（右侧为 Dream 画布，来自自动化 GUI 自测；界面会随会话情绪变化）：
+
+<p>
+  <img src="docs/screenshot-live.png" alt="实时表达" width="48%">
+  <img src="docs/screenshot-empty.png" alt="还没有表达时" width="48%">
+</p>
+<p>
+  <img src="docs/screenshot-rain.png" alt="天气形态：雨" width="48%">
+  <img src="docs/screenshot-replay.png" alt="回看某一轮" width="48%">
+</p>
+
 ## 常见问题
 
 | 现象 | 处理 |

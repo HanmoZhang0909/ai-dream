@@ -24,6 +24,7 @@
 | `CHANGELOG.md` | 版本历史 | 每次发版 |
 | `docs/index.json` | 插件市场索引 | 每次发版（版本 + pinned commit） |
 | `docs/mcp-app.md` | MCP App（ChatGPT/Claude）移植说明 | 移植形态、宿主限制、验收清单变化 |
+| `docs/screenshot-*.png` | README 用的真实界面截图（由 GUI 自测生成、缩小后入库） | UI 大改后重拍 |
 | `docs/iterations.md` | 自主迭代记录（每轮增量 + 自测证据 + 工程经验） | 每轮结束后追加 |
 | `mcp/app-manifest.json` | 可移植的工具契约（`express_emotion`） | 协议字段/枚举/范围变化（CI 校验） |
 | `mcp/server.mjs` | stdio JSON-RPC MCP server（handler 纯函数） | 工具/资源/协议方法变化（CI 单测） |
@@ -74,5 +75,5 @@
 
 ## 当前状态
 
-- **最近发布**：`1.18.0` —— 天气形态扩展（雨/雾，协议 v2.1 追加）+ 词表中文形态标注；
+- **最近发布**：`1.19.0` —— README 加入真实界面截图（GUI 自测生成）；
 - **下一步**：见 `docs/iterations.md`「剩余待办」（MCP 真机验证需用户账号；流式第二部分、双向校准、分发宣传）。

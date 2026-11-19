@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.19.0 — 2026-11-18
+
+- README now shows real screenshots of the running panel (live expression, waiting state, weather form 「rain」, replay of a turn), captured by the automated GUI self-test and downscaled into `docs/screenshot-*.png`; both language READMEs get a Screenshots section.
+
 ## 1.18.0 — 2026-11-18
 
 - Weather forms (protocol v2.1, additive): `form` gains `rain` (fine diagonal light threads over a soft core) and `fog` (a wide, vertically fading haze with a much larger blur). Old renderers fall back to the default form, so v2 expressions stay compatible.
