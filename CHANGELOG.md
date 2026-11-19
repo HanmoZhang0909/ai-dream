@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.16.0 — 2026-11-18
+
+- Streaming expressions (part 1): while the assistant is still writing a ```canvas fence, the canvas now folds the unterminated block as a partial mood and glides towards it, so the glow starts moving before the JSON finishes. The completed fence replaces the preview seamlessly.
+- Pure helpers in `renderer/core.mjs`: `PARTIAL_MARK`, `extractPartialCanvas` (finds a trailing open fence, rejects closed ones), `parsePartialMood` (best-effort name/intensity/form/palette extraction from truncated JSON), with unit tests and client-copy parity assertions.
+- GUI regression stays green (signature viewer, calibration notes, waiting state, dots/jump/back); a live generation preview is covered by the pure tests because it needs real streaming output.
+
 ## 1.15.0 — 2026-11-18
 
 - Emotion signature viewer (GUI-verified): a low-contrast pill in the canvas top-right — 「情绪词表 · N」 — opens an anchored popover listing the emotions the AI defined for this session (colour dot + name, up to 12), with the panel title 「情绪签名」and the line 「AI 自己定义的情绪词表」. It also shows in the waiting state when a signature exists.

@@ -199,7 +199,52 @@ export function signatureChips(entries, limit = SIGNATURE_VIEW_LIMIT) {
   return chips
 }
 
-/** Interpolation time constant: how fast the glow glides to a new target. */
+/** Marker prefix for a streaming (unterminated) expression in the canvas feed. */
+export const PARTIAL_MARK = '\u0002'
+
+/**
+ * Find a trailing, still-open ```canvas fence in assistant text.
+ * Returns the partial body (without the opening fence line), or null.
+ */
+export function extractPartialCanvas(text) {
+  if (typeof text !== 'string' || text.length === 0) return null
+  const match = /^ {0,3}```canvas[^\n]*\n([\s\S]*)$/m.exec(text)
+  if (!match) return null
+  const body = match[1]
+  if (/^ {0,3}```/m.test(body)) return null
+  return body.slice(0, 20000)
+}
+
+/**
+ * Best-effort parse of a partial mood block so the canvas can follow the model
+ * while it is still writing. Returns raw fields or null when nothing usable.
+ */
+export function parsePartialMood(code) {
+  if (typeof code !== 'string' || code.trim().length === 0) return null
+  const nameMatch = /"name"\s*:\s*"([^"\\]{1,40})"/.exec(code)
+  const intensityMatch = /"intensity"\s*:\s*(-?\d+(?:\.\d+)?)/.exec(code)
+  const formMatch = /"form"\s*:\s*"([a-z]+)"/.exec(code)
+  const moodMatch = /"mood"\s*:\s*"([a-z]{1,20})"/.exec(code)
+  const palette = {}
+  for (const key of ['base', 'core', 'tone']) {
+    const match = new RegExp('"' + key + '"\\s*:\\s*"(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6})"').exec(code)
+    if (match) palette[key] = match[1].toLowerCase()
+  }
+  const hexes = Array.from(code.matchAll(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/g))
+    .map(match => '#' + match[1].toLowerCase())
+    .slice(0, 4)
+  if (!palette.core && hexes.length > 0) palette.core = hexes[0]
+  if (!palette.base && hexes.length > 1) palette.base = hexes[1]
+  const found = Boolean(nameMatch || intensityMatch || formMatch || moodMatch || palette.core || palette.base)
+  if (!found) return null
+  const partial = { kind: 'mood' }
+  if (nameMatch) partial.name = nameMatch[1]
+  if (moodMatch) partial.mood = moodMatch[1]
+  if (intensityMatch) partial.intensity = Number(intensityMatch[1])
+  if (formMatch && FORMS.indexOf(formMatch[1]) >= 0) partial.form = formMatch[1]
+  if (palette.core || palette.base || palette.tone) partial.palette = palette
+  return partial
+}
 export function tauFor(speed, style) {
   const base = speed === 'slow' ? 1600 : speed === 'fast' ? 380 : 900
   const factor = style === 'dissolve' ? 1.4 : style === 'burst' ? 0.45 : style === 'ripple' ? 0.9 : 1.1

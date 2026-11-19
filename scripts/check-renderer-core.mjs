@@ -6,6 +6,7 @@ import {
   CALIBRATION,
   EMPTY_STATE,
   FORMS,
+  PARTIAL_MARK,
   SIGNATURE_VIEW_LIMIT,
   TIMELINE_LAYOUT,
   TRANSITION_STYLES,
@@ -13,6 +14,7 @@ import {
   calibrationNoteFor,
   clamp,
   cut,
+  extractPartialCanvas,
   hexColor,
   hexToRgb,
   inReplayMode,
@@ -20,6 +22,7 @@ import {
   mixHex,
   nextCalibrationBias,
   normalizeMood,
+  parsePartialMood,
   pick,
   resolveColors,
   sentinelSelector,
@@ -185,6 +188,26 @@ assert.equal(isEmptyState(false), true)
 assert.equal(isEmptyState(true), false)
 assert.equal(isEmptyState(undefined), true)
 
+// --- streaming (partial) mood parsing ----------------------------------------
+assert.equal(extractPartialCanvas('no fence here'), null)
+assert.equal(extractPartialCanvas('```canvas\n{"kind":"mood"}\n```'), null, 'closed fences are not partial')
+assert.equal(extractPartialCanvas('x\n```canvas\n{"kind":"mood",'), '{"kind":"mood",', 'open fence body is partial')
+assert.equal(extractPartialCanvas('```canvas\n{"a":1}\n```\nafter'), null)
+
+{
+  const partial = parsePartialMood('{"kind":"mood","name":"被看穿","intensity":0.8,"form":"streak","palette":{"base":"#0B0A12","core":"#E8D9FF","tone":"#9A7AA6"')
+  assert.equal(partial.name, '被看穿')
+  assert.equal(partial.intensity, 0.8)
+  assert.equal(partial.form, 'streak')
+  assert.deepEqual(partial.palette, { base: '#0b0a12', core: '#e8d9ff', tone: '#9a7aa6' })
+  assert.equal(parsePartialMood('{"kind":"mood","name":"半句'), null)
+  assert.equal(parsePartialMood('{"kind":"mood","intensity":0.5').intensity, 0.5)
+  assert.equal(parsePartialMood('{"kind":"mood","form":"weather"').form, undefined, 'unknown forms are ignored')
+  assert.equal(parsePartialMood('{"kind":"mood","palette":{"core":"#abc"}').palette.core, '#abc')
+  assert.equal(parsePartialMood(''), null)
+  assert.equal(parsePartialMood('{"kind":"mood"'), null, 'kind alone is not enough to preview')
+}
+
 // --- signature viewer chips ---------------------------------------------------
 {
   const entries = [
@@ -256,6 +279,9 @@ assert.equal(isEmptyState(undefined), true)
   assert.ok(client.includes('data-ai-dream-signature-btn'), 'client keeps the signature pill hook')
   assert.ok(client.includes('data-ai-dream-signature-panel'), 'client keeps the signature panel hook')
   assert.ok(client.includes('情绪词表'), 'client keeps the user-facing signature wording')
+  assert.ok(client.includes('PARTIAL_MARK'), 'client keeps the streaming marker')
+  assert.ok(client.includes('extractPartialCanvas'), 'client keeps the partial fence extractor')
+  assert.ok(client.includes('parsePartialMood'), 'client keeps the partial mood parser')
 }
 
 console.log('renderer core checks OK')

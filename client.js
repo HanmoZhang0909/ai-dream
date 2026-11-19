@@ -473,6 +473,46 @@ window.__ModuleLoader__.load({
     // a cheap, stable string for useChat selectors.
     const FEED_SEP = '\n\u0000\n'
 
+    // Streaming (v1.16): an unterminated ```canvas fence is folded as a partial
+    // mood so the canvas follows the model while it is still writing.
+    const PARTIAL_MARK = '\u0002'
+
+    function extractPartialCanvas(text) {
+      if (typeof text !== 'string' || text.length === 0) return null
+      const match = /^ {0,3}```canvas[^\n]*\n([\s\S]*)$/m.exec(text)
+      if (!match) return null
+      const body = match[1]
+      if (/^ {0,3}```/m.test(body)) return null
+      return body.slice(0, 20000)
+    }
+
+    function parsePartialMood(code) {
+      if (typeof code !== 'string' || code.trim().length === 0) return null
+      const nameMatch = /"name"\s*:\s*"([^"\\]{1,40})"/.exec(code)
+      const intensityMatch = /"intensity"\s*:\s*(-?\d+(?:\.\d+)?)/.exec(code)
+      const formMatch = /"form"\s*:\s*"([a-z]+)"/.exec(code)
+      const moodMatch = /"mood"\s*:\s*"([a-z]{1,20})"/.exec(code)
+      const palette = {}
+      for (const key of ['base', 'core', 'tone']) {
+        const match = new RegExp('"' + key + '"\\s*:\\s*"(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6})"').exec(code)
+        if (match) palette[key] = match[1].toLowerCase()
+      }
+      const hexes = Array.from(code.matchAll(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/g))
+        .map(match => '#' + match[1].toLowerCase())
+        .slice(0, 4)
+      if (!palette.core && hexes.length > 0) palette.core = hexes[0]
+      if (!palette.base && hexes.length > 1) palette.base = hexes[1]
+      const found = Boolean(nameMatch || intensityMatch || formMatch || moodMatch || palette.core || palette.base)
+      if (!found) return null
+      const partial = { kind: 'mood' }
+      if (nameMatch) partial.name = nameMatch[1]
+      if (moodMatch) partial.mood = moodMatch[1]
+      if (intensityMatch) partial.intensity = Number(intensityMatch[1])
+      if (formMatch && ['cloud', 'ring', 'streak', 'spiral'].indexOf(formMatch[1]) >= 0) partial.form = formMatch[1]
+      if (palette.core || palette.base || palette.tone) partial.palette = palette
+      return partial
+    }
+
     /**
      * Selector: every ```canvas fence in the loaded transcript, in order.
      * `define` blocks can appear in any turn, so the canvas tab folds the whole
@@ -481,6 +521,7 @@ window.__ModuleLoader__.load({
     function canvasFeed(snapshot) {
       if (!snapshot) return null
       const codes = []
+      let lastText = ''
 
       const store = snapshot.nodes
       const order = snapshot.order
@@ -489,7 +530,9 @@ window.__ModuleLoader__.load({
           const node = store.get(order[index])
           if (!node || node.kind !== 'assistant-step' || !node.data) continue
           const turn = typeof node.data.turn === 'number' ? node.data.turn : ''
-          for (const code of canvasFences(blocksText(node.data.blocks))) codes.push(turn + '\u0001' + code)
+          const text = blocksText(node.data.blocks)
+          lastText = text
+          for (const code of canvasFences(text)) codes.push(turn + '\u0001' + code)
         }
       }
 
@@ -497,14 +540,21 @@ window.__ModuleLoader__.load({
       if (Array.isArray(legacyNodes)) {
         for (const node of legacyNodes) {
           if (!node || node.kind !== 'assistant') continue
-          for (const code of canvasFences(blocksText(node.blocks))) codes.push('\u0001' + code)
+          const text = blocksText(node.blocks)
+          lastText = text
+          for (const code of canvasFences(text)) codes.push('\u0001' + code)
         }
       }
 
       const partial = snapshot.legacy && snapshot.legacy.partial
       if (partial) {
-        for (const code of canvasFences(blocksText(partial.blocks))) codes.push('\u0001' + code)
+        const text = blocksText(partial.blocks)
+        lastText = text
+        for (const code of canvasFences(text)) codes.push('\u0001' + code)
       }
+
+      const streamingText = extractPartialCanvas(lastText)
+      if (streamingText) codes.push(PARTIAL_MARK + streamingText)
 
       return codes.length ? codes.join(FEED_SEP) : null
     }
@@ -1430,6 +1480,17 @@ window.__ModuleLoader__.load({
           const turn = rawTurn === '' ? null : Number(rawTurn)
           if (turn !== null && Number.isFinite(turn)) {
             latestTurn = latestTurn === null ? turn : Math.max(latestTurn, turn)
+          }
+          if (code.charAt(0) === PARTIAL_MARK) {
+            const rawPartial = parsePartialMood(code.slice(1))
+            if (rawPartial) {
+              const partialModel = normalize(rawPartial)
+              if (partialModel && partialModel.kind === 'mood') {
+                parsedAny = true
+                latest = { ...partialModel, partial: true }
+              }
+            }
+            continue
           }
           const block = parseCanvas(code)
           if (!block) continue

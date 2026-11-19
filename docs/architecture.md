@@ -149,6 +149,13 @@ interface EmotionState {
 - 修改文件后需要重载插件（Host 加载时读取一次），配合同一文件目录里的签名持久化，形成"用户可调 + AI 自己定义"的双向校准；
 - 边界：只影响模型的表达倾向（提示词层），不改写历史表达；画布底部三按钮的即时偏置仍是纯客户端行为。
 
+### 4.6 流式表达（v1.16，第一部分）
+
+- `canvasFeed` 在扫描完所有完整 fence 后，检查最后一条 assistant 文本是否以未闭合的 ```canvas 块结尾（`extractPartialCanvas`），若是则追加一条带 `PARTIAL_MARK` 前缀的条目；
+- 折叠循环遇到 partial 条目时用 `parsePartialMood` 做尽力解析（name/mood/intensity/form/palette），经客户端 `normalize` 后作为 `latest` 预览（标记 `partial: true`，不写入 `turnModels`）；
+- 完整 fence 到达后，同一条目被替换，预览无缝过渡到正式模型；解析失败绝不报错（等待下一条消息）；
+- 局限：真实流式输出无法在 GUI 自测里稳定构造，因此这一层由 `extractPartialCanvas`/`parsePartialMood` 单测覆盖，GUI 回归确保完整路径不受影响。
+
 ## 5. 情绪时间轴（滚动回看，v1.1）
 
 **数据**：表达块已经在每条助手消息的文本里（`canvas` fence），因此**无需额外存储**——从 `ChatSnapshot` 中按 `messageId` 解析出该轮的表达规格即可。更早的历史需要 Host projection 分页加载（后续）。
