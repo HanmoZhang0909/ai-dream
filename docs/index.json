@@ -42,6 +42,18 @@
       },
       "versions": [
         {
+          "version": "1.21.2",
+          "publishTimestamp": 1794951600,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/HanmoZhang0909/ai-dream",
+            "commit": "a6f49876277e3b45ae1b88977030e4d34be39c40"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-rc.3"
+          }
+        },
+        {
           "version": "1.21.1",
           "publishTimestamp": 1794950400,
           "source": {
