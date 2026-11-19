@@ -6,6 +6,7 @@ import {
   CALIBRATION,
   EMPTY_STATE,
   FORMS,
+  SIGNATURE_VIEW_LIMIT,
   TIMELINE_LAYOUT,
   TRANSITION_STYLES,
   buildTimelineDots,
@@ -22,6 +23,7 @@ import {
   pick,
   resolveColors,
   sentinelSelector,
+  signatureChips,
   targetFrom,
   tauFor,
   timelineRowRects,
@@ -183,6 +185,26 @@ assert.equal(isEmptyState(false), true)
 assert.equal(isEmptyState(true), false)
 assert.equal(isEmptyState(undefined), true)
 
+// --- signature viewer chips ---------------------------------------------------
+{
+  const entries = [
+    { name: '专注', palette: { core: '#e8d9ff' } },
+    { name: '专注', palette: { core: '#111111' } },
+    { name: '  ', palette: {} },
+    { name: '调试紧', palette: { core: 'not-a-colour' } },
+    { name: '被看穿' },
+    null,
+  ]
+  const chips = signatureChips(entries)
+  assert.deepEqual(chips.map(chip => chip.name), ['专注', '调试紧', '被看穿'])
+  assert.equal(chips[0].core, '#e8d9ff')
+  assert.equal(chips[1].core, '#9a7aa6', 'invalid colours fall back to the default')
+  assert.equal(signatureChips('nope').length, 0)
+  assert.equal(signatureChips(entries, 1).length, 1)
+  const many = Array.from({ length: 20 }, (_, index) => ({ name: 'e' + index }))
+  assert.equal(signatureChips(many).length, SIGNATURE_VIEW_LIMIT)
+}
+
 // --- bottom stack layout invariants (overlap / hit-target bug class) ---------
 {
   assert.equal(TIMELINE_LAYOUT.dotHitSize >= 24, true, 'dot hit target must be at least 24px')
@@ -231,6 +253,9 @@ assert.equal(isEmptyState(undefined), true)
   assert.ok(client.includes('还没有感受可以成形状'), 'client keeps the empty-state title')
   assert.ok(client.includes('发送消息后画布会亮起'), 'client keeps the empty-state hint')
   assert.ok(client.includes('data-ai-dream-empty'), 'client keeps the empty-state hook')
+  assert.ok(client.includes('data-ai-dream-signature-btn'), 'client keeps the signature pill hook')
+  assert.ok(client.includes('data-ai-dream-signature-panel'), 'client keeps the signature panel hook')
+  assert.ok(client.includes('情绪词表'), 'client keeps the user-facing signature wording')
 }
 
 console.log('renderer core checks OK')

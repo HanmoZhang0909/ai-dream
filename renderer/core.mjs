@@ -171,6 +171,34 @@ export function isEmptyState(hasExpression) {
   return !hasExpression
 }
 
+/** Maximum chips shown by the signature viewer. */
+export const SIGNATURE_VIEW_LIMIT = 12
+
+/**
+ * Build the chips for the "emotion signature" viewer: name + core colour.
+ * Accepts signature entries with or without palettes and always returns stable,
+ * de-duplicated rows for the UI.
+ */
+export function signatureChips(entries, limit = SIGNATURE_VIEW_LIMIT) {
+  if (!Array.isArray(entries)) return []
+  const max = Number.isInteger(limit) && limit > 0 ? limit : SIGNATURE_VIEW_LIMIT
+  const seen = new Set()
+  const chips = []
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object') continue
+    const name = typeof entry.name === 'string' ? entry.name.trim() : ''
+    if (!name || seen.has(name)) continue
+    seen.add(name)
+    const palette = entry.palette && typeof entry.palette === 'object' ? entry.palette : {}
+    const core = typeof palette.core === 'string' && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(palette.core.trim())
+      ? palette.core.trim().toLowerCase()
+      : '#9a7aa6'
+    chips.push({ name, core })
+    if (chips.length >= max) break
+  }
+  return chips
+}
+
 /** Interpolation time constant: how fast the glow glides to a new target. */
 export function tauFor(speed, style) {
   const base = speed === 'slow' ? 1600 : speed === 'fast' ? 380 : 900

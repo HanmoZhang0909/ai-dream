@@ -236,6 +236,8 @@ window.__ModuleLoader__.load({
       const style = document.createElement('style')
       style.id = 'ai-dream-style'
       style.textContent = '@keyframes aiDreamEmptyPulse{0%,100%{opacity:.3}50%{opacity:.65}}'
+        + 'button[data-ai-dream-signature-btn]:focus-visible,button[data-ai-dream-signature-close]:focus-visible'
+        + '{outline:1px solid rgba(255,255,255,0.6) !important; outline-offset:2px}'
         + '@media (prefers-reduced-motion: reduce){[data-ai-dream-empty-ring]{animation:none !important}}'
       document.head.appendChild(style)
     }
@@ -1193,6 +1195,151 @@ window.__ModuleLoader__.load({
       )
     }
 
+    // Mirror of renderer/core.mjs signatureChips (unit-tested there).
+    const SIGNATURE_VIEW_LIMIT = 12
+
+    function signatureChips(entries, limit) {
+      const max = Number.isInteger(limit) && limit > 0 ? limit : SIGNATURE_VIEW_LIMIT
+      if (!Array.isArray(entries)) return []
+      const seen = new Set()
+      const chips = []
+      for (const entry of entries) {
+        if (!entry || typeof entry !== 'object') continue
+        const name = typeof entry.name === 'string' ? entry.name.trim() : ''
+        if (!name || seen.has(name)) continue
+        seen.add(name)
+        const palette = entry.palette && typeof entry.palette === 'object' ? entry.palette : {}
+        const core = typeof palette.core === 'string' && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(palette.core.trim())
+          ? palette.core.trim().toLowerCase()
+          : '#9a7aa6'
+        chips.push({ name, core })
+        if (chips.length >= max) break
+      }
+      return chips
+    }
+
+    /**
+     * "Emotion signature" viewer (v1.15): top-right pill that anchors a small
+     * popover listing the emotions the AI defined for this session.
+     */
+    function SignatureBadge(props) {
+      const chips = Array.isArray(props && props.chips) ? props.chips : []
+      const [open, setOpen] = React.useState(false)
+      const buttonRef = React.useRef(null)
+      const panelRef = React.useRef(null)
+      const panelId = 'ai-dream-signature-panel'
+
+      React.useEffect(() => {
+        if (!open || typeof document === 'undefined') return undefined
+        const onKey = event => {
+          if (event.key === 'Escape') setOpen(false)
+        }
+        const onPointer = event => {
+          const panel = panelRef.current
+          const button = buttonRef.current
+          if (panel && panel.contains(event.target)) return
+          if (button && button.contains(event.target)) return
+          setOpen(false)
+        }
+        document.addEventListener('keydown', onKey)
+        document.addEventListener('mousedown', onPointer, true)
+        const panel = panelRef.current
+        if (panel && typeof panel.focus === 'function') panel.focus()
+        return () => {
+          document.removeEventListener('keydown', onKey)
+          document.removeEventListener('mousedown', onPointer, true)
+        }
+      }, [open])
+
+      const close = () => {
+        setOpen(false)
+        if (buttonRef.current && typeof buttonRef.current.focus === 'function') buttonRef.current.focus()
+      }
+
+      if (chips.length === 0) return null
+      return h('div', { style: { position: 'absolute', top: 10, right: 10, zIndex: 5 } },
+        h('button', {
+          ref: buttonRef,
+          type: 'button',
+          'data-ai-dream-signature-btn': '1',
+          'aria-expanded': open ? 'true' : 'false',
+          'aria-controls': panelId,
+          'aria-label': '查看 AI 的情绪词表，共 ' + String(chips.length) + ' 个',
+          title: '查看 AI 自己定义的情绪词表',
+          onClick: () => setOpen(value => !value),
+          style: {
+            minHeight: 24,
+            padding: '2px 10px',
+            borderRadius: 999,
+            border: '0.5px solid rgba(255,255,255,0.18)',
+            background: 'rgba(4,6,12,0.72)',
+            color: '#c8d2e0',
+            fontSize: 11,
+            font: 'inherit',
+            cursor: 'pointer',
+          },
+        }, '情绪词表 · ' + String(chips.length)),
+        open
+          ? h('div', {
+            ref: panelRef,
+            id: panelId,
+            role: 'dialog',
+            tabIndex: -1,
+            'aria-label': 'AI 的情绪词表',
+            'data-ai-dream-signature-panel': '1',
+            style: {
+              position: 'absolute',
+              top: '100%',
+              right: 0,
+              marginTop: 6,
+              width: 220,
+              maxHeight: 260,
+              overflow: 'auto',
+              background: 'rgba(6,9,16,0.96)',
+              border: '0.5px solid rgba(255,255,255,0.2)',
+              borderRadius: 10,
+              padding: '10px 12px',
+              boxShadow: '0 6px 24px rgba(0,0,0,0.45)',
+              outline: 'none',
+            },
+          },
+          h('div', {
+            style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 },
+          },
+          h('div', { style: { color: '#e9f0ff', fontSize: 12, fontWeight: 600 } }, '情绪签名'),
+          h('button', {
+            type: 'button',
+            'data-ai-dream-signature-close': '1',
+            onClick: close,
+            'aria-label': '关闭情绪词表',
+            style: {
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              border: '0.5px solid rgba(255,255,255,0.2)',
+              background: 'transparent',
+              color: '#c8d2e0',
+              font: 'inherit',
+              cursor: 'pointer',
+            },
+          }, '✕')),
+          h('div', {
+            style: { color: '#8b96a6', fontSize: 10.5, lineHeight: 1.4, marginBottom: 8 },
+          }, 'AI 自己定义的情绪词表'),
+          h('div', { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+            chips.map(chip => h('div', {
+              key: chip.name,
+              'data-ai-dream-signature-chip': chip.name,
+              style: { display: 'flex', alignItems: 'center', gap: 8, color: '#dfe7f2', fontSize: 11.5 },
+            },
+            h('span', {
+              'aria-hidden': true,
+              style: { width: 8, height: 8, borderRadius: '50%', background: chip.core, flex: '0 0 auto' },
+            }),
+            h('span', null, chip.name)))))
+          : null)
+    }
+
     function CanvasBody(props) {
       const feed = props.useChat(canvasFeed)
       // Host-side emotion signature (v0.5) and runtime config (v0.6) projections.
@@ -1302,6 +1449,12 @@ window.__ModuleLoader__.load({
 
       const failed = feed != null && !timeline.parsedAny && shown.current == null
       const isEmpty = FORCE_EMPTY || (!shown.current && !failed)
+      // Signature chips: prefer the host projection, fall back to the cached/local map.
+      const signatureList = React.useMemo(() => {
+        const projected = wire && Array.isArray(wire.emotions) ? wire.emotions : []
+        if (projected.length > 0) return signatureChips(projected)
+        return signatureChips(Array.from(SIGNATURE.values()))
+      }, [wire])
       let baseModel = shown.current || (failed ? null : { ...MOOD_DEFAULT, intensity: CONFIG.defaultIntensity })
       // Replay mode: scrolled above the newest turn → show that turn's emotion,
       // falling back to the nearest earlier expressed turn.
@@ -1380,6 +1533,7 @@ window.__ModuleLoader__.load({
         h('div', {
           style: { position: 'absolute', inset: 0, opacity: 0.9 },
         }, h(MoodView, { model: waitingModel, revision: revision.current })),
+        h(SignatureBadge, { chips: signatureList }),
         h('div', {
           'data-ai-dream-empty-ring': '1',
           'aria-hidden': true,
@@ -1469,11 +1623,11 @@ window.__ModuleLoader__.load({
               scroll.scrollTop = scroll.scrollHeight
               const atEnd = scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 2
               stable = atEnd ? stable + 1 : 0
-              if (stable >= 2 || attempts >= 80) {
+              if (stable >= 2 || attempts >= 200) {
                 setTimeout(() => setReturning(false), 700)
                 return
               }
-              setTimeout(pin, 100)
+              setTimeout(pin, 60)
             }
             pin()
           } catch {
@@ -1657,6 +1811,7 @@ window.__ModuleLoader__.load({
           style: { height: '100%', background: BG, position: 'relative' },
         },
           h(MoodView, { model, revision: revision.current + bump }),
+          h(SignatureBadge, { chips: signatureList }),
           bottomRows.length
             ? h('div', {
               'data-ai-dream-stack': '1',

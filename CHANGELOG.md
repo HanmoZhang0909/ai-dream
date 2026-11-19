@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.15.0 — 2026-11-18
+
+- Emotion signature viewer (GUI-verified): a low-contrast pill in the canvas top-right — 「情绪词表 · N」 — opens an anchored popover listing the emotions the AI defined for this session (colour dot + name, up to 12), with the panel title 「情绪签名」and the line 「AI 自己定义的情绪词表」. It also shows in the waiting state when a signature exists.
+- Accessibility: `aria-expanded` / `aria-controls` / `role="dialog"` / `aria-label`, focus moves into the panel and returns to the pill, Esc and ✕ close it, clicking outside closes it, `:focus-visible` outlines, 24px targets.
+- `signatureChips` (de-dupe, invalid-colour fallback, 12-chip limit) lives in `renderer/core.mjs` with unit tests and a client-copy parity assertion; the GUI self-test asserts the pill label, chip names, focus, Esc and ✕ behaviour.
+- "回到最新" keeps pinning up to 12s (60ms cadence) for very long sessions so the replay hint no longer reappears mid-scroll.
+
 ## 1.14.0 — 2026-11-18
 
 - Waiting state (GUI-verified): when the session has no expression yet the canvas no longer shows a default "neutral" glow with calibration buttons. It now renders a dimmer, slower "sleeping" version of the same glow, a faint dashed breathing ring, and the copy 「还没有感受可以成形状」/「发送消息后画布会亮起」, with the dots and calibration controls hidden. `EMPTY_STATE` and `isEmptyState` live in `renderer/core.mjs` with unit tests.

@@ -65,6 +65,7 @@ Notes:
 - **First-run hint**: the first time the canvas opens it explains the dots and calibration buttons; dismiss with 知道了 or wait 5 seconds, then it never shows again.
 - **Canvas calibration**: the three buttons only tune the glow (不像 / 再强一点 / 再淡一点); each click shows a short note, the ±0.4 bound reports 「已到上限」, and it never changes the AI's replies.
 - **Before the first expression**: the canvas shows a smaller, slower "sleeping" glow with 「还没有感受可以成形状 / 发送消息后画布会亮起」; dots and calibration appear only after the AI expresses once.
+- **Emotion vocabulary**: the 「情绪词表 · N」 pill in the top-right opens the list of emotions this AI defined (colour dot + name); close it with Esc, ✕, or by clicking outside.
 - **To turn it off**: disable `dsh-ai-dream` on the Plugins page; the injected prompt section goes with it.
 
 ## Troubleshooting
