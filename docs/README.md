@@ -78,5 +78,5 @@
 
 ## 当前状态
 
-- **最近发布**：`1.26.0` —— MCP 工具契约同步协议 v3（开放词汇 + layers/macros/keyframes/relations，server 返回 tier/layers/degradations）；
-- **下一步**：补跑 GUI 截图（需新 token）→ iframe 渲染器支持 v3 层 → 文档收尾 → `v3.0.0`。
+- **最近发布**：`1.27.0` —— MCP iframe 渲染器支持 v3（层/遮罩/关系/关键帧/variation，探针含 tier/degradations，已用无头 Chrome 验证并截图）；
+- **下一步**：补跑 DSH GUI 截图（需新 token）→ 最终文档收尾 → `v3.0.0`。

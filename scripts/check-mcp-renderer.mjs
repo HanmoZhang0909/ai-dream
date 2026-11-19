@@ -15,7 +15,15 @@ function validateDump(stdout) {
   const match = String(stdout || '').match(/\{"ok":true[^<]*\}/)
   if (!match) return { problems: ['probe JSON missing from DOM'], probe: null }
   const probe = JSON.parse(match[0])
-  if (probe.protocol !== 2) problems.push('protocol must be 2')
+  if (probe.protocol === 3) {
+    if (probe.tier !== 'L2' && probe.tier !== 'L3') problems.push('v3 probe must report L2/L3, got ' + probe.tier)
+    if (!(probe.layers >= 1)) problems.push('v3 probe must report rendered layers')
+    if (!Array.isArray(probe.primitives) || probe.primitives.length !== probe.layers) problems.push('v3 probe primitives must match layers')
+    if (typeof probe.animated !== 'boolean') problems.push('v3 probe must report animation support')
+    if (typeof probe.degradations !== 'number') problems.push('v3 probe must report degradation count')
+    return { problems, probe }
+  }
+  if (probe.protocol !== 2) problems.push('protocol must be 2 (v2) or 3 (v3)')
   if (probe.pattern !== 'cloud') problems.push('default form must fall back to cloud, got ' + probe.pattern)
   if (probe.intensity !== 0.7) problems.push('intensity must survive normalization, got ' + probe.intensity)
   if (probe.c0 !== '243,230,255') problems.push('core colour must come from the spec palette, got ' + probe.c0)

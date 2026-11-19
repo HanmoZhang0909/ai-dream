@@ -115,7 +115,9 @@ CI 校验 schema、合法引用与降级期望；渲染截图在 GUI 轮次补�
   - 输出 `{tier, tierRequested, palette, intensity, layers, macros, keyframes, seed, variation, afterglow, transition, degradations}`；
   - 保证不抛错：任何非法/超限输入都会被夹紧、降级并记录 `degradations`，最差回落 L0 光晕；
   - 单测覆盖五个风格 fixtures、能力协商（弱渲染器 / 无 variation / 无 afterglow）、层/粒子/闪烁上限、非法 keyframes、junk 输入等（`scripts/check-renderer-core.mjs`）。
-- **渲染器接入（进行中）**：
-  - v1.24.0 已实现**静态分层渲染**：`client.js` 的 `planV3Client` + `V3Scene` 把 `layers` 变成绝对定位 CSS 层（paletteSlot/opacity/blend/blur/transform/mask/grain，primitive 解析与 core 同款回退链），用 `window.__AI_DREAM_FORCE_V3` 可注入 v3 表达式做 GUI 断言（脚本相位 exit 20）；
-  - 待接入：GUI 截图与 `v3.0.0` 发布（当前 `dsh web` token 已轮换，GUI 验证排队）。
-  - v1.25.0 已实现**动画采样与播放**：core 的 `sampleMotionV3`（breath/drift/rotate/wobble/flicker/uneven/hold）、`sampleKeyframesV3`（缓动插值含 `steps(n)`）、`variationOffset`/`hashUnit`（种子采样）、`applyRelationsV3`（follow/converge/split/echo + delay/strength）；客户端 `V3Scene` 用一条 rAF 只改 `transform`/`opacity`，标签页隐藏时暂停，`prefers-reduced-motion` 下静止。
+- **渲染器接入（已实现主体）**：
+  - v1.24.0：客户端**静态分层渲染**——`client.js` 的 `planV3Client` + `V3Scene` 把 `layers` 变成绝对定位 CSS 层（paletteSlot/opacity/blend/blur/transform/mask/grain，primitive 解析与 core 同款回退链），可用 `window.__AI_DREAM_FORCE_V3` 注入表达式断言；
+  - v1.25.0：**动画采样与播放**——core 的 `sampleMotionV3` / `sampleKeyframesV3` / `variationOffset` / `applyRelationsV3`；客户端 rAF 只改 `transform`/`opacity`，标签页隐藏时暂停，`prefers-reduced-motion` 静止；
+  - v1.26.0：**MCP 工具契约同步**——`mcp/app-manifest.json` protocol 3，server 返回 `tier/layers/degradations`；
+  - v1.27.0：**MCP iframe 渲染器支持 v3**——`resources/ai-dream.html` 渲染层/遮罩/关系/关键帧/variation，探针输出 `{protocol:3, tier, layers, primitives, animated, degradations}`；本地无头 Chrome 验证 tier L3 / 3 层 / 未知原语降级，截图 `docs/screenshot-v3-layers.png`；
+  - 待办：DSH 画布 GUI 截图（需要新的 `dsh web` token）。

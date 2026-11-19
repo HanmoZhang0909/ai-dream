@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.27.0 — 2026-11-18
+
+- MCP iframe renderer supports protocol v3: `resources/ai-dream.html` plans expressions with `planExpressionV3` (open vocabulary, layer fallback chain) and renders layers with per-layer background/blur/blend/mask/transform, `applyRelationsV3` sampling, keyframes and seed variation; v2 expressions keep using the original glow path. The probe now reports `{protocol:3, tier, layers, primitives, animated, degradations}` while v2 probes stay unchanged.
+- `scripts/check-mcp-renderer.mjs` validates either probe shape; locally verified with headless Chrome: tier L3, 3 layers (`blob` + fallback `ring` + `lines`), animation enabled, 2 degradations — screenshot committed as `docs/screenshot-v3-layers.png`.
+- Docs: `docs/mcp-app.md` / `docs/protocol-v3.md` reflect that contract + renderer both support v3.
+
 ## 1.26.0 — 2026-11-18
 
 - MCP contract synchronized to protocol v3: `mcp/app-manifest.json` now declares `protocol: 3` with the open-vocabulary surface (free-form `form`/`primitive`, `layers`, `macros`, `seed`/`variation`, `keyframes`, `afterglow`, layer `relations`, `requires`) while keeping the v2 fields; the manifest check was rewritten to assert the v3 surface (layer/relations/keyframe shapes, no enums on vocabulary).

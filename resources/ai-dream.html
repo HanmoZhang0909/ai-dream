@@ -10,18 +10,30 @@
   #stage { position: fixed; inset: 0; overflow: hidden; background: radial-gradient(circle at 50% 46%, var(--c4, #0a0e16) 0%, var(--c5, #05070c) 70%); }
   #wrap { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 60%; aspect-ratio: 1; }
   #glow { position: absolute; inset: 0; filter: blur(var(--blur, 46px)); opacity: var(--op, .8); transform: scale(1); }
-  #layerA, #layerB { position: absolute; inset: 0; border-radius: 50%; }
+  #layerA { position: absolute; inset: 0; border-radius: 50%; }
+  #v3 { position: absolute; inset: 0; display: none; }
+  #v3 > div { position: absolute; inset: 0; transform-origin: 50% 50%; pointer-events: none; }
   #probe { position: absolute; left: 8px; bottom: 8px; font: 11px/1.4 ui-monospace, monospace; color: rgba(255,255,255,.5); white-space: pre; pointer-events: none; display: none; }
   @media (prefers-reduced-motion: reduce) { #glow { transform: none; } }
 </style>
 </head>
 <body>
 <div id="stage">
-  <div id="wrap"><div id="glow"><div id="layerA"></div><div id="layerB"></div></div></div>
+  <div id="wrap"><div id="glow"><div id="layerA"></div></div></div>
+  <div id="v3"></div>
   <pre id="probe"></pre>
 </div>
 <script type="module">
-import { normalizeMood, targetFrom, tauFor, hexToRgb } from '../renderer/core.mjs'
+import {
+  applyRelationsV3,
+  normalizeMood,
+  planExpressionV3,
+  resolveCapabilities,
+  sampleMotionV3,
+  targetFrom,
+  tauFor,
+  variationOffset,
+} from '../renderer/core.mjs'
 
 const params = new URLSearchParams(location.search)
 const fixedTime = params.has('t') ? Number(params.get('t')) : null
@@ -42,24 +54,130 @@ if (params.get('spec')) {
   try { spec = JSON.parse(atob(params.get('spec'))) } catch { spec = defaultSpec }
 }
 
+const stage = document.getElementById('stage')
+const wrap = document.getElementById('wrap')
+const glow = document.getElementById('glow')
+const layerA = document.getElementById('layerA')
+const v3Root = document.getElementById('v3')
+const probe = document.getElementById('probe')
+
+const v3Plan = planExpressionV3(spec, resolveCapabilities())
+const isV3 = v3Plan.tier !== 'L0' && (v3Plan.layers.length > 1 || Boolean(spec.layers || spec.macros || spec.keyframes))
+
+const paletteColor = (palette, slot) => {
+  if (slot === 'tone') return palette.tone || palette.core
+  if (slot && slot.indexOf('spectrum') === 0) {
+    const index = Number(slot.slice('spectrum'.length)) || 0
+    return palette.spectrum[index] || palette.tone || palette.core
+  }
+  return palette.core
+}
+
+function layerBackground(layer, palette) {
+  const core = paletteColor(palette, layer.paletteSlot)
+  const tone = palette.tone || core
+  const spectrum1 = palette.spectrum[1] || tone
+  const size = Math.round(20 + layer.size * 60)
+  const angle = Math.round(layer.angle || 0)
+  if (layer.primitive === 'ring') {
+    const inner = Math.max(8, size - 26)
+    return 'radial-gradient(circle, transparent ' + inner + '%, ' + core + ' ' + (inner + 4) + '%, transparent ' + (inner + 16) + '%)'
+  }
+  if (layer.primitive === 'band') return 'linear-gradient(' + angle + 'deg, transparent 30%, ' + core + ' 50%, transparent 70%)'
+  if (layer.primitive === 'spiral') return 'conic-gradient(from ' + angle + 'deg, transparent 0%, ' + spectrum1 + ' 18%, transparent 36%, ' + core + ' 62%, transparent 100%)'
+  if (layer.primitive === 'lines') return 'repeating-linear-gradient(' + (angle || 100) + 'deg, transparent 0 14px, ' + tone + ' 15px 16px, transparent 17px 30px)'
+  if (layer.primitive === 'haze') return 'linear-gradient(180deg, transparent 0%, ' + tone + ' 45%, transparent 90%)'
+  if (layer.primitive === 'particles') {
+    return 'radial-gradient(circle at 28% 36%, ' + core + ' 0 1.5px, transparent 2.5px), radial-gradient(circle at 68% 62%, ' + tone + ' 0 1.5px, transparent 2.5px)'
+  }
+  return 'radial-gradient(circle at 50% 50%, ' + core + ' 0%, ' + tone + ' ' + size + '%, transparent 82%)'
+}
+
+function baseTransform(layer) {
+  if (layer.transform) {
+    return 'translate(' + Math.round((layer.transform.translate ? layer.transform.translate[0] : 0) * 100) + '%, '
+      + Math.round((layer.transform.translate ? layer.transform.translate[1] : 0) * 100) + '%) '
+      + 'scale(' + layer.transform.scale + ') rotate(' + Math.round(layer.transform.rotate) + 'deg)'
+    + (layer.transform.skew ? ' skew(' + Math.round(layer.transform.skew) + 'deg)' : '')
+  }
+  return 'rotate(' + Math.round(layer.rotation || 0) + 'deg)'
+}
+
+let v3Nodes = []
+let animated = false
+
+function buildV3() {
+  const palette = v3Plan.palette
+  stage.style.background = palette.base
+  wrap.style.display = 'none'
+  v3Root.style.display = 'block'
+  v3Nodes = []
+  animated = false
+  v3Plan.layers.forEach((layer, index) => {
+    const node = document.createElement('div')
+    node.style.position = 'absolute'
+    node.style.inset = '0'
+    node.style.opacity = String(layer.opacity)
+    node.style.mixBlendMode = layer.blend || 'normal'
+    node.style.background = layerBackground(layer, palette)
+    node.style.filter = 'blur(' + Math.round(4 + (1 - layer.softness) * 8) + 'px)'
+    node.style.transform = baseTransform(layer)
+    if (layer.mask) {
+      const softness = Math.round(40 + layer.mask.softness * 60)
+      const maskImage = layer.mask.type === 'linear'
+        ? 'linear-gradient(' + Math.round(layer.mask.angle) + 'deg, black 0%, black ' + (100 - softness) + '%, transparent 100%)'
+        : 'radial-gradient(circle, black 0%, black ' + (100 - softness) + '%, transparent 100%)'
+      node.style.maskImage = maskImage
+      node.style.webkitMaskImage = maskImage
+    }
+    node.dataset.primitive = layer.primitive
+    v3Root.appendChild(node)
+    v3Nodes.push({ node, layer, base: baseTransform(layer) })
+    if ((layer.motion && Object.keys(layer.motion).length > 0) || (layer.keyframes && layer.keyframes.length >= 2)
+      || (layer.relations && layer.relations.length > 0)) animated = true
+  })
+  if (v3Plan.keyframes && v3Plan.keyframes.length >= 2) animated = true
+}
+
+function renderV3At(t) {
+  const samples = applyRelationsV3(v3Plan.layers, t)
+  v3Nodes.forEach((entry, index) => {
+    const sample = samples[index] || { dx: 0, dy: 0, scale: 1, rotate: 0, opacity: 1 }
+    const offset = variationOffset(v3Plan.seed, v3Plan.variation, index)
+    entry.node.style.transform = entry.base
+      + ' translate3d(' + (sample.dx + offset * 6).toFixed(2) + '%, ' + (sample.dy + offset * 4).toFixed(2) + '%, 0)'
+      + ' scale(' + sample.scale.toFixed(3) + ') rotate(' + sample.rotate.toFixed(2) + 'deg)'
+    entry.node.style.opacity = String(Math.max(0, Math.min(1, entry.layer.opacity * sample.opacity)))
+  })
+}
+
+function writeV3Probe() {
+  probe.textContent = JSON.stringify({
+    ok: true,
+    protocol: 3,
+    tier: v3Plan.tier,
+    layers: v3Plan.layers.length,
+    primitives: v3Plan.layers.map(layer => layer.primitive),
+    animated,
+    degradations: v3Plan.degradations.length,
+    intensity: v3Plan.intensity,
+  })
+}
+
+// ------------------------------------------------------------------ v2 path
 const model = normalizeMood(spec)
 const target = targetFrom(model)
 const state = {}
 for (const key of ['w', 'px', 'h', 'op', 'blur', 'rot']) state[key] = target[key]
 for (const key of ['c0', 'c1', 'c2', 'c3', 'c4', 'c5']) state[key] = [...target[key]]
 
-const stage = document.getElementById('stage')
-const wrap = document.getElementById('wrap')
-const glow = document.getElementById('glow')
-const layerA = document.getElementById('layerA')
-const layerB = document.getElementById('layerB')
-const probe = document.getElementById('probe')
-
 function rgb(value) { return 'rgb(' + value.map(part => Math.round(part)).join(' ') + ')' }
 function gradient(pattern) {
   if (pattern === 'ring') return 'radial-gradient(circle, transparent 34%, var(--c0) 43%, var(--c1) 53%, var(--c2) 64%, transparent 76%)'
   if (pattern === 'streak') return 'linear-gradient(100deg, transparent 0%, var(--c1) 26%, var(--c0) 46%, var(--c2) 62%, transparent 86%)'
   if (pattern === 'spiral') return 'conic-gradient(from 0deg, transparent 0%, var(--c1) 16%, transparent 33%, var(--c3) 50%, transparent 68%, var(--c0) 84%, transparent 100%)'
+  if (pattern === 'rain') return 'repeating-linear-gradient(102deg, transparent 0 18px, var(--c2) 19px 20px, transparent 21px 38px)'
+  if (pattern === 'fog') return 'linear-gradient(180deg, transparent 0%, var(--c1) 45%, transparent 90%)'
   return 'radial-gradient(circle, #ffffff 0%, var(--c0) 22%, var(--c1) 44%, var(--c2) 60%, transparent 78%)'
 }
 layerA.style.background = gradient(target.pattern)
@@ -73,8 +191,7 @@ function apply() {
   wrap.style.transform = 'translate(-50%,-50%) rotate(' + state.rot.toFixed(2) + 'deg)'
   glow.style.filter = 'blur(' + state.blur.toFixed(1) + 'px)'
   glow.style.opacity = String(state.op)
-  const el = glow.style
-  for (let index = 0; index < 6; index += 1) el.setProperty('--c' + index, rgb(state['c' + index]))
+  for (let index = 0; index < 6; index += 1) glow.style.setProperty('--c' + index, rgb(state['c' + index]))
   layerA.style.opacity = '1'
   layerA.style.background = gradient(target.pattern)
   probe.textContent = JSON.stringify({
@@ -89,13 +206,24 @@ function apply() {
   })
 }
 
-if (fixedTime !== null && Number.isFinite(fixedTime)) {
-  // Deterministic frame: jump the state to the target, no animation loop.
+if (isV3) {
+  buildV3()
+  if (fixedTime !== null && Number.isFinite(fixedTime)) {
+    renderV3At(fixedTime)
+  } else {
+    const started = performance.now()
+    const step = () => {
+      renderV3At((performance.now() - started) / 1000)
+      requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  }
+  writeV3Probe()
+} else if (fixedTime !== null && Number.isFinite(fixedTime)) {
   apply()
 } else {
   const started = performance.now()
   const step = () => {
-    const dt = Math.min(64, performance.now() - started)
     const k = 1 - Math.exp(-16 / 900)
     for (const key of ['w', 'px', 'h', 'op', 'blur', 'rot']) state[key] += (target[key] - state[key]) * k
     for (const key of ['c0', 'c1', 'c2', 'c3', 'c4', 'c5']) {

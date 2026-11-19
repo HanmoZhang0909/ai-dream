@@ -70,6 +70,7 @@
 - 轮 3（v1.24.0）：客户端 v3 静态分层渲染——`planV3Client`（与 core 同款回退链）+ `V3Scene`（paletteSlot/opacity/blend/blur/transform/mask/grain）；GUI 测试相位已写好（exit 20），但 **dsh web token 已轮换（页面 401）**，截图验证待用户提供新 URL；脚本新增 401 显式检测（exit 21，不再盲重试），包装脚本改为随机 CDP 端口 + 进程树清理。
 - 轮 4（v1.25.0）：v3 动画引擎——core 采样纯函数（motion/keyframes/关系/种子变化/悬停/闪烁上限）+ 客户端 `V3Scene` rAF 循环（仅 transform/opacity、隐藏页暂停、reduced-motion 静止）；单测覆盖确定性与边界；GUI 截图仍待 token。
 - 轮 5（v1.26.0）：MCP 工具契约同步协议 v3（开放词汇 + layers/macros/keyframes/relations/seed/variation），server 规划并返回 `tier/layers/degradations`；manifest 检查重写为 v3 断言；文档同步。GitHub 推送仍受网络阻塞，转为后台重试。
+- 轮 6（v1.27.0）：MCP iframe 渲染器支持 v3——`resources/ai-dream.html` 用 `planExpressionV3` 渲染层/遮罩/关系/关键帧/variation，探针输出 protocol 3 信息；本地无头 Chrome 验证 tier L3/3 层/未知原语降级并截图入库；v2 路径保持。DSH GUI 截图仍待新 token。
 
 ## GUI 自测运行方法（本地，不随仓库发布）
 
