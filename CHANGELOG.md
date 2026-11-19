@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.13.0 — 2026-11-18
+
+- Calibration feedback (GUI-verified): every 不像 / 再强一点 / 再淡一点 click now shows a short note in the reserved hint row — 「更亮了 · 只影响画面」 / 「更淡了 · 只影响画面」, and 「已到上限 · 只影响画面」 when the ±0.4 bias bound is reached — then fades after 1.6s. Pure logic lives in `renderer/core.mjs` (`CALIBRATION`, `nextCalibrationBias`, `calibrationNoteFor`) with unit tests and client-copy parity assertions.
+- "回到最新" pins only until the bottom is stable for two consecutive checks, so lazy-loaded history can no longer leave the replay hint visible afterwards.
+
 ## 1.12.0 — 2026-11-18
 
 - Discoverability (GUI-verified): first time the canvas opens, a one-time hint explains the dots and calibration buttons — "圆点＝最近几轮情绪，点它回看；按钮只调光，不改回复" — with a 知道了 dismiss, 5s auto-hide + fade, remembered in `localStorage['ai-dream:onboarded:v1']`; it only shows in live mode, never while replaying.

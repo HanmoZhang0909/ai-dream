@@ -63,6 +63,7 @@ Notes:
 - **Replay emotions**: scroll up and the canvas follows that turn's emotion; a 「回看 · 第 N 轮 · 回到最新」 hint appears at the bottom — click it to jump back to live.
 - **Mini emotion timeline**: the colour dots under the canvas are the most recent expressed turns; click one to replay it.
 - **First-run hint**: the first time the canvas opens it explains the dots and calibration buttons; dismiss with 知道了 or wait 5 seconds, then it never shows again.
+- **Canvas calibration**: the three buttons only tune the glow (不像 / 再强一点 / 再淡一点); each click shows a short note, the ±0.4 bound reports 「已到上限」, and it never changes the AI's replies.
 - **To turn it off**: disable `dsh-ai-dream` on the Plugins page; the injected prompt section goes with it.
 
 ## Troubleshooting

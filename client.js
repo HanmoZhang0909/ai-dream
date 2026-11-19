@@ -213,6 +213,15 @@ window.__ModuleLoader__.load({
       }
     }
 
+    const CALIBRATION_NOTE_MS = 1600
+
+    /** Mirror of renderer/core.mjs calibrationNoteFor (unit-tested there). */
+    function calibrationNoteFor(bias, delta) {
+      const next = Math.round(Math.min(0.4, Math.max(-0.4, (typeof bias === 'number' ? bias : 0) + (typeof delta === 'number' ? delta : 0))) * 100) / 100
+      if (Math.abs(next) >= 0.4 - 1e-9) return '已到上限 · 只影响画面'
+      return delta > 0 ? '更亮了 · 只影响画面' : '更淡了 · 只影响画面'
+    }
+
     // One-time onboarding flag (v1.12): explain the canvas controls once per browser.
     const ONBOARD_KEY = 'ai-dream:onboarded:v1'
     // Test hook: window.__AI_DREAM_FORCE_ONBOARD (CDP preload) or ?ai-dream-onboard=1
@@ -1183,6 +1192,8 @@ window.__ModuleLoader__.load({
       const [onboarding, setOnboarding] = React.useState(() => !readOnboarded())
       const [onboardingFading, setOnboardingFading] = React.useState(false)
       const [returning, setReturning] = React.useState(false)
+      const [calibrationNote, setCalibrationNote] = React.useState(null)
+      const calibrationNoteTimer = React.useRef(0)
       const topTurnRaw = useTopTurn()
       const atBottom = useTimelineAtBottom()
       const topTurn = CONFIG.replayEnabled === false || atBottom ? null : topTurnRaw
@@ -1204,6 +1215,10 @@ window.__ModuleLoader__.load({
         setOnboarding(false)
         markOnboarded()
       }
+
+      React.useEffect(() => () => {
+        if (calibrationNoteTimer.current) clearTimeout(calibrationNoteTimer.current)
+      }, [])
 
       // Track "near the bottom" so a short last turn cannot keep replay mode alive.
       React.useEffect(() => {
@@ -1330,9 +1345,15 @@ window.__ModuleLoader__.load({
 
       if (model.kind === 'mood') {
         const adjust = delta => {
-          CALIBRATION.intensityBias = Math.min(0.4, Math.max(-0.4, CALIBRATION.intensityBias + delta))
+          const note = calibrationNoteFor(CALIBRATION.intensityBias, delta)
+          CALIBRATION.intensityBias = Math.round(
+            Math.min(0.4, Math.max(-0.4, CALIBRATION.intensityBias + delta)) * 100,
+          ) / 100
           saveCalibration()
           setBump(value => value + 1)
+          setCalibrationNote(note)
+          if (calibrationNoteTimer.current) clearTimeout(calibrationNoteTimer.current)
+          calibrationNoteTimer.current = setTimeout(() => setCalibrationNote(null), CALIBRATION_NOTE_MS)
         }
         const controls = CONFIG.calibrationEnabled === false ? [] : [
           ['不像', -0.15, '把光的色彩调冷一点（只影响画面，不改回复）'],
@@ -1364,18 +1385,20 @@ window.__ModuleLoader__.load({
             if (!scroll) return
             setReturning(true)
             setAtBottom(true)
-            // History lazy-loads while we scroll; keep pinning until we actually reach the bottom.
+            // History lazy-loads while we scroll; keep pinning until the bottom stays stable.
             let attempts = 0
+            let stable = 0
             const pin = () => {
               attempts += 1
               setAtBottom(true)
               scroll.scrollTop = scroll.scrollHeight
               const atEnd = scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 2
-              if (!atEnd && attempts < 80) {
-                setTimeout(pin, 100)
-              } else {
-                setTimeout(() => setReturning(false), 1200)
+              stable = atEnd ? stable + 1 : 0
+              if (stable >= 2 || attempts >= 80) {
+                setTimeout(() => setReturning(false), 700)
+                return
               }
+              setTimeout(pin, 100)
             }
             pin()
           } catch {
@@ -1471,6 +1494,24 @@ window.__ModuleLoader__.load({
               cursor: 'pointer',
             },
           }, '回看 · 第 ' + String(topTurn) + ' 轮 · 回到最新')
+        } else if (calibrationNote) {
+          hintContent = h('div', {
+            'data-ai-dream-calibration-note': '1',
+            style: {
+              maxWidth: '96%',
+              padding: '2px 8px',
+              borderRadius: 999,
+              background: 'rgba(4,6,12,0.78)',
+              border: '0.5px solid rgba(255,255,255,0.16)',
+              color: '#dfe7f2',
+              fontSize: 10.5,
+              lineHeight: 1.3,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              pointerEvents: 'none',
+            },
+          }, calibrationNote)
         } else if (onboarding && dots.length > 0) {
           hintContent = h('div', {
             'data-ai-dream-onboarding': '1',
@@ -1536,6 +1577,7 @@ window.__ModuleLoader__.load({
           'data-ai-dream-canvas': '1',
           'data-ai-dream-onboarding-state': onboarding ? '1' : '0',
           'data-ai-dream-force-onboard': FORCE_ONBOARD ? '1' : '0',
+          'data-ai-dream-calib': calibrationNote || '0',
           style: { height: '100%', background: BG, position: 'relative' },
         },
           h(MoodView, { model, revision: revision.current + bump }),

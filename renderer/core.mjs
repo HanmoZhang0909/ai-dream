@@ -134,6 +134,31 @@ export function normalizeMood(raw) {
   }
 }
 
+/** Calibration (client-side intensity bias) bounds and step sizes. */
+export const CALIBRATION = Object.freeze({
+  minBias: -0.4,
+  maxBias: 0.4,
+  stepLike: -0.15,
+  stepStronger: 0.08,
+  stepLighter: -0.08,
+  noteMs: 1600,
+})
+
+/** Next clamped bias value after one calibration click. */
+export function nextCalibrationBias(bias, delta) {
+  const current = typeof bias === 'number' && Number.isFinite(bias) ? bias : 0
+  const step = typeof delta === 'number' && Number.isFinite(delta) ? delta : 0
+  return Math.round(Math.min(CALIBRATION.maxBias, Math.max(CALIBRATION.minBias, current + step)) * 100) / 100
+}
+
+/** Short feedback label for one calibration click (pure, so it is unit-tested). */
+export function calibrationNoteFor(bias, delta) {
+  const next = nextCalibrationBias(bias, delta)
+  if (Math.abs(next) >= CALIBRATION.maxBias - 1e-9) return '已到上限 · 只影响画面'
+  if (delta > 0) return '更亮了 · 只影响画面'
+  return '更淡了 · 只影响画面'
+}
+
 /** Interpolation time constant: how fast the glow glides to a new target. */
 export function tauFor(speed, style) {
   const base = speed === 'slow' ? 1600 : speed === 'fast' ? 380 : 900

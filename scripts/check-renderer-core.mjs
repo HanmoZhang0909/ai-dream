@@ -3,16 +3,19 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {
   BUILTIN_PALETTES,
+  CALIBRATION,
   FORMS,
   TIMELINE_LAYOUT,
   TRANSITION_STYLES,
   buildTimelineDots,
+  calibrationNoteFor,
   clamp,
   cut,
   hexColor,
   hexToRgb,
   inReplayMode,
   mixHex,
+  nextCalibrationBias,
   normalizeMood,
   pick,
   resolveColors,
@@ -126,6 +129,19 @@ assert.ok(tauFor('medium', 'burst') < tauFor('medium', 'soft'))
   assert.deepEqual(custom.c5, [16, 16, 16])
 }
 
+// --- calibration feedback -----------------------------------------------------
+assert.equal(CALIBRATION.minBias, -0.4)
+assert.equal(CALIBRATION.maxBias, 0.4)
+assert.equal(nextCalibrationBias(0, 0.08), 0.08)
+assert.equal(nextCalibrationBias(0.36, 0.08), 0.4, 'bias clamps at the upper bound')
+assert.equal(nextCalibrationBias(-0.36, -0.08), -0.4, 'bias clamps at the lower bound')
+assert.equal(nextCalibrationBias('x', 0.08), 0.08, 'invalid bias starts from zero')
+assert.equal(nextCalibrationBias(0.1, NaN), 0.1, 'invalid delta leaves the bias unchanged')
+assert.equal(calibrationNoteFor(0, 0.08), '更亮了 · 只影响画面')
+assert.equal(calibrationNoteFor(0, -0.08), '更淡了 · 只影响画面')
+assert.equal(calibrationNoteFor(0.36, 0.08), '已到上限 · 只影响画面', 'hitting the bound reports the limit')
+assert.equal(calibrationNoteFor(-0.36, -0.08), '已到上限 · 只影响画面')
+
 // --- scroll replay (mini timeline) -------------------------------------------
 assert.equal(sentinelSelector(42), '[data-ai-dream-sentinel="42"]')
 assert.equal(sentinelSelector(0), '[data-ai-dream-sentinel="0"]')
@@ -200,6 +216,8 @@ assert.equal(inReplayMode(5, null), false)
   assert.ok(client.includes('width: 11'), 'client keeps the 11px visual dot')
   assert.ok(client.includes('ai-dream-onboard=1'), 'client keeps the onboarding test hook')
   assert.ok(client.includes('showingReplayHint'), 'client suppresses the hint while returning to live')
+  assert.ok(client.includes('calibrationNoteFor'), 'client keeps the calibration feedback logic')
+  assert.ok(client.includes('data-ai-dream-calibration-note'), 'client keeps the calibration note hook')
 }
 
 console.log('renderer core checks OK')
