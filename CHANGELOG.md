@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.24.0 — 2026-11-18
+
+- v3 renderer (step 1, static layers): `client.js` gains `planV3Client` and `V3Scene` — v3 expressions with `layers` now render as absolutely positioned CSS layers with per-layer palette slot, opacity, blend mode, blur from `softness`, `transform` (scale/translate/rotate/skew), `mask` (radial/linear), grain overlay, and resolved primitives (blob/ring/band/spiral/lines/haze/particles). Unknown vocabulary is resolved client-side by the same fallback chain as the core planner.
+- New test hook `window.__AI_DREAM_FORCE_V3` and a GUI self-test phase (exit code 20) that renders a three-layer expression and asserts layer count/primitives/tier; the wrapper now uses a random CDP port per attempt and kills the whole Chrome tree.
+- The GUI run for this round is pending: the previously supplied `dsh web` token has been rotated (page now answers 401), and the script now detects that explicitly (exit code 21, no blind retry) instead of looping. Core/CI checks and unit tests are green.
+
 ## 1.23.0 — 2026-11-18
 
 - Protocol v3 planner implemented in `renderer/core.mjs`: `planExpressionV3` resolves capabilities, maps unknown vocabulary through `fallback` → name-similarity → `blob`, applies the fallback chain for macros, clamps every parameter, enforces the safety envelope (layers/particles/animated budget, flicker ≤ 3 Hz), normalizes keyframes/motion/relations and records every degradation. It never throws: junk input degrades to a visible L0 glow.

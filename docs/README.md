@@ -78,5 +78,5 @@
 
 ## 当前状态
 
-- **最近发布**：`1.23.0` —— v3 规划器实现：能力协商、开放词汇降级、预算/闪烁上限、keyframes/关系规范化、永不抛错的 L0 保底（单测覆盖五种风格样例）；
-- **下一步**：v3 渲染器接入（layers → DOM/CSS + 动画）、MCP schema 同步、GUI 截图、`v3.0.0` 发布。
+- **最近发布**：`1.24.0` —— v3 客户端分层渲染（静态层：paletteSlot/blend/transform/mask/grain；未知原语回退）；GUI 截图待 token 刷新后重跑；
+- **下一步**：v3 动画引擎（breath/drift/rotate/flicker/uneven/hold/keyframes/relations/variation/afterglow）→ MCP schema 同步 → `v3.0.0`。

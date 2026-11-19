@@ -67,6 +67,7 @@
 
 - 轮 1（v1.22.0）：v3 设计口径落地——开放词汇表（primitive/form/motion 任意名字、macro、keyframes、transform/mask/relations/grain/gloss/direction、seed/variation/afterglow/uneven/hold）、程序不崩硬边界（层数/粒子/元素上限、仅 transform/opacity、闪烁 ≤3Hz、reduced-motion、异常回落 L0）、能力协商与降级矩阵；机器契约 `docs/protocol-v3.schema.json` + 五份风格样例 + CI 校验 `check-protocol-v3.mjs`。
 - 轮 2（v1.23.0）：规划器实现 `planExpressionV3` 及配套纯函数（能力协商/原语降级/参数夹紧/keyframes/关系/预算/闪烁上限），永不抛错、最差回落 L0；单测覆盖五份 fixtures + 弱渲染器 + 非法输入 + 预算超限。
+- 轮 3（v1.24.0）：客户端 v3 静态分层渲染——`planV3Client`（与 core 同款回退链）+ `V3Scene`（paletteSlot/opacity/blend/blur/transform/mask/grain）；GUI 测试相位已写好（exit 20），但 **dsh web token 已轮换（页面 401）**，截图验证待用户提供新 URL；脚本新增 401 显式检测（exit 21，不再盲重试），包装脚本改为随机 CDP 端口 + 进程树清理。
 
 ## GUI 自测运行方法（本地，不随仓库发布）
 

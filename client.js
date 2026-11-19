@@ -418,6 +418,10 @@ window.__ModuleLoader__.load({
       : null
     // Test hook: window.__AI_DREAM_FORCE_PARTIAL injects a partial (streaming) model.
     const FORCE_PARTIAL = (typeof window !== 'undefined' && window.__AI_DREAM_FORCE_PARTIAL === true)
+    // Test hook: window.__AI_DREAM_FORCE_V3 injects a full v3 expression for GUI checks.
+    const FORCE_V3 = (typeof window !== 'undefined' && window.__AI_DREAM_FORCE_V3 && typeof window.__AI_DREAM_FORCE_V3 === 'object')
+      ? window.__AI_DREAM_FORCE_V3
+      : null
 
     // Empty-state ring animation, injected once; reduced motion is handled in CSS.
     if (typeof document !== 'undefined' && !document.getElementById('ai-dream-style')) {
@@ -632,9 +636,215 @@ window.__ModuleLoader__.load({
           return null
         }
       }
-      return normalize(parsed)
+      const model = normalize(parsed)
+      if (model && (Array.isArray(parsed.layers) || (parsed.macros && typeof parsed.macros === 'object') || Array.isArray(parsed.keyframes))) {
+        model.v3 = planV3Client(parsed)
+      }
+      return model
     }
 
+    // ------------------------------------------------- protocol v3 rendering
+    // Client-side planner mirror (the authoritative planner is renderer/core.mjs;
+    // both are covered by tests/parity asserts). Unknown vocabulary never fails.
+
+    const V3_CLIENT_PRIMITIVES = ['blob', 'ring', 'band', 'spiral', 'lines', 'haze', 'particles', 'macro']
+    const V3_CLIENT_LIMIT_LAYERS = 8
+
+    function v3Clamp(value, min, max, fallback) {
+      return typeof value === 'number' && Number.isFinite(value)
+        ? Math.min(max, Math.max(min, value))
+        : fallback
+    }
+
+    function v3GuessFamily(name) {
+      const text = String(name || '').toLowerCase()
+      for (const hint of ['ring', 'spiral', 'blob', 'haze', 'particles', 'lines', 'band']) {
+        if (text.indexOf(hint) >= 0) return hint
+      }
+      return 'blob'
+    }
+
+    function v3ResolvePrimitive(layer, macros, depth) {
+      const source = layer && typeof layer === 'object' ? layer : {}
+      const raw = typeof source.primitive === 'string' ? source.primitive.trim() : ''
+      const known = value => V3_CLIENT_PRIMITIVES.indexOf(value) >= 0
+      if (known(raw) && raw !== 'macro') return raw
+      if (raw === 'macro') {
+        const macro = macros[source.name]
+        if (macro && depth < 2) return v3ResolvePrimitive(macro, macros, depth + 1)
+      }
+      const fallback = typeof source.fallback === 'string' ? source.fallback : ''
+      if (known(fallback) && fallback !== 'macro') return fallback
+      return v3GuessFamily(raw || source.name)
+    }
+
+    function v3NormalizeLayer(layer, index, macros, total) {
+      const source = layer && typeof layer === 'object' ? layer : {}
+      const out = {
+        primitive: v3ResolvePrimitive(source, macros, 0),
+        paletteSlot: typeof source.paletteSlot === 'string' ? source.paletteSlot : null,
+        count: Math.round(v3Clamp(source.count, 1, 6, 1)),
+        size: v3Clamp(source.size, 0, 1, 0.5),
+        softness: v3Clamp(source.softness, 0, 1, 0.5),
+        opacity: v3Clamp(source.opacity, 0, 1, 0.7),
+        angle: v3Clamp(source.angle, -180, 180, 0),
+        blend: typeof source.blend === 'string' ? source.blend : 'normal',
+        grain: v3Clamp(source.grain, 0, 1, 0),
+        rotation: v3Clamp(source.rotation, -180, 180, 0),
+        relations: [],
+      }
+      if (source.transform && typeof source.transform === 'object') {
+        const t = source.transform
+        out.transform = {
+          scale: v3Clamp(t.scale, 0.05, 4, 1),
+          rotate: v3Clamp(t.rotate, -180, 180, 0),
+          skew: v3Clamp(t.skew, -45, 45, 0),
+          translate: Array.isArray(t.translate) ? [v3Clamp(t.translate[0], -1, 1, 0), v3Clamp(t.translate[1], -1, 1, 0)] : null,
+        }
+      }
+      if (source.mask && typeof source.mask === 'object') {
+        out.mask = {
+          type: typeof source.mask.type === 'string' ? source.mask.type : 'radial',
+          softness: v3Clamp(source.mask.softness, 0, 1, 0.5),
+          angle: v3Clamp(source.mask.angle, -180, 180, 0),
+        }
+      }
+      out.motion = source.motion && typeof source.motion === 'object' ? source.motion : {}
+      if (Array.isArray(source.keyframes)) out.keyframes = source.keyframes
+      if (Array.isArray(source.relations)) {
+        for (const relation of source.relations.slice(0, 3)) {
+          if (!relation || ['follow', 'converge', 'split', 'echo'].indexOf(relation.type) < 0) continue
+          const target = Number(relation.target)
+          if (!Number.isFinite(target) || target < 0 || target >= total) continue
+          out.relations.push({ type: relation.type, target: Math.round(target) })
+        }
+      }
+      return out
+    }
+
+    function planV3Client(expression) {
+      const raw = expression && typeof expression === 'object' ? expression : {}
+      const macros = raw.macros && typeof raw.macros === 'object' ? raw.macros : {}
+      const sourceLayers = Array.isArray(raw.layers) ? raw.layers.slice(0, V3_CLIENT_LIMIT_LAYERS).length : 0
+      const layers = []
+      if (Array.isArray(raw.layers)) {
+        for (const layer of raw.layers.slice(0, V3_CLIENT_LIMIT_LAYERS)) {
+          layers.push(v3NormalizeLayer(layer, layers.length, macros, sourceLayers))
+        }
+      }
+      const paletteSource = raw.palette && typeof raw.palette === 'object' ? raw.palette : {}
+      const hex = value => (typeof value === 'string' && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(value.trim()) ? value.trim().toLowerCase() : null)
+      return {
+        tier: layers.length > 0 ? 'L2' : 'L1',
+        layers,
+        seed: Number.isFinite(raw.seed) ? Math.max(0, Math.round(raw.seed)) : 0,
+        variation: v3Clamp(raw.variation, 0, 1, 0),
+        intensity: v3Clamp(raw.intensity, 0.2, 1, 0.6),
+        palette: {
+          base: hex(paletteSource.base) || '#05070c',
+          core: hex(paletteSource.core) || '#cfe0ff',
+          tone: hex(paletteSource.tone) || '#5f7bb8',
+          spectrum: Array.isArray(paletteSource.spectrum) ? paletteSource.spectrum.map(hex).filter(Boolean).slice(0, 4) : [],
+        },
+      }
+    }
+
+    function v3PaletteColor(palette, slot) {
+      if (!palette) return '#cfe0ff'
+      if (slot === 'tone') return palette.tone || palette.core
+      if (slot && slot.indexOf('spectrum') === 0) {
+        const index = Number(slot.slice('spectrum'.length)) || 0
+        return palette.spectrum[index] || palette.tone || palette.core
+      }
+      return palette.core
+    }
+
+    function v3LayerBackground(layer, palette) {
+      const core = v3PaletteColor(palette, layer.paletteSlot)
+      const tone = palette.tone || core
+      const spectrum1 = palette.spectrum[1] || tone
+      const size = Math.round(20 + layer.size * 60)
+      const angle = Math.round(layer.angle || 0)
+      if (layer.primitive === 'ring') {
+        const inner = Math.max(8, size - 26)
+        return 'radial-gradient(circle, transparent ' + inner + '%, ' + core + ' ' + (inner + 4) + '%, transparent ' + (inner + 16) + '%)'
+      }
+      if (layer.primitive === 'band') {
+        return 'linear-gradient(' + angle + 'deg, transparent 30%, ' + core + ' 50%, transparent 70%)'
+      }
+      if (layer.primitive === 'spiral') {
+        return 'conic-gradient(from ' + angle + 'deg, transparent 0%, ' + spectrum1 + ' 18%, transparent 36%, ' + core + ' 62%, transparent 100%)'
+      }
+      if (layer.primitive === 'lines') {
+        return 'repeating-linear-gradient(' + (angle || 100) + 'deg, transparent 0 14px, ' + tone + ' 15px 16px, transparent 17px 30px)'
+      }
+      if (layer.primitive === 'haze') {
+        return 'linear-gradient(180deg, transparent 0%, ' + tone + ' 45%, transparent 90%)'
+      }
+      if (layer.primitive === 'particles') {
+        return 'radial-gradient(circle at 28% 36%, ' + core + ' 0 1.5px, transparent 2.5px), radial-gradient(circle at 68% 62%, ' + tone + ' 0 1.5px, transparent 2.5px), radial-gradient(circle at 44% 74%, ' + core + ' 0 1px, transparent 2px)'
+      }
+      return 'radial-gradient(circle at 50% 50%, ' + core + ' 0%, ' + tone + ' ' + size + '%, transparent 82%)'
+    }
+
+    /** v3 scene: layers rendered as absolutely positioned CSS layers (no layout animation). */
+    function V3Scene(props) {
+      const plan = props && props.plan ? props.plan : {}
+      const layers = Array.isArray(plan.layers) ? plan.layers : []
+      const palette = plan.palette || { base: '#05070c', core: '#cfe0ff', tone: '#5f7bb8', spectrum: [] }
+      const hasGrain = layers.some(layer => layer.grain > 0.05)
+      return h('div', {
+        'data-ai-dream-v3': '1',
+        'data-ai-dream-v3-layers': String(layers.length),
+        style: { position: 'absolute', inset: 0, background: palette.base, overflow: 'hidden' },
+      },
+      layers.map((layer, index) => {
+        const blur = Math.round(4 + (1 - layer.softness) * 8)
+        const transform = layer.transform
+          ? 'translate(' + Math.round((layer.transform.translate ? layer.transform.translate[0] : 0) * 100)
+            + '%, ' + Math.round((layer.transform.translate ? layer.transform.translate[1] : 0) * 100) + '%) '
+            + 'scale(' + layer.transform.scale + ') rotate(' + Math.round(layer.transform.rotate) + 'deg)'
+            + (layer.transform.skew ? ' skew(' + Math.round(layer.transform.skew) + 'deg)' : '')
+          : 'rotate(' + Math.round(layer.rotation) + 'deg)'
+        const style = {
+          position: 'absolute',
+          inset: 0,
+          opacity: layer.opacity,
+          mixBlendMode: layer.blend || 'normal',
+          background: v3LayerBackground(layer, palette),
+          filter: 'blur(' + blur + 'px)',
+          transform,
+          transformOrigin: '50% 50%',
+          pointerEvents: 'none',
+        }
+        if (layer.mask) {
+          const softness = Math.round(40 + layer.mask.softness * 60)
+          const maskImage = layer.mask.type === 'linear'
+            ? 'linear-gradient(' + Math.round(layer.mask.angle) + 'deg, black 0%, black ' + (100 - softness) + '%, transparent 100%)'
+            : 'radial-gradient(circle, black 0%, black ' + (100 - softness) + '%, transparent 100%)'
+          style.maskImage = maskImage
+          style.WebkitMaskImage = maskImage
+        }
+        return h('div', {
+          key: 'v3-' + index,
+          'data-ai-dream-v3-layer': String(index),
+          'data-ai-dream-v3-primitive': layer.primitive,
+          style,
+        })
+      }),
+      hasGrain
+        ? h('div', {
+          'aria-hidden': true,
+          style: {
+            position: 'absolute',
+            inset: 0,
+            opacity: 0.16,
+            backgroundImage: GRAIN,
+            pointerEvents: 'none',
+          },
+        })
+        : null)
+    }
     // ------------------------------------------------------------- extraction
 
     // A fence only counts when it opens at the start of a line (Markdown rule):
@@ -1755,6 +1965,14 @@ window.__ModuleLoader__.load({
             latest = { ...forcedPartial, partial: true }
           }
         }
+        if (FORCE_V3) {
+          const forcedBase = normalize({ kind: 'mood', intensity: FORCE_V3.intensity, palette: FORCE_V3.palette, name: FORCE_V3.name })
+          if (forcedBase && forcedBase.kind === 'mood') {
+            forcedBase.v3 = planV3Client(FORCE_V3)
+            parsedAny = true
+            latest = forcedBase
+          }
+        }
         return { latest, parsedAny, turnModels, latestTurn }
       }, [feed, wire, wireConfig])
       const shown = React.useRef(null)
@@ -2198,9 +2416,12 @@ window.__ModuleLoader__.load({
           'data-ai-dream-calib': calibrationNote || '0',
           'data-ai-dream-form': renderedModel && renderedModel.nebula ? renderedModel.nebula.pattern : '',
           'data-ai-dream-partial': renderedModel && renderedModel.partial ? '1' : '0',
+          'data-ai-dream-tier': shownModel && shownModel.v3 ? shownModel.v3.tier : 'L1',
           style: { height: '100%', background: BG, position: 'relative' },
         },
-          h(MoodView, { model: shownModel, revision: revision.current + bump }),
+          shownModel && shownModel.v3
+            ? h(V3Scene, { plan: shownModel.v3 })
+            : h(MoodView, { model: shownModel, revision: revision.current + bump }),
           h(SignatureBadge, { chips: signatureList }),
           h('div', {
             role: 'status',

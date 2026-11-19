@@ -115,4 +115,6 @@ CI 校验 schema、合法引用与降级期望；渲染截图在 GUI 轮次补�
   - 输出 `{tier, tierRequested, palette, intensity, layers, macros, keyframes, seed, variation, afterglow, transition, degradations}`；
   - 保证不抛错：任何非法/超限输入都会被夹紧、降级并记录 `degradations`，最差回落 L0 光晕；
   - 单测覆盖五个风格 fixtures、能力协商（弱渲染器 / 无 variation / 无 afterglow）、层/粒子/闪烁上限、非法 keyframes、junk 输入等（`scripts/check-renderer-core.mjs`）。
-- **渲染器接入（下一步）**：客户端把 `layers/macros/keyframes/transform/mask/relations` 变成 DOM+CSS 动画；MCP schema 同步；GUI 截图。
+- **渲染器接入（进行中）**：
+  - v1.24.0 已实现**静态分层渲染**：`client.js` 的 `planV3Client` + `V3Scene` 把 `layers` 变成绝对定位 CSS 层（paletteSlot/opacity/blend/blur/transform/mask/grain，primitive 解析与 core 同款回退链），用 `window.__AI_DREAM_FORCE_V3` 可注入 v3 表达式做 GUI 断言（脚本相位 exit 20）；
+  - 待接入：动画引擎（breath/drift/rotate/wobble/flicker/uneven/hold/keyframes/relations）、`variation` 采样、afterglow；随后统一 GUI 截图与 `v3.0.0` 发布。
