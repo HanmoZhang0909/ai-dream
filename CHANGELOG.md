@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.26.0 — 2026-11-18
+
+- MCP contract synchronized to protocol v3: `mcp/app-manifest.json` now declares `protocol: 3` with the open-vocabulary surface (free-form `form`/`primitive`, `layers`, `macros`, `seed`/`variation`, `keyframes`, `afterglow`, layer `relations`, `requires`) while keeping the v2 fields; the manifest check was rewritten to assert the v3 surface (layer/relations/keyframe shapes, no enums on vocabulary).
+- `mcp/server.mjs` plans every `express_emotion` call with `planExpressionV3` and returns `{protocol:3, tier, layers, degradations}` so MCP hosts/renderers see the same tier and degradation notes as the DSH client. Server tests cover an L2 layer expression and an unknown primitive (`liquid-glass`) that degrades with a recorded note.
+- Docs: `docs/mcp-app.md` and `docs/protocol-v3.md` document the synced v3 contract; the iframe renderer HTML still covers v2 forms only (v3 layer rendering there is a remaining task).
+- GitHub push is still failing from this network; commits/tags are local and retried in the background.
+
 ## 1.25.0 — 2026-11-18
 
 - v3 animation engine: pure samplers in `renderer/core.mjs` — `sampleMotionV3` (breath/drift/rotate/wobble/flicker/uneven/hold, bounded and deterministic, reduced-motion identity), `sampleKeyframesV3` (eased interpolation incl. `steps(n)`), `variationOffset`/`hashUnit` (seeded per-layer sampling), `applyRelationsV3` (follow/converge/split/echo with delay and strength). Unit-tested: determinism, bounds, hold freeze, flicker clamp, easing, relations offsets, reduced motion.

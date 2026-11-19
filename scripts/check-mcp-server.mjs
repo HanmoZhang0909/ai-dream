@@ -42,11 +42,27 @@ const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
   })
   const payload = JSON.parse(result.content[0].text)
   assert.equal(payload.ok, true)
-  assert.equal(payload.protocol, 2)
+  assert.equal(payload.protocol, 3)
   assert.equal(payload.intensity, 1, 'intensity is clamped like the client')
   assert.equal(payload.pattern, 'ring')
   assert.equal(payload.colors.core, '#abcdef')
   assert.equal(payload.transition.style, 'burst')
+}
+
+{
+  const v3 = callTool('express_emotion', {
+    kind: 'mood',
+    intensity: 0.7,
+    layers: [
+      { primitive: 'blob', size: 0.6 },
+      { primitive: 'liquid-glass', fallback: 'haze', opacity: 0.4 },
+    ],
+  })
+  const payload = JSON.parse(v3.content[0].text)
+  assert.equal(payload.protocol, 3)
+  assert.equal(payload.tier, 'L2')
+  assert.equal(payload.layers, 2)
+  assert.ok(payload.degradations.some(item => item.reason === 'unknown-primitive'), 'unknown vocabulary is reported')
 }
 
 {

@@ -1,18 +1,19 @@
 {
   "name": "ai-dream",
   "title": "AI Dream",
-  "description": "Emotional ambient medium for AI: the model expresses how it feels as a continuously evolving glow.",
+  "description": "Emotional ambient medium for AI: the model expresses how it feels as a continuously evolving glow. Accepts protocol v3 open-vocabulary expressions; unknown primitives degrade gracefully.",
   "manifestVersion": 1,
-  "protocol": 2,
+  "protocol": 3,
   "tool": {
     "name": "express_emotion",
-    "description": "Express the assistant's current emotional state as a visual specification. Call this only when there is something worth feeling; emitting nothing keeps the previous expression.",
+    "description": "Express the assistant's current emotional state as a visual specification. Protocol v3: L0 palette+intensity, L1 form+motion, L2 layers with open primitive names, L3 macros/keyframes. Unknown vocabulary is degraded by the renderer, never rejected. Call this only when there is something worth feeling; emitting nothing keeps the previous expression.",
     "inputSchema": {
       "type": "object",
-      "additionalProperties": false,
+      "additionalProperties": true,
       "required": ["kind"],
       "properties": {
         "kind": { "const": "mood" },
+        "schema": { "type": "number" },
         "name": { "type": "string", "maxLength": 40 },
         "intensity": { "type": "number", "minimum": 0.2, "maximum": 1 },
         "palette": {
@@ -30,16 +31,8 @@
             }
           }
         },
-        "motion": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "speed": { "type": "number", "minimum": 0.2, "maximum": 2 },
-            "amplitude": { "type": "number", "minimum": 0.1, "maximum": 1 },
-            "rhythm": { "enum": ["steady", "breathing", "uneven"] }
-          }
-        },
-        "form": { "enum": ["cloud", "ring", "streak", "spiral", "rain", "fog"] },
+        "form": { "type": "string", "maxLength": 40 },
+        "motion": { "type": "object", "additionalProperties": true },
         "transition": {
           "type": "object",
           "additionalProperties": false,
@@ -47,6 +40,80 @@
             "style": { "enum": ["soft", "ripple", "burst", "dissolve", "snap"] },
             "speed": { "enum": ["slow", "medium", "fast"] }
           }
+        },
+        "layers": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/definitions/layer" } },
+        "macros": { "type": "object", "additionalProperties": { "$ref": "#/definitions/layer" } },
+        "seed": { "type": "integer", "minimum": 0 },
+        "variation": { "type": "number", "minimum": 0, "maximum": 1 },
+        "afterglow": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hold": { "type": "number", "minimum": 0, "maximum": 10 },
+            "decay": { "type": "number", "minimum": 0.5, "maximum": 20 }
+          }
+        },
+        "keyframes": { "$ref": "#/definitions/keyframes" },
+        "requires": { "type": "array", "items": { "type": "string", "maxLength": 40 } }
+      }
+    }
+  },
+  "definitions": {
+    "layer": {
+      "type": "object",
+      "required": ["primitive"],
+      "additionalProperties": true,
+      "properties": {
+        "primitive": { "type": "string", "maxLength": 40, "description": "Open vocabulary; unknown names degrade via fallback/name-similarity/blob." },
+        "name": { "type": "string", "maxLength": 40 },
+        "fallback": { "type": "string", "maxLength": 40 },
+        "priority": { "type": "integer", "minimum": 0, "maximum": 9 },
+        "count": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "size": { "type": "number", "minimum": 0, "maximum": 1 },
+        "height": { "type": "number", "minimum": 0, "maximum": 1 },
+        "thickness": { "type": "number", "minimum": 0, "maximum": 1 },
+        "softness": { "type": "number", "minimum": 0, "maximum": 1 },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "angle": { "type": "number", "minimum": -180, "maximum": 180 },
+        "rotation": { "type": "number", "minimum": -180, "maximum": 180 },
+        "paletteSlot": { "type": "string", "maxLength": 24 },
+        "blend": { "type": "string", "maxLength": 24 },
+        "grain": { "type": "number", "minimum": 0, "maximum": 1 },
+        "gloss": { "type": "number", "minimum": 0, "maximum": 1 },
+        "direction": { "type": "string", "maxLength": 24 },
+        "transform": { "type": "object", "additionalProperties": true },
+        "mask": { "type": "object", "additionalProperties": true },
+        "motion": { "type": "object", "additionalProperties": true },
+        "keyframes": { "$ref": "#/definitions/keyframes" },
+        "relations": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "required": ["type", "target"],
+            "additionalProperties": true,
+            "properties": {
+              "type": { "type": "string", "maxLength": 24 },
+              "target": { "type": "integer", "minimum": 0, "maximum": 7 },
+              "delay": { "type": "number", "minimum": 0, "maximum": 2 },
+              "strength": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        }
+      }
+    },
+    "keyframes": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "required": ["at"],
+        "additionalProperties": true,
+        "properties": {
+          "at": { "type": "number", "minimum": 0, "maximum": 1 },
+          "easing": { "type": "string", "maxLength": 32 },
+          "values": { "type": "object", "additionalProperties": { "type": "number" } }
         }
       }
     }
@@ -55,7 +122,7 @@
     "renderer": "resources/ai-dream.html",
     "sandbox": "iframe",
     "persistence": "none",
-    "notes": "Renderer must run without host DOM access, respect prefers-reduced-motion, and clamp every numeric field again."
+    "notes": "Renderer must run without host DOM access, respect prefers-reduced-motion, clamp every numeric field again, and degrade unknown vocabulary to a visible fallback (never blank, never throw)."
   },
   "hosts": {
     "dsh": { "kind": "in-process-plugin" },

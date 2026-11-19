@@ -95,7 +95,7 @@ macro 只能引用已注册原语与参数，不能执行代码；嵌套 macro �
 
 ## 7. 版本演进
 
-v3 主版本；字段只增不删；未知字段忽略；未知枚举走降级；`schema` 不强制。MCP `express_emotion` schema 在后续轮次同步至 v3。
+v3 主版本；字段只增不删；未知字段忽略；未知枚举走降级；`schema` 不强制。**MCP 工具契约已同步（v1.26.0）**：`mcp/app-manifest.json` 的 `protocol` 为 3，`express_emotion` 接受 layers/macros/keyframes/relations/seed/variation/afterglow（开放词汇），server 输出 `tier`/`layers`/`degradations`。
 
 ## 8. 兼容性证据：四种"别的 AI 风格"样例
 

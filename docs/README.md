@@ -78,5 +78,5 @@
 
 ## 当前状态
 
-- **最近发布**：`1.25.0` —— v3 动画引擎（core 采样纯函数 + 客户端 rAF：breath/drift/rotate/wobble/flicker/uneven/hold/keyframes/relations/variation）；GUI 截图待 token 刷新；
-- **下一步**：补跑 GUI 截图（需要新 token）→ MCP schema 同步 v3 → 文档收尾 → `v3.0.0`。
+- **最近发布**：`1.26.0` —— MCP 工具契约同步协议 v3（开放词汇 + layers/macros/keyframes/relations，server 返回 tier/layers/degradations）；
+- **下一步**：补跑 GUI 截图（需新 token）→ iframe 渲染器支持 v3 层 → 文档收尾 → `v3.0.0`。

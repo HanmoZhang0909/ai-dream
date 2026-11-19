@@ -10,7 +10,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import readline from 'node:readline'
 import { fileURLToPath } from 'node:url'
-import { normalizeMood } from '../renderer/core.mjs'
+import { normalizeMood, planExpressionV3, resolveCapabilities } from '../renderer/core.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'mcp/app-manifest.json'), 'utf8'))
@@ -53,17 +53,23 @@ export function callTool(name, args) {
   if (!args || typeof args !== 'object' || Array.isArray(args)) throw rpcError(-32602, 'arguments must be an object')
   if (args.kind !== 'mood') throw rpcError(-32602, 'kind must be "mood"')
   const model = normalizeMood(args)
+  // v3: plan against the default (full) capabilities so hosts see the same tier
+  // and degradation notes the renderer would produce.
+  const plan = planExpressionV3(args, resolveCapabilities())
   return {
     content: [{
       type: 'text',
       text: JSON.stringify({
         ok: true,
-        protocol: 2,
+        protocol: 3,
+        tier: plan.tier,
         mood: model.mood,
         pattern: model.nebula.pattern,
         intensity: model.intensity,
         colors: model.colors,
         transition: model.transition,
+        layers: plan.layers.length,
+        degradations: plan.degradations.slice(0, 8),
       }),
     }],
   }

@@ -1,8 +1,8 @@
 # AI Dream — MCP App 移植说明
 
-> 状态：规格与清单已就绪（v1.5），渲染器 HTML 待产出。目标：同一套表达协议与渲染引擎能跑在 ChatGPT / Claude 的沙箱 iframe 里。
+> 状态：规格、工具契约与 server 骨架已就绪；工具契约已同步**协议 v3**（开放词汇 + layers/macros/keyframes/关系，v1.26）。渲染器 HTML 目前只覆盖 v2 形态，v3 分层渲染待补。目标：同一套表达协议与渲染引擎能跑在 ChatGPT / Claude 的沙箱 iframe 里。
 >
-> 权威协议见 [`expression-protocol.md`](expression-protocol.md)；本文件只描述**宿主移植**，不重复字段定义。
+> 权威协议见 [`expression-protocol.md`](expression-protocol.md) 与 [`protocol-v3.md`](protocol-v3.md)；本文件只描述**宿主移植**，不重复字段定义。
 
 ## 1. 为什么这样移植
 
@@ -22,7 +22,9 @@ MCP server（Host 侧）
 └── 可选：tool: define_emotions     ← AI 追加情绪定义（对应 DSH 的 define 块）
 ```
 
-DSH 里的 `canvas` 围栏协议与 `express_emotion` 的入参是**同一份字段**；MCP 侧不再区分 mood/define/diagram，先只移植 mood（v1.5 范围）。
+DSH 里的 `canvas` 围栏协议与 `express_emotion` 的入参是**同一份字段**；MCP 侧不再区分 mood/define/diagram，先只移植 mood。
+
+**协议 v3（v1.26 起）**：`express_emotion` 接受 L0–L3 全部表达——`palette/intensity`、`form/motion`、`layers`（开放 primitive 名 + transform/mask/blend/grain/gloss/direction）、`macros`、`seed/variation`、`keyframes`、`afterglow`、层间 `relations`。未知词汇不会被拒绝：server 用 core 的 `planExpressionV3` 规划，返回 `tier`、`layers` 数量与 `degradations`（宿主可记录/展示），渲染器需按同一降级链落到可见保底。
 
 ## 3. 宿主要求与限制
 
