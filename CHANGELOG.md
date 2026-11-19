@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.25.0 — 2026-11-18
+
+- v3 animation engine: pure samplers in `renderer/core.mjs` — `sampleMotionV3` (breath/drift/rotate/wobble/flicker/uneven/hold, bounded and deterministic, reduced-motion identity), `sampleKeyframesV3` (eased interpolation incl. `steps(n)`), `variationOffset`/`hashUnit` (seeded per-layer sampling), `applyRelationsV3` (follow/converge/split/echo with delay and strength). Unit-tested: determinism, bounds, hold freeze, flicker clamp, easing, relations offsets, reduced motion.
+- Client integration: `V3Scene` now drives one rAF loop that applies the mirrored samplers to layer `transform`/`opacity` only (paused while the tab is hidden, honours `prefers-reduced-motion`), carries `data-ai-dream-v3-animated`, and mixes per-layer keyframes and seed variation.
+- GUI verification for this round is still pending a fresh `dsh web` token (the previous one was rotated; page answers 401).
+
 ## 1.24.0 — 2026-11-18
 
 - v3 renderer (step 1, static layers): `client.js` gains `planV3Client` and `V3Scene` — v3 expressions with `layers` now render as absolutely positioned CSS layers with per-layer palette slot, opacity, blend mode, blur from `softness`, `transform` (scale/translate/rotate/skew), `mask` (radial/linear), grain overlay, and resolved primitives (blob/ring/band/spiral/lines/haze/particles). Unknown vocabulary is resolved client-side by the same fallback chain as the core planner.

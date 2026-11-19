@@ -601,6 +601,175 @@ function planTierFromData(expression, planned, macroUsed) {
   return 'L2'
 }
 
+// ---------------------------------------------------------------- v3 animation
+// Pure sampling functions: given a normalized v3 plan and a time offset they
+// return bounded transform/opacity values. The client mirrors these functions;
+// everything here is deterministic and unit-tested.
+
+export function hashUnit(seed, index) {
+  let x = (Math.imul(Math.round(seed || 0) | 0, 374761393) + Math.imul(Math.round(index || 0) | 0, 668265263)) | 0
+  x = Math.imul(x ^ (x >>> 13), 1274126177)
+  x = (x ^ (x >>> 16)) >>> 0
+  return x / 4294967295
+}
+
+/** Deterministic per-layer sampling offset in -1..1 (0 when variation is 0). */
+export function variationOffset(seed, variation, index) {
+  const amount = clampRange(variation, 0, 1, 0)
+  return (hashUnit(seed, index) * 2 - 1) * amount
+}
+
+/** Easing lookup used by keyframes (unknown names fall back to linear). */
+export function easingAt(name, progress) {
+  const value = Math.min(1, Math.max(0, typeof progress === 'number' && Number.isFinite(progress) ? progress : 0))
+  if (name === 'ease-in') return value * value
+  if (name === 'ease-out') return 1 - (1 - value) * (1 - value)
+  if (name === 'ease-in-out') return value < 0.5 ? 2 * value * value : 1 - Math.pow(-2 * value + 2, 2) / 2
+  const steps = /^steps\((\d{1,2})\)$/.exec(typeof name === 'string' ? name : '')
+  if (steps) {
+    const count = Math.max(1, Math.min(20, Number(steps[1])))
+    return Math.floor(value * count) / count
+  }
+  return value
+}
+
+/** Sample keyframes at 0..1 progress; returns numeric values (empty when unusable). */
+export function sampleKeyframesV3(keyframes, progress) {
+  if (!Array.isArray(keyframes) || keyframes.length < 2) return {}
+  const frames = keyframes.filter(frame => frame && Number.isFinite(frame.at)).slice(0, 12)
+  if (frames.length < 2) return {}
+  const t = clampRange(progress, 0, 1, 0)
+  let from = frames[0]
+  let to = frames[frames.length - 1]
+  for (let index = 0; index < frames.length - 1; index += 1) {
+    const a = frames[index]
+    const b = frames[index + 1]
+    if (t >= a.at && t <= b.at) {
+      from = a
+      to = b
+      break
+    }
+  }
+  const span = to.at - from.at
+  const local = span <= 0 ? 0 : easingAt(to.easing, (t - from.at) / span)
+  const out = {}
+  const keys = new Set(Object.keys(from.values || {}).concat(Object.keys(to.values || {})))
+  for (const key of keys) {
+    const a = from.values && Number.isFinite(from.values[key]) ? from.values[key] : null
+    const b = to.values && Number.isFinite(to.values[key]) ? to.values[key] : null
+    if (a === null && b === null) continue
+    if (a === null) out[key] = b
+    else if (b === null) out[key] = a
+    else out[key] = a + (b - a) * local
+  }
+  return out
+}
+
+/**
+ * Sample one motion block at tSeconds. Returns bounded transform/opacity deltas:
+ * { dx, dy } in percent, `scale`/`rotate` multipliers/degrees and `opacity` 0..1.
+ */
+export function sampleMotionV3(motion, tSeconds, options = {}) {
+  const source = motion && typeof motion === 'object' ? motion : {}
+  const t = Math.max(0, Number.isFinite(tSeconds) ? tSeconds : 0)
+  const reduced = options.reducedMotion === true
+  const base = { dx: 0, dy: 0, scale: 1, rotate: 0, opacity: 1 }
+  if (reduced) return base
+  const hold = source.hold && typeof source.hold === 'object' ? clampRange(source.hold.holdSeconds, 0.5, 20, 2) : 0
+  if (hold > 0 && t < hold) return base
+  const tau = 2 * Math.PI
+  let scale = 1
+  let rotate = 0
+  let dx = 0
+  let dy = 0
+  let opacity = 1
+  if (source.breath && typeof source.breath === 'object') {
+    const rate = clampRange(source.breath.rate, 0.05, 2, 0.3)
+    const depth = clampRange(source.breath.depth, 0, 0.3, 0.06)
+    scale *= 1 + depth * Math.sin(tau * rate * t)
+    opacity *= 1 - depth * 0.35 * (0.5 + 0.5 * Math.sin(tau * rate * t + Math.PI))
+  }
+  if (source.drift && typeof source.drift === 'object') {
+    const x = clampRange(source.drift.x, -0.3, 0.3, 0.05)
+    const y = clampRange(source.drift.y, -0.3, 0.3, 0)
+    const speed = clampRange(source.drift.speed, 0, 2, 0.4)
+    dx += x * 100 * Math.sin(tau * (0.05 + 0.05 * speed) * t)
+    dy += y * 100 * Math.sin(tau * (0.04 + 0.04 * speed) * t + 0.7)
+  }
+  if (source.rotate && typeof source.rotate === 'object') {
+    rotate += clampRange(source.rotate.speed, -1, 1, 0.1) * 60 * t
+  }
+  if (source.wobble && typeof source.wobble === 'object') {
+    const amplitude = clampRange(source.wobble.amplitude, 0, 0.3, 0.08)
+    const frequency = clampRange(source.wobble.frequency, 0.1, 2, 0.4)
+    scale *= 1 + amplitude * Math.sin(tau * frequency * t)
+    dx += amplitude * 12 * Math.cos(tau * frequency * t)
+  }
+  if (source.flicker && typeof source.flicker === 'object') {
+    const rate = clampRange(source.flicker.rate, 0.5, V3_LIMITS.flickerHz, 1.6)
+    const depth = clampRange(source.flicker.depth, 0, 0.4, 0.1)
+    opacity *= 1 - depth * (0.5 + 0.5 * Math.sin(tau * rate * t))
+  }
+  if (source.uneven && typeof source.uneven === 'object') {
+    const rate = clampRange(source.uneven.rate, 0.1, 4, 0.8)
+    const clusters = clampRange(source.uneven.clusters, 2, 5, 3)
+    const envelope = Math.sin(tau * rate * t + Math.sin(tau * 0.23 * t) * clusters)
+    opacity *= 1 - 0.12 * (0.5 + 0.5 * envelope)
+    scale *= 1 + 0.03 * envelope
+  }
+  return {
+    dx: Math.max(-80, Math.min(80, dx)),
+    dy: Math.max(-80, Math.min(80, dy)),
+    scale: Math.max(0.2, Math.min(3, scale)),
+    rotate: Math.max(-720, Math.min(720, rotate)),
+    opacity: Math.max(0, Math.min(1, opacity)),
+  }
+}
+
+/**
+ * Apply layer relations (follow/converge/split/echo) on top of their own motion.
+ * Deterministic; missing targets are ignored (degradation already recorded).
+ */
+export function applyRelationsV3(layers, tSeconds, options = {}) {
+  const list = Array.isArray(layers) ? layers : []
+  const own = list.map((layer, index) => sampleMotionV3(layer && layer.motion, tSeconds, options))
+  const result = own.map(item => Object.assign({}, item))
+  list.forEach((layer, index) => {
+    if (!layer || !Array.isArray(layer.relations)) return
+    layer.relations.forEach(relation => {
+      if (!relation || !Number.isFinite(relation.target) || relation.target < 0 || relation.target >= list.length) return
+      if (relation.target === index) return
+      const target = own[relation.target]
+      const strength = clampRange(relation.strength, 0, 1, 0.5)
+      const delay = clampRange(relation.delay, 0, 2, 0)
+      const delayed = delay > 0 ? sampleMotionV3(list[relation.target].motion, Math.max(0, tSeconds - delay), options) : target
+      const output = result[index]
+      if (relation.type === 'follow') {
+        output.dx += delayed.dx * strength
+        output.dy += delayed.dy * strength
+      } else if (relation.type === 'converge') {
+        output.dx -= delayed.dx * strength * 0.5
+        output.dy -= delayed.dy * strength * 0.5
+        output.scale *= 1 - strength * 0.05
+      } else if (relation.type === 'split') {
+        output.dx -= delayed.dx * strength
+        output.dy -= delayed.dy * strength
+      } else if (relation.type === 'echo') {
+        output.dx += delayed.dx * strength * 0.6
+        output.dy += delayed.dy * strength * 0.6
+        output.opacity *= 0.65 + 0.35 * strength
+      } else {
+        return
+      }
+      output.dx = Math.max(-80, Math.min(80, output.dx))
+      output.dy = Math.max(-80, Math.min(80, output.dy))
+      output.scale = Math.max(0.2, Math.min(3, output.scale))
+      output.opacity = Math.max(0, Math.min(1, output.opacity))
+    })
+  })
+  return result
+}
+
 /** Copy for the empty/waiting state (no expression yet). */export const EMPTY_STATE = Object.freeze({
   title: '还没有感受可以成形状',
   hint: '发送消息后画布会亮起',

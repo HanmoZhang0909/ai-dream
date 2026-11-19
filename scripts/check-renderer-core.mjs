@@ -11,14 +11,17 @@ import {
   SIGNATURE_VIEW_LIMIT,
   TIMELINE_LAYOUT,
   TRANSITION_STYLES,
+  applyRelationsV3,
   buildTimelineDots,
   calibrationNoteFor,
   calibrationSnippet,
   clamp,
   cut,
+  easingAt,
   expressionTier,
   extractPartialCanvas,
   formLabel,
+  hashUnit,
   hexColor,
   hexToRgb,
   inReplayMode,
@@ -32,11 +35,14 @@ import {
   planExpressionV3,
   resolveCapabilities,
   resolveColors,
+  sampleKeyframesV3,
+  sampleMotionV3,
   sentinelSelector,
   signatureChips,
   targetFrom,
   tauFor,
   timelineRowRects,
+  variationOffset,
 } from '../renderer/core.mjs'
 
 // --- primitives ---------------------------------------------------------------
@@ -264,6 +270,57 @@ assert.equal(nextDotTurn([10, 11, 12], 12, 'home'), 10)
 assert.equal(nextDotTurn([10, 11, 12], 10, 'end'), 12)
 assert.equal(nextDotTurn([10, 11, 12], 99, 'next'), 10, 'unknown turns start at the first dot')
 
+// --- v3 animation sampling ----------------------------------------------------
+{
+  assert.equal(hashUnit(1, 2), hashUnit(1, 2), 'hash is deterministic')
+  assert.ok(hashUnit(1, 2) >= 0 && hashUnit(1, 2) <= 1)
+  assert.equal(Math.abs(variationOffset(5, 0, 0)), 0, 'no variation means no offset')
+  const varied = [-1, 0, 1, 2, 3].map(index => variationOffset(9, 1, index))
+  assert.ok(varied.every(value => value >= -1 && value <= 1))
+  assert.ok(varied.some(value => value !== varied[0]), 'per-layer offsets differ')
+
+  assert.equal(easingAt('linear', 0.5), 0.5)
+  assert.equal(easingAt('ease-in', 0.5), 0.25)
+  assert.equal(easingAt('ease-out', 0.5), 0.75)
+  assert.equal(easingAt('ease-in-out', 0.5), 0.5)
+  assert.equal(easingAt('steps(4)', 0.4), 0.25)
+  assert.equal(easingAt('bogus', 0.3), 0.3)
+
+  const kf = [
+    { at: 0, values: { scale: 1, opacity: 0.5 } },
+    { at: 1, values: { scale: 2, opacity: 1 }, easing: 'ease-out' },
+  ]
+  assert.deepEqual(sampleKeyframesV3(kf, 0), { scale: 1, opacity: 0.5 })
+  assert.deepEqual(sampleKeyframesV3(kf, 1), { scale: 2, opacity: 1 })
+  assert.deepEqual(sampleKeyframesV3(kf, 0.5), { scale: 1.75, opacity: 0.875 })
+  assert.deepEqual(sampleKeyframesV3([], 0.5), {})
+  assert.deepEqual(sampleKeyframesV3([{ at: 0, values: { x: 1 } }], 0.5), {})
+
+  const motion = { breath: { rate: 0.5, depth: 0.1 }, drift: { x: 0.1, y: 0.05, speed: 0.5 }, rotate: { speed: 1 }, wobble: { amplitude: 0.2, frequency: 0.5 } }
+  const first = sampleMotionV3(motion, 1.3)
+  assert.deepEqual(sampleMotionV3(motion, 1.3), first, 'sampling is deterministic')
+  assert.deepEqual(sampleMotionV3(motion, 1.3, { reducedMotion: true }), { dx: 0, dy: 0, scale: 1, rotate: 0, opacity: 1 })
+  assert.ok(first.opacity >= 0 && first.opacity <= 1)
+  assert.ok(first.scale > 0 && first.scale <= 3)
+  assert.ok(Math.abs(first.dx) <= 80)
+  assert.equal(sampleMotionV3({ hold: { holdSeconds: 3 } }, 1).scale, 1, 'hold freezes motion')
+  assert.equal(sampleMotionV3({ rotate: { speed: 1 } }, 30).rotate, 720, 'rotation is bounded')
+  const flicker = sampleMotionV3({ flicker: { rate: 50, depth: 5 } }, 0.2)
+  assert.ok(flicker.opacity >= 0)
+
+  const layers = [
+    { motion: { wobble: { amplitude: 0.2, frequency: 0.5 } } },
+    { motion: { wobble: { amplitude: 0.2, frequency: 0.5 } }, relations: [{ type: 'follow', target: 0, strength: 1 }] },
+    { motion: {}, relations: [{ type: 'converge', target: 0, strength: 1 }] },
+  ]
+  const rel = applyRelationsV3(layers, 0.7)
+  assert.equal(rel.length, 3)
+  assert.ok(Math.abs(rel[1].dx) >= Math.abs(rel[0].dx), 'follow adds the target offset')
+  assert.ok(rel[0].dx !== undefined)
+  const holdLayout = applyRelationsV3([{ motion: { hold: { holdSeconds: 5 } } }], 1, { reducedMotion: true })
+  assert.equal(holdLayout[0].dx, 0)
+}
+
 // --- protocol v3 planner (open vocabulary, safe degradation) -----------------
 {
   const fixtures = ['minimal', 'lyrical', 'geometric', 'symbolic', 'wild']
@@ -457,6 +514,8 @@ assert.equal(nextDotTurn([10, 11, 12], 99, 'next'), 10, 'unknown turns start at 
   assert.ok(client.includes('planV3Client'), 'client keeps the v3 client planner')
   assert.ok(client.includes('data-ai-dream-v3'), 'client keeps the v3 scene hook')
   assert.ok(client.includes('V3Scene'), 'client renders v3 layers')
+  assert.ok(client.includes('v3SampleMotion') && client.includes('v3ApplyRelations'), 'client keeps the v3 animation samplers')
+  assert.ok(client.includes('data-ai-dream-v3-animated'), 'client flags animated v3 scenes')
   assert.ok(client.includes('__AI_DREAM_FORCE_FORM'), 'client keeps the form test hook')
   assert.ok(client.includes('data-ai-dream-form'), 'client exposes the rendered form')
 }

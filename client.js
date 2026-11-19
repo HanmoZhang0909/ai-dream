@@ -787,15 +787,213 @@ window.__ModuleLoader__.load({
       return 'radial-gradient(circle at 50% 50%, ' + core + ' 0%, ' + tone + ' ' + size + '%, transparent 82%)'
     }
 
+    // Animation mirrors of renderer/core.mjs samplers (deterministic, bounded).
+    function v3HashUnit(seed, index) {
+      let x = (Math.imul(Math.round(seed || 0) | 0, 374761393) + Math.imul(Math.round(index || 0) | 0, 668265263)) | 0
+      x = Math.imul(x ^ (x >>> 13), 1274126177)
+      x = (x ^ (x >>> 16)) >>> 0
+      return x / 4294967295
+    }
+
+    function v3VariationOffset(seed, variation, index) {
+      const amount = v3Clamp(variation, 0, 1, 0)
+      return (v3HashUnit(seed, index) * 2 - 1) * amount
+    }
+
+    function v3Easing(name, progress) {
+      const value = Math.min(1, Math.max(0, typeof progress === 'number' && Number.isFinite(progress) ? progress : 0))
+      if (name === 'ease-in') return value * value
+      if (name === 'ease-out') return 1 - (1 - value) * (1 - value)
+      if (name === 'ease-in-out') return value < 0.5 ? 2 * value * value : 1 - Math.pow(-2 * value + 2, 2) / 2
+      const steps = /^steps\((\d{1,2})\)$/.exec(typeof name === 'string' ? name : '')
+      if (steps) {
+        const count = Math.max(1, Math.min(20, Number(steps[1])))
+        return Math.floor(value * count) / count
+      }
+      return value
+    }
+
+    function v3SampleKeyframes(keyframes, progress) {
+      if (!Array.isArray(keyframes) || keyframes.length < 2) return {}
+      const frames = keyframes.filter(frame => frame && Number.isFinite(frame.at)).slice(0, 12)
+      if (frames.length < 2) return {}
+      const t = v3Clamp(progress, 0, 1, 0)
+      let from = frames[0]
+      let to = frames[frames.length - 1]
+      for (let index = 0; index < frames.length - 1; index += 1) {
+        const a = frames[index]
+        const b = frames[index + 1]
+        if (t >= a.at && t <= b.at) {
+          from = a
+          to = b
+          break
+        }
+      }
+      const span = to.at - from.at
+      const local = span <= 0 ? 0 : v3Easing(to.easing, (t - from.at) / span)
+      const out = {}
+      const keys = new Set(Object.keys(from.values || {}).concat(Object.keys(to.values || {})))
+      keys.forEach(key => {
+        const a = from.values && Number.isFinite(from.values[key]) ? from.values[key] : null
+        const b = to.values && Number.isFinite(to.values[key]) ? to.values[key] : null
+        if (a === null && b === null) return
+        if (a === null) out[key] = b
+        else if (b === null) out[key] = a
+        else out[key] = a + (b - a) * local
+      })
+      return out
+    }
+
+    function v3SampleMotion(motion, tSeconds, reducedMotion) {
+      const source = motion && typeof motion === 'object' ? motion : {}
+      const t = Math.max(0, Number.isFinite(tSeconds) ? tSeconds : 0)
+      const base = { dx: 0, dy: 0, scale: 1, rotate: 0, opacity: 1 }
+      if (reducedMotion) return base
+      if (source.hold && typeof source.hold === 'object') {
+        const hold = v3Clamp(source.hold.holdSeconds, 0.5, 20, 2)
+        if (t < hold) return base
+      }
+      const tau = 2 * Math.PI
+      let scale = 1
+      let rotate = 0
+      let dx = 0
+      let dy = 0
+      let opacity = 1
+      if (source.breath && typeof source.breath === 'object') {
+        const rate = v3Clamp(source.breath.rate, 0.05, 2, 0.3)
+        const depth = v3Clamp(source.breath.depth, 0, 0.3, 0.06)
+        scale *= 1 + depth * Math.sin(tau * rate * t)
+        opacity *= 1 - depth * 0.35 * (0.5 + 0.5 * Math.sin(tau * rate * t + Math.PI))
+      }
+      if (source.drift && typeof source.drift === 'object') {
+        const x = v3Clamp(source.drift.x, -0.3, 0.3, 0.05)
+        const y = v3Clamp(source.drift.y, -0.3, 0.3, 0)
+        const speed = v3Clamp(source.drift.speed, 0, 2, 0.4)
+        dx += x * 100 * Math.sin(tau * (0.05 + 0.05 * speed) * t)
+        dy += y * 100 * Math.sin(tau * (0.04 + 0.04 * speed) * t + 0.7)
+      }
+      if (source.rotate && typeof source.rotate === 'object') {
+        rotate += v3Clamp(source.rotate.speed, -1, 1, 0.1) * 60 * t
+      }
+      if (source.wobble && typeof source.wobble === 'object') {
+        const amplitude = v3Clamp(source.wobble.amplitude, 0, 0.3, 0.08)
+        const frequency = v3Clamp(source.wobble.frequency, 0.1, 2, 0.4)
+        scale *= 1 + amplitude * Math.sin(tau * frequency * t)
+        dx += amplitude * 12 * Math.cos(tau * frequency * t)
+      }
+      if (source.flicker && typeof source.flicker === 'object') {
+        const rate = v3Clamp(source.flicker.rate, 0.5, 3, 1.6)
+        const depth = v3Clamp(source.flicker.depth, 0, 0.4, 0.1)
+        opacity *= 1 - depth * (0.5 + 0.5 * Math.sin(tau * rate * t))
+      }
+      if (source.uneven && typeof source.uneven === 'object') {
+        const rate = v3Clamp(source.uneven.rate, 0.1, 4, 0.8)
+        const clusters = v3Clamp(source.uneven.clusters, 2, 5, 3)
+        const envelope = Math.sin(tau * rate * t + Math.sin(tau * 0.23 * t) * clusters)
+        opacity *= 1 - 0.12 * (0.5 + 0.5 * envelope)
+        scale *= 1 + 0.03 * envelope
+      }
+      return {
+        dx: Math.max(-80, Math.min(80, dx)),
+        dy: Math.max(-80, Math.min(80, dy)),
+        scale: Math.max(0.2, Math.min(3, scale)),
+        rotate: Math.max(-720, Math.min(720, rotate)),
+        opacity: Math.max(0, Math.min(1, opacity)),
+      }
+    }
+
+    function v3ApplyRelations(layers, tSeconds, reducedMotion) {
+      const list = Array.isArray(layers) ? layers : []
+      const own = list.map(layer => v3SampleMotion(layer.motion, tSeconds, reducedMotion))
+      const result = own.map(item => Object.assign({}, item))
+      list.forEach((layer, index) => {
+        if (!layer || !Array.isArray(layer.relations)) return
+        layer.relations.forEach(relation => {
+          if (!relation || !Number.isFinite(relation.target) || relation.target < 0 || relation.target >= list.length) return
+          if (relation.target === index) return
+          const strength = v3Clamp(relation.strength, 0, 1, 0.5)
+          const delay = v3Clamp(relation.delay, 0, 2, 0)
+          const delayed = delay > 0 ? v3SampleMotion(list[relation.target].motion, Math.max(0, tSeconds - delay), reducedMotion) : own[relation.target]
+          const out = result[index]
+          if (relation.type === 'follow') {
+            out.dx += delayed.dx * strength
+            out.dy += delayed.dy * strength
+          } else if (relation.type === 'converge') {
+            out.dx -= delayed.dx * strength * 0.5
+            out.dy -= delayed.dy * strength * 0.5
+            out.scale *= 1 - strength * 0.05
+          } else if (relation.type === 'split') {
+            out.dx -= delayed.dx * strength
+            out.dy -= delayed.dy * strength
+          } else if (relation.type === 'echo') {
+            out.dx += delayed.dx * strength * 0.6
+            out.dy += delayed.dy * strength * 0.6
+            out.opacity *= 0.65 + 0.35 * strength
+          } else {
+            return
+          }
+          out.dx = Math.max(-80, Math.min(80, out.dx))
+          out.dy = Math.max(-80, Math.min(80, out.dy))
+          out.scale = Math.max(0.2, Math.min(3, out.scale))
+          out.opacity = Math.max(0, Math.min(1, out.opacity))
+        })
+      })
+      return result
+    }
+
     /** v3 scene: layers rendered as absolutely positioned CSS layers (no layout animation). */
     function V3Scene(props) {
       const plan = props && props.plan ? props.plan : {}
       const layers = Array.isArray(plan.layers) ? plan.layers : []
       const palette = plan.palette || { base: '#05070c', core: '#cfe0ff', tone: '#5f7bb8', spectrum: [] }
       const hasGrain = layers.some(layer => layer.grain > 0.05)
+      const animated = layers.some(layer => (layer.motion && Object.keys(layer.motion).length > 0)
+        || (layer.keyframes && layer.keyframes.length >= 2)
+        || (layer.relations && layer.relations.length > 0))
+        || Boolean(plan.keyframes && plan.keyframes.length >= 2)
+      const refs = React.useRef([])
+      const baseTransforms = React.useRef([])
+
+      React.useEffect(() => {
+        if (!animated || typeof window === 'undefined' || typeof requestAnimationFrame !== 'function') return undefined
+        const reduced = Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+        if (reduced) return undefined
+        let frame = 0
+        let started = 0
+        const loop = now => {
+          if (!started) started = now
+          const t = (now - started) / 1000
+          if (!document.hidden) {
+            const samples = v3ApplyRelations(layers, t, false)
+            refs.current.forEach((node, index) => {
+              if (!node) return
+              const layer = layers[index] || {}
+              const sample = samples[index] || { dx: 0, dy: 0, scale: 1, rotate: 0, opacity: 1 }
+              const offset = v3VariationOffset(plan.seed || 0, plan.variation || 0, index)
+              const keys = layer.keyframes && layer.keyframes.length >= 2
+                ? v3SampleKeyframes(layer.keyframes, (t % 6) / 6)
+                : (plan.keyframes && plan.keyframes.length >= 2 ? v3SampleKeyframes(plan.keyframes, (t % 6) / 6) : null)
+              const scale = sample.scale * (keys && Number.isFinite(keys.scale) ? keys.scale : 1)
+              const dx = sample.dx + offset * 6
+              const dy = sample.dy + offset * 4
+              node.style.transform = (baseTransforms.current[index] || '')
+                + ' translate3d(' + dx.toFixed(2) + '%, ' + dy.toFixed(2) + '%, 0)'
+                + ' scale(' + scale.toFixed(3) + ') rotate(' + sample.rotate.toFixed(2) + 'deg)'
+              const opacity = (typeof layer.opacity === 'number' ? layer.opacity : 0.7) * sample.opacity
+                * (keys && Number.isFinite(keys.opacity) ? keys.opacity : 1)
+              node.style.opacity = String(Math.max(0, Math.min(1, opacity)))
+            })
+          }
+          frame = requestAnimationFrame(loop)
+        }
+        frame = requestAnimationFrame(loop)
+        return () => cancelAnimationFrame(frame)
+      }, [animated, plan, layers])
+
       return h('div', {
         'data-ai-dream-v3': '1',
         'data-ai-dream-v3-layers': String(layers.length),
+        'data-ai-dream-v3-animated': animated ? '1' : '0',
         style: { position: 'absolute', inset: 0, background: palette.base, overflow: 'hidden' },
       },
       layers.map((layer, index) => {
@@ -806,6 +1004,7 @@ window.__ModuleLoader__.load({
             + 'scale(' + layer.transform.scale + ') rotate(' + Math.round(layer.transform.rotate) + 'deg)'
             + (layer.transform.skew ? ' skew(' + Math.round(layer.transform.skew) + 'deg)' : '')
           : 'rotate(' + Math.round(layer.rotation) + 'deg)'
+        baseTransforms.current[index] = transform
         const style = {
           position: 'absolute',
           inset: 0,
@@ -827,6 +1026,7 @@ window.__ModuleLoader__.load({
         }
         return h('div', {
           key: 'v3-' + index,
+          ref: node => { refs.current[index] = node },
           'data-ai-dream-v3-layer': String(index),
           'data-ai-dream-v3-primitive': layer.primitive,
           style,
