@@ -159,6 +159,18 @@ export function calibrationNoteFor(bias, delta) {
   return '更淡了 · 只影响画面'
 }
 
+/** Copy for the empty/waiting state (no expression yet). */
+export const EMPTY_STATE = Object.freeze({
+  title: '还没有感受可以成形状',
+  hint: '发送消息后画布会亮起',
+  intensity: 0.2,
+})
+
+/** Whether the canvas should show the waiting state instead of a default glow. */
+export function isEmptyState(hasExpression) {
+  return !hasExpression
+}
+
 /** Interpolation time constant: how fast the glow glides to a new target. */
 export function tauFor(speed, style) {
   const base = speed === 'slow' ? 1600 : speed === 'fast' ? 380 : 900

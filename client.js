@@ -228,6 +228,17 @@ window.__ModuleLoader__.load({
     // forces the hint and disables auto-hide; no effect for real users.
     const FORCE_ONBOARD = (typeof window !== 'undefined' && window.__AI_DREAM_FORCE_ONBOARD === true)
       || (typeof location !== 'undefined' && /[?&]ai-dream-onboard=1/.test(location.search))
+    // Test hook: window.__AI_DREAM_FORCE_EMPTY (CDP preload) forces the waiting state.
+    const FORCE_EMPTY = (typeof window !== 'undefined' && window.__AI_DREAM_FORCE_EMPTY === true)
+
+    // Empty-state ring animation, injected once; reduced motion is handled in CSS.
+    if (typeof document !== 'undefined' && !document.getElementById('ai-dream-style')) {
+      const style = document.createElement('style')
+      style.id = 'ai-dream-style'
+      style.textContent = '@keyframes aiDreamEmptyPulse{0%,100%{opacity:.3}50%{opacity:.65}}'
+        + '@media (prefers-reduced-motion: reduce){[data-ai-dream-empty-ring]{animation:none !important}}'
+      document.head.appendChild(style)
+    }
 
     function readOnboarded() {
       if (FORCE_ONBOARD) return false
@@ -1194,24 +1205,14 @@ window.__ModuleLoader__.load({
       const [returning, setReturning] = React.useState(false)
       const [calibrationNote, setCalibrationNote] = React.useState(null)
       const calibrationNoteTimer = React.useRef(0)
+      // The onboarding hint is only "used up" once it has actually been rendered.
+      const onboardingShownRef = React.useRef(false)
       const topTurnRaw = useTopTurn()
       const atBottom = useTimelineAtBottom()
       const topTurn = CONFIG.replayEnabled === false || atBottom ? null : topTurnRaw
 
-      React.useEffect(() => {
-        if (!onboarding || FORCE_ONBOARD) return undefined
-        const fadeTimer = setTimeout(() => setOnboardingFading(true), 4200)
-        const hideTimer = setTimeout(() => {
-          setOnboarding(false)
-          markOnboarded()
-        }, 5000)
-        return () => {
-          clearTimeout(fadeTimer)
-          clearTimeout(hideTimer)
-        }
-      }, [onboarding])
-
       const dismissOnboarding = () => {
+        onboardingShownRef.current = true
         setOnboarding(false)
         markOnboarded()
       }
@@ -1300,6 +1301,7 @@ window.__ModuleLoader__.load({
       if (timeline.latest) shown.current = timeline.latest
 
       const failed = feed != null && !timeline.parsedAny && shown.current == null
+      const isEmpty = FORCE_EMPTY || (!shown.current && !failed)
       let baseModel = shown.current || (failed ? null : { ...MOOD_DEFAULT, intensity: CONFIG.defaultIntensity })
       // Replay mode: scrolled above the newest turn → show that turn's emotion,
       // falling back to the nearest earlier expressed turn.
@@ -1316,6 +1318,26 @@ window.__ModuleLoader__.load({
       const model = baseModel && baseModel.kind === 'mood'
         ? { ...baseModel, intensity: clamp(baseModel.intensity + CALIBRATION.intensityBias, 0.2, 1) }
         : baseModel
+
+      // The onboarding hint may only be consumed after it was actually rendered;
+      // the waiting state must not mark it as seen.
+      React.useEffect(() => {
+        if (!onboarding || FORCE_ONBOARD) return undefined
+        setOnboardingFading(false)
+        const fadeTimer = setTimeout(() => {
+          if (!onboardingShownRef.current) return
+          setOnboardingFading(true)
+        }, 4200)
+        const hideTimer = setTimeout(() => {
+          if (!onboardingShownRef.current) return
+          setOnboarding(false)
+          markOnboarded()
+        }, 5000)
+        return () => {
+          clearTimeout(fadeTimer)
+          clearTimeout(hideTimer)
+        }
+      }, [onboarding, timeline.latest, isEmpty])
 
       React.useEffect(() => {
         recordHistory(baseModel)
@@ -1341,6 +1363,59 @@ window.__ModuleLoader__.load({
             background: BG,
           },
         }, h(ParseErrorState))
+      }
+
+      if (isEmpty) {
+        // "Sleeping" version of the same glow: smaller, slower, dimmer — same body, lower life state.
+        const waitingModel = {
+          ...MOOD_DEFAULT,
+          intensity: 0.2,
+          orb: { ...MOOD_DEFAULT.orb, size: 0.3, pulse: 'breathe' },
+          motion: { speed: 0.45, amplitude: 0.3, rhythm: 'breathing' },
+        }
+        return h('div', {
+          'data-ai-dream-empty': '1',
+          style: { height: '100%', position: 'relative', background: BG, overflow: 'hidden' },
+        },
+        h('div', {
+          style: { position: 'absolute', inset: 0, opacity: 0.9 },
+        }, h(MoodView, { model: waitingModel, revision: revision.current })),
+        h('div', {
+          'data-ai-dream-empty-ring': '1',
+          'aria-hidden': true,
+          style: {
+            position: 'absolute',
+            left: '50%',
+            top: '42%',
+            width: '30%',
+            maxWidth: 240,
+            aspectRatio: '1',
+            transform: 'translate(-50%, -50%)',
+            border: '0.5px dashed rgba(255,255,255,0.18)',
+            borderRadius: '50%',
+            animation: 'aiDreamEmptyPulse 6s ease-in-out infinite',
+          },
+        }),
+        h('div', {
+          role: 'status',
+          'data-ai-dream-empty-copy': '1',
+          style: {
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: '62%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 6,
+            color: '#aab4c4',
+            textAlign: 'center',
+            padding: '0 24px',
+            pointerEvents: 'none',
+          },
+        },
+        h('div', { style: { fontSize: 13, letterSpacing: '0.02em' } }, '还没有感受可以成形状'),
+        h('div', { style: { fontSize: 11, color: '#78838f' } }, '发送消息后画布会亮起')))
       }
 
       if (model.kind === 'mood') {
@@ -1513,6 +1588,7 @@ window.__ModuleLoader__.load({
             },
           }, calibrationNote)
         } else if (onboarding && dots.length > 0) {
+          onboardingShownRef.current = true
           hintContent = h('div', {
             'data-ai-dream-onboarding': '1',
             style: {

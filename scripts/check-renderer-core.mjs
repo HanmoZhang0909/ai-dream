@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import {
   BUILTIN_PALETTES,
   CALIBRATION,
+  EMPTY_STATE,
   FORMS,
   TIMELINE_LAYOUT,
   TRANSITION_STYLES,
@@ -14,6 +15,7 @@ import {
   hexColor,
   hexToRgb,
   inReplayMode,
+  isEmptyState,
   mixHex,
   nextCalibrationBias,
   normalizeMood,
@@ -173,6 +175,14 @@ assert.equal(inReplayMode(5, null), false)
   assert.deepEqual(buildTimelineDots(new Map()), [])
 }
 
+// --- empty / waiting state ----------------------------------------------------
+assert.equal(EMPTY_STATE.title, '还没有感受可以成形状')
+assert.equal(EMPTY_STATE.hint, '发送消息后画布会亮起')
+assert.equal(EMPTY_STATE.intensity, 0.2, 'waiting glow is dimmer than a normal expression')
+assert.equal(isEmptyState(false), true)
+assert.equal(isEmptyState(true), false)
+assert.equal(isEmptyState(undefined), true)
+
 // --- bottom stack layout invariants (overlap / hit-target bug class) ---------
 {
   assert.equal(TIMELINE_LAYOUT.dotHitSize >= 24, true, 'dot hit target must be at least 24px')
@@ -218,6 +228,9 @@ assert.equal(inReplayMode(5, null), false)
   assert.ok(client.includes('showingReplayHint'), 'client suppresses the hint while returning to live')
   assert.ok(client.includes('calibrationNoteFor'), 'client keeps the calibration feedback logic')
   assert.ok(client.includes('data-ai-dream-calibration-note'), 'client keeps the calibration note hook')
+  assert.ok(client.includes('还没有感受可以成形状'), 'client keeps the empty-state title')
+  assert.ok(client.includes('发送消息后画布会亮起'), 'client keeps the empty-state hint')
+  assert.ok(client.includes('data-ai-dream-empty'), 'client keeps the empty-state hook')
 }
 
 console.log('renderer core checks OK')

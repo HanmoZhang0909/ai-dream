@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.14.0 — 2026-11-18
+
+- Waiting state (GUI-verified): when the session has no expression yet the canvas no longer shows a default "neutral" glow with calibration buttons. It now renders a dimmer, slower "sleeping" version of the same glow, a faint dashed breathing ring, and the copy 「还没有感受可以成形状」/「发送消息后画布会亮起」, with the dots and calibration controls hidden. `EMPTY_STATE` and `isEmptyState` live in `renderer/core.mjs` with unit tests.
+- Fixed a real bug the review found: the waiting state used to consume the one-time onboarding hint (it marked it as seen even though it was never rendered), so first-time users could permanently miss the hint. The hint is now only consumed after it actually rendered, and the waiting state leaves it for the first real expression.
+- Test hook `window.__AI_DREAM_FORCE_EMPTY` (CDP preload) forces the waiting state; the GUI self-test gains a waiting-state phase that asserts the copy, ring, hidden controls and that the onboarding flag stays unset.
+
 ## 1.13.0 — 2026-11-18
 
 - Calibration feedback (GUI-verified): every 不像 / 再强一点 / 再淡一点 click now shows a short note in the reserved hint row — 「更亮了 · 只影响画面」 / 「更淡了 · 只影响画面」, and 「已到上限 · 只影响画面」 when the ±0.4 bias bound is reached — then fades after 1.6s. Pure logic lives in `renderer/core.mjs` (`CALIBRATION`, `nextCalibrationBias`, `calibrationNoteFor`) with unit tests and client-copy parity assertions.
