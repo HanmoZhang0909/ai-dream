@@ -416,6 +416,8 @@ window.__ModuleLoader__.load({
     const FORCE_FORM = (typeof window !== 'undefined' && typeof window.__AI_DREAM_FORCE_FORM === 'string')
       ? window.__AI_DREAM_FORCE_FORM
       : null
+    // Test hook: window.__AI_DREAM_FORCE_PARTIAL injects a partial (streaming) model.
+    const FORCE_PARTIAL = (typeof window !== 'undefined' && window.__AI_DREAM_FORCE_PARTIAL === true)
 
     // Empty-state ring animation, injected once; reduced motion is handled in CSS.
     if (typeof document !== 'undefined' && !document.getElementById('ai-dream-style')) {
@@ -1621,6 +1623,8 @@ window.__ModuleLoader__.load({
       const [returning, setReturning] = React.useState(false)
       const [calibrationNote, setCalibrationNote] = React.useState(null)
       const [dotFocusTurn, setDotFocusTurn] = React.useState(null)
+      const [streamingVisible, setStreamingVisible] = React.useState(false)
+      const [partialStale, setPartialStale] = React.useState(false)
       const calibrationNoteTimer = React.useRef(0)
       const backToLatestRef = React.useRef(null)
       // The onboarding hint is only "used up" once it has actually been rendered.
@@ -1744,9 +1748,15 @@ window.__ModuleLoader__.load({
             if (turn !== null && Number.isFinite(turn)) turnModels.set(turn, block)
           }
         }
+        if (FORCE_PARTIAL) {
+          const forcedPartial = normalize(parsePartialMood('{"kind":"mood","name":"生成中","intensity":0.7,"form":"cloud","palette":{"core":"#ffd9a0","tone":"#ff9f43"}'))
+          if (forcedPartial && forcedPartial.kind === 'mood') {
+            parsedAny = true
+            latest = { ...forcedPartial, partial: true }
+          }
+        }
         return { latest, parsedAny, turnModels, latestTurn }
       }, [feed, wire, wireConfig])
-
       const shown = React.useRef(null)
       if (timeline.latest) shown.current = timeline.latest
 
@@ -1778,6 +1788,9 @@ window.__ModuleLoader__.load({
       const renderedModel = FORCE_FORM && NEBULA_PATTERNS.indexOf(FORCE_FORM) >= 0 && model && model.kind === 'mood'
         ? { ...model, nebula: { ...model.nebula, pattern: FORCE_FORM } }
         : model
+      // Streaming previews keep the default glide (fast transitions amplify the
+      // field jumps a partial block still has while it is being written).
+      const shownModel = renderedModel
 
       // The onboarding hint may only be consumed after it was actually rendered;
       // the waiting state must not mark it as seen.
@@ -1798,6 +1811,23 @@ window.__ModuleLoader__.load({
           clearTimeout(hideTimer)
         }
       }, [onboarding, timeline.latest, isEmpty])
+
+      const isPartialNow = Boolean(shownModel && shownModel.kind === 'mood' && shownModel.partial)
+      // Debounce the streaming hint: only ≥250ms streams show it, and an interrupted
+      // stream (no new feed for 8s) must not leave the hint pinned forever.
+      React.useEffect(() => {
+        setPartialStale(false)
+        if (!isPartialNow) {
+          setStreamingVisible(false)
+          return undefined
+        }
+        const showTimer = setTimeout(() => setStreamingVisible(true), 250)
+        const staleTimer = setTimeout(() => setPartialStale(true), 8000)
+        return () => {
+          clearTimeout(showTimer)
+          clearTimeout(staleTimer)
+        }
+      }, [isPartialNow, feed])
 
       React.useEffect(() => {
         recordHistory(baseModel)
@@ -2079,6 +2109,24 @@ window.__ModuleLoader__.load({
               pointerEvents: 'none',
             },
           }, calibrationNote)
+        } else if (streamingVisible && !partialStale) {
+          hintContent = h('div', {
+            'data-ai-dream-streaming': '1',
+            role: 'status',
+            'aria-live': 'polite',
+            style: {
+              maxWidth: '96%',
+              padding: '2px 8px',
+              borderRadius: 999,
+              background: 'rgba(4,6,12,0.78)',
+              border: '0.5px solid rgba(255,255,255,0.16)',
+              color: '#c8d2e0',
+              fontSize: 10.5,
+              lineHeight: 1.3,
+              transition: 'opacity 0.18s ease',
+              pointerEvents: 'none',
+            },
+          }, '画布生成中…（预览）')
         } else if (onboarding && dots.length > 0) {
           onboardingShownRef.current = true
           hintContent = h('div', {
@@ -2149,9 +2197,10 @@ window.__ModuleLoader__.load({
           'data-ai-dream-force-onboard': FORCE_ONBOARD ? '1' : '0',
           'data-ai-dream-calib': calibrationNote || '0',
           'data-ai-dream-form': renderedModel && renderedModel.nebula ? renderedModel.nebula.pattern : '',
+          'data-ai-dream-partial': renderedModel && renderedModel.partial ? '1' : '0',
           style: { height: '100%', background: BG, position: 'relative' },
         },
-          h(MoodView, { model: renderedModel, revision: revision.current + bump }),
+          h(MoodView, { model: shownModel, revision: revision.current + bump }),
           h(SignatureBadge, { chips: signatureList }),
           h('div', {
             role: 'status',

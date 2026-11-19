@@ -354,6 +354,9 @@ assert.equal(nextDotTurn([10, 11, 12], 99, 'next'), 10, 'unknown turns start at 
   assert.ok(client.includes('data-ai-dream-sync'), 'client keeps the sync-to-AI hook')
   assert.ok(client.includes('重载插件'), 'client mentions the plugin reload requirement')
   assert.ok(client.includes('整份覆盖'), 'client warns about overwriting the calibration file')
+  assert.ok(client.includes('data-ai-dream-streaming'), 'client keeps the streaming indicator hook')
+  assert.ok(client.includes('data-ai-dream-partial'), 'client exposes the partial flag')
+  assert.ok(client.includes('__AI_DREAM_FORCE_PARTIAL'), 'client keeps the partial test hook')
   assert.ok(client.includes('__AI_DREAM_FORCE_FORM'), 'client keeps the form test hook')
   assert.ok(client.includes('data-ai-dream-form'), 'client exposes the rendered form')
 }

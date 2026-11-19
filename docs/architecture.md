@@ -153,6 +153,7 @@ interface EmotionState {
 
 - `canvasFeed` 在扫描完所有完整 fence 后，检查最后一条 assistant 文本是否以未闭合的 ```canvas 块结尾（`extractPartialCanvas`），若是则追加一条带 `PARTIAL_MARK` 前缀的条目；
 - 折叠循环遇到 partial 条目时用 `parsePartialMood` 做尽力解析（name/mood/intensity/form/palette），经客户端 `normalize` 后作为 `latest` 预览（标记 `partial: true`，不写入 `turnModels`）；
+- partial 期间底部预留提示行显示「画布生成中…（预览）」（`role="status"` + `aria-live`），延迟 250ms 才出现（避免极短流闪烁），完整块到达即消失；若流中断 8s 无新 feed，提示自动隐藏，防止永久残留；预览**不**加速过渡（未完成 JSON 的字段跳变会被放大）；
 - 完整 fence 到达后，同一条目被替换，预览无缝过渡到正式模型；解析失败绝不报错（等待下一条消息）；
 - 局限：真实流式输出无法在 GUI 自测里稳定构造，因此这一层由 `extractPartialCanvas`/`parsePartialMood` 单测覆盖，GUI 回归确保完整路径不受影响。
 

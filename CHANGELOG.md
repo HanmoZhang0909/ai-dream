@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.21.0 — 2026-11-18
+
+- Streaming part 2 (GUI-verified): while a partial expression is on the canvas, the reserved bottom row shows 「画布生成中…（预览）」 with `role="status"`/`aria-live` (matching the fence wording). It only appears after 250ms of streaming, disappears when the complete block lands, and an interrupted stream hides it after 8s so the hint cannot stay pinned forever.
+- Partial previews keep the default glide instead of switching to `fast`: accelerating amplified the field jumps of an unfinished JSON (e.g. intensity clamped before its digits arrive). Field-stability work can speed this up later.
+- Test hook `window.__AI_DREAM_FORCE_PARTIAL` injects a partial model; the GUI self-test asserts `data-ai-dream-partial="1"`, the hint text and a screenshot (exit code 19 on failure).
+
 ## 1.20.1 — 2026-11-18
 
 - Documented the local GUI self-test workflow in `docs/iterations.md`: the `run-ui-selftest.ps1` wrapper (Chrome lifecycle + one automatic retry), the exit-code map, and why the driver/screenshots stay out of the open-source repository.

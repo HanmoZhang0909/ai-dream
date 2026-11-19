@@ -67,7 +67,7 @@ Notes:
 - **Sync to AI**: 「同步给 AI」 next to the calibration row exports a copy-ready model-side calibration JSON (with the file path and caveats). Paste it into `calibration.json` and reload the plugin — then the AI expresses with that preference too, not just the canvas.
 - **Before the first expression**: the canvas shows a smaller, slower "sleeping" glow with 「还没有感受可以成形状 / 发送消息后画布会亮起」; dots and calibration appear only after the AI expresses once.
 - **Emotion vocabulary**: the 「情绪词表 · N」 pill in the top-right opens the list of emotions this AI defined (colour dot + name); close it with Esc, ✕, or by clicking outside.
-- **Streaming expressions**: while the assistant is still writing the canvas block the glow already starts drifting towards the new emotion.
+- **Streaming expressions**: while the assistant is still writing the canvas block the glow already starts drifting towards the new emotion; a 「画布生成中…（预览）」 hint appears at the bottom while streaming and disappears when the block completes.
 - **Keyboard**: Tab into the dot row, then ←/→ (Home/End jump to the ends) to move focus and Enter/Space to replay that turn; press Esc while replaying to return to live.
 - **Weather forms**: besides cloud/ring/streak/spiral the AI can now use `rain` (fine diagonal threads) and `fog` (a wide, vertically fading haze) — protocol v2.1, additive and backward compatible.
 - **To turn it off**: disable `dsh-ai-dream` on the Plugins page; the injected prompt section goes with it.
