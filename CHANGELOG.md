@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.0.0 — 2026-11-18
+
+- Protocol v3 milestone: AI Dream now speaks an **open-vocabulary, layered expression protocol** end to end.
+  - **Expressions**: L0 palette+intensity → L1 form+motion → L2 `layers` (free-form primitive names, transform/mask/blend/grain/gloss/direction, inter-layer relations, rhythm primitives) → L3 `macros` + `keyframes`; generative `seed`/`variation`/`afterglow`; v2 expressions untouched.
+  - **Safety**: no raw CSS/SVG/external resources; 8 layers / 800 particles / 1200 animated elements / flicker ≤ 3 Hz / transform+opacity only / reduced-motion freezes; anything unknown or malformed degrades through `fallback` → name-similarity → `blob`, and the planner never throws (worst case a visible L0 glow).
+  - **Verification**: planner + animation samplers unit-tested against cross-style fixtures (minimal/lyrical/geometric/symbolic/wild); MCP tool contract and server return `tier/layers/degradations`; MCP iframe renderer renders v3 layers (headless-Chrome probe: tier L3, 3 layers, unknown primitive degraded, animated) with screenshot in `docs/screenshot-v3-layers.png`; DSH client renders v3 scenes with a single rAF loop.
+  - **Still pending** (documented, non-blocking): the DSH canvas GUI screenshot needs a fresh `dsh web` token; the GitHub push for v1.25.0–v3.0.0 was blocked by this network and is retried in the background.
+
 ## 1.28.0 — 2026-11-18
 
 - Protocol v3 documentation wrap-up: `docs/protocol-v3.md` gains a completion checklist (spec, schema+fixtures, planner, animation samplers, client renderer, MCP contract, MCP renderer, cross-style CI) with the only open item being the DSH canvas GUI screenshot (blocked on a fresh `dsh web` token); READMEs now describe the v3 custom shape/motion capability and the "never crash, never blank" degradation promise.

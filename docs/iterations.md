@@ -72,6 +72,12 @@
 - 轮 5（v1.26.0）：MCP 工具契约同步协议 v3（开放词汇 + layers/macros/keyframes/relations/seed/variation），server 规划并返回 `tier/layers/degradations`；manifest 检查重写为 v3 断言；文档同步。GitHub 推送仍受网络阻塞，转为后台重试。
 - 轮 6（v1.27.0）：MCP iframe 渲染器支持 v3——`resources/ai-dream.html` 用 `planExpressionV3` 渲染层/遮罩/关系/关键帧/variation，探针输出 protocol 3 信息；本地无头 Chrome 验证 tier L3/3 层/未知原语降级并截图入库；v2 路径保持。DSH GUI 截图仍待新 token。
 - 轮 7（v1.28.0）：协议 v3 文档收尾——完成度清单（设计/契约/规划器/动画/客户端/MCP 契约/MCP 渲染器/跨风格 CI 全部 ✅，唯一未完成项是 DSH 画布 GUI 截图，等待新 token）；中英 README 增加 v3 自定义形状与动态说明及"绝不崩、绝不空白"承诺；product 状态更新。
+- 轮 8（v3.0.0，结项）：发布 3.0.0——协议 v3 全链路（DSH 客户端分层渲染/动画、MCP 契约、MCP iframe 渲染器、跨风格 fixtures/CI）；安全边界与降级矩阵完整；本地 8 套检查全绿、MCP 渲染器无头 Chrome 验证与截图入库。遗留：DSH 画布 GUI 截图待新 token；GitHub 推送受网络阻塞，后台重试中。
+
+## 协议 v3 循环总结
+
+目标「兼容多 AI 的分层表达 + 适当不可控的自由信封」已完成主体：协议口径与机器契约、core 规划器与动画采样、DSH 客户端分层渲染与 rAF 播放、MCP 契约与 iframe 渲染器、跨风格一致性测试均已落地并有自动化证据；v2 表达保持兼容。唯一待补的是 DSH 画布的 GUI 截图证据（脚本已就绪，缺新 token）。
+
 
 ## GUI 自测运行方法（本地，不随仓库发布）
 
