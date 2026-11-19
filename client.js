@@ -222,6 +222,188 @@ window.__ModuleLoader__.load({
       return delta > 0 ? '更亮了 · 只影响画面' : '更淡了 · 只影响画面'
     }
 
+    /** Mirror of renderer/core.mjs calibrationSnippet: copy-ready model-side calibration. */
+    function calibrationSnippet(bias) {
+      const value = typeof bias === 'number' && Number.isFinite(bias) ? bias : 0
+      const rounded = Math.round(Math.min(0.4, Math.max(-0.4, value)) * 100) / 100
+      const intensity = Math.round(Math.min(1, Math.max(0.2, 0.6 + rounded)) * 100) / 100
+      const tone = rounded === 0 ? null : rounded > 0 ? '画布偏好更亮/更强' : '画布偏好更淡/更弱'
+      return { bias: rounded, intensity, tone, json: tone ? JSON.stringify({ tone, intensity }) : null }
+    }
+
+    /**
+     * "Sync to AI" (v1.20): export the canvas calibration as a copy-ready
+     * calibration.json snippet, so users can feed it to the model-side channel.
+     */
+    function CalibrationSync(props) {
+      const bias = props && typeof props.bias === 'number' ? props.bias : 0
+      const [open, setOpen] = React.useState(false)
+      const buttonRef = React.useRef(null)
+      const panelRef = React.useRef(null)
+      const textareaRef = React.useRef(null)
+      const snippet = calibrationSnippet(bias)
+
+      React.useEffect(() => {
+        if (!open || typeof document === 'undefined') return undefined
+        const onKey = event => {
+          if (event.key !== 'Escape' || event.isComposing) return
+          const target = event.target
+          if (target && target.closest && target.closest('input, [contenteditable="true"]')) return
+          setOpen(false)
+          if (buttonRef.current) buttonRef.current.focus()
+        }
+        const onPointer = event => {
+          const panel = panelRef.current
+          const button = buttonRef.current
+          if (panel && panel.contains(event.target)) return
+          if (button && button.contains(event.target)) return
+          setOpen(false)
+        }
+        document.addEventListener('keydown', onKey)
+        document.addEventListener('mousedown', onPointer, true)
+        const textarea = textareaRef.current
+        if (textarea && typeof textarea.focus === 'function') textarea.focus()
+        return () => {
+          document.removeEventListener('keydown', onKey)
+          document.removeEventListener('mousedown', onPointer, true)
+        }
+      }, [open])
+
+      const close = () => {
+        setOpen(false)
+        if (buttonRef.current && typeof buttonRef.current.focus === 'function') buttonRef.current.focus()
+      }
+      const selectAll = () => {
+        const textarea = textareaRef.current
+        if (!textarea) return
+        textarea.focus()
+        if (typeof textarea.select === 'function') textarea.select()
+      }
+
+      return h('div', { style: { position: 'relative' } },
+        h('button', {
+          ref: buttonRef,
+          type: 'button',
+          'data-ai-dream-sync': '1',
+          'aria-expanded': open ? 'true' : 'false',
+          'aria-controls': 'ai-dream-sync-panel',
+          'aria-label': '把画布校准同步给 AI（可选择复制配置）',
+          title: '导出模型侧校准配置',
+          onClick: () => setOpen(value => !value),
+          style: {
+            border: '0.5px solid ' + BORDER,
+            background: 'rgba(8,12,20,0.55)',
+            color: LABEL_2,
+            borderRadius: 6,
+            minHeight: 24,
+            padding: '3px 8px',
+            fontSize: 11,
+            font: 'inherit',
+            cursor: 'pointer',
+          },
+        }, '同步给 AI'),
+        open
+          ? h('div', {
+            ref: panelRef,
+            id: 'ai-dream-sync-panel',
+            role: 'dialog',
+            tabIndex: -1,
+            'data-ai-dream-sync-panel': '1',
+            'aria-label': '同步校准给 AI',
+            style: {
+              position: 'absolute',
+              right: 0,
+              bottom: 'calc(100% + 8px)',
+              width: 300,
+              maxHeight: 320,
+              overflow: 'auto',
+              background: 'rgba(6,9,16,0.97)',
+              border: '0.5px solid rgba(255,255,255,0.22)',
+              borderRadius: 10,
+              padding: '10px 12px',
+              boxShadow: '0 8px 26px rgba(0,0,0,0.5)',
+              color: '#dfe7f2',
+              textAlign: 'left',
+            },
+          },
+          h('div', {
+            style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+          },
+          h('div', { style: { fontSize: 12, fontWeight: 600, color: '#e9f0ff' } }, '同步校准给 AI'),
+          h('button', {
+            type: 'button',
+            'data-ai-dream-sync-close': '1',
+            onClick: close,
+            'aria-label': '关闭同步面板',
+            style: {
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              border: '0.5px solid rgba(255,255,255,0.2)',
+              background: 'transparent',
+              color: '#c8d2e0',
+              font: 'inherit',
+              cursor: 'pointer',
+            },
+          }, '✕')),
+          h('div', {
+            'data-ai-dream-sync-state': '1',
+            style: { fontSize: 11, lineHeight: 1.5, color: '#c8d2e0', marginBottom: 6 },
+          }, snippet.tone
+            ? '画布偏' + (snippet.bias > 0 ? '强' : '弱') + ' ' + snippet.bias.toFixed(2) + '（只影响画面；强度取 0.6+bias）'
+            : '当前校准为 0（不需要同步）'),
+          snippet.json
+            ? h('textarea', {
+              ref: textareaRef,
+              readOnly: true,
+              'data-ai-dream-sync-text': '1',
+              value: snippet.json,
+              rows: 2,
+              style: {
+                width: '100%',
+                boxSizing: 'border-box',
+                background: 'rgba(255,255,255,0.06)',
+                color: '#e9f0ff',
+                border: '0.5px solid rgba(255,255,255,0.2)',
+                borderRadius: 6,
+                padding: '6px 8px',
+                font: '11px/1.4 ui-monospace, monospace',
+                resize: 'none',
+              },
+            })
+            : null,
+          snippet.json
+            ? h('div', {
+              style: { fontSize: 10.5, lineHeight: 1.55, color: '#8b96a6', marginTop: 6 },
+            },
+            '写入文件并重载插件后，AI 会照此表达。文件：',
+            h('code', { style: { color: '#c8d2e0', wordBreak: 'break-all' } }, '%USERPROFILE%\\.dsh\\storages\\dsh-ai-dream\\calibration.json'),
+            '（macOS/Linux：~/.dsh/storages/dsh-ai-dream/calibration.json）',
+            h('br'),
+            '会整份覆盖该文件；对本机所有会话与 AI 回复生效；数字可改；JSON 写错会被忽略。')
+            : null,
+          snippet.json
+            ? h('div', { style: { display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' } },
+              h('button', {
+                type: 'button',
+                'data-ai-dream-sync-select': '1',
+                onClick: selectAll,
+                style: {
+                  border: '0.5px solid rgba(255,255,255,0.24)',
+                  background: 'rgba(255,255,255,0.08)',
+                  color: '#e9f0ff',
+                  borderRadius: 6,
+                  padding: '2px 8px',
+                  font: 'inherit',
+                  fontSize: 10.5,
+                  cursor: 'pointer',
+                },
+              }, '全选'),
+              h('span', { style: { fontSize: 10, color: '#78838f' } }, '然后 Ctrl+C 复制'))
+            : null)
+          : null)
+    }
+
     // One-time onboarding flag (v1.12): explain the canvas controls once per browser.
     const ONBOARD_KEY = 'ai-dream:onboarded:v1'
     // Test hook: window.__AI_DREAM_FORCE_ONBOARD (CDP preload) or ?ai-dream-onboard=1
@@ -1731,6 +1913,7 @@ window.__ModuleLoader__.load({
             cursor: 'pointer',
           },
         }, label))
+        controls.push(h(CalibrationSync, { key: 'sync', bias: CALIBRATION.intensityBias }))
         const replaying = topTurn !== null && timeline.latestTurn !== null && topTurn < timeline.latestTurn
         const showingReplayHint = replaying && !returning
         const backToLatest = () => {

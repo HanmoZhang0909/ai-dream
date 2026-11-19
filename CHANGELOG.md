@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.20.0 — 2026-11-18
+
+- "Sync to AI" export (first step toward two-way calibration): the calibration row gains a compact 「同步给 AI」 button that opens an anchored panel with the current bias (e.g. 画布偏强 0.40), a read-only copy-ready JSON snippet (`{"tone":"画布偏好更亮/更强","intensity":1}`), a 全选 button (Range selection, no clipboard permission needed), and explicit warnings: it overwrites the whole file, affects every session and the AI's replies, needs a plugin reload to take effect, invalid JSON is ignored, and it shows both the Windows and macOS/Linux paths.
+- `calibrationSnippet` in `renderer/core.mjs` derives the snippet (bias clamped/rounded, intensity = 0.6+bias capped to 0.2–1, no JSON when the bias is 0) with unit tests and client parity assertions. Accessibility: `aria-expanded`/`role="dialog"`, focus enters the panel, ✕ and Esc close it, click-outside closes it.
+- GUI-verified end-to-end (exit 0): panel content, JSON, warnings, selection and close behaviour, with all previous checks still green.
+
 ## 1.19.0 — 2026-11-18
 
 - README now shows real screenshots of the running panel (live expression, waiting state, weather form 「rain」, replay of a turn), captured by the automated GUI self-test and downscaled into `docs/screenshot-*.png`; both language READMEs get a Screenshots section.

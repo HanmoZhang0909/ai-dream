@@ -176,6 +176,24 @@ export function calibrationNoteFor(bias, delta) {
   return '更淡了 · 只影响画面'
 }
 
+/**
+ * Copy-ready model-side calibration snippet derived from the canvas bias.
+ * Pasting it into ~/.dsh/storages/dsh-ai-dream/calibration.json lets the AI
+ * learn the same preference (v1.10 channel).
+ */
+export function calibrationSnippet(bias) {
+  const value = typeof bias === 'number' && Number.isFinite(bias) ? bias : 0
+  const rounded = Math.round(Math.min(CALIBRATION.maxBias, Math.max(CALIBRATION.minBias, value)) * 100) / 100
+  const intensity = Math.round(Math.min(1, Math.max(0.2, 0.6 + rounded)) * 100) / 100
+  const tone = rounded === 0 ? null : rounded > 0 ? '画布偏好更亮/更强' : '画布偏好更淡/更弱'
+  return {
+    bias: rounded,
+    intensity,
+    tone,
+    json: tone ? JSON.stringify({ tone, intensity }) : null,
+  }
+}
+
 /** Copy for the empty/waiting state (no expression yet). */
 export const EMPTY_STATE = Object.freeze({
   title: '还没有感受可以成形状',
@@ -265,8 +283,7 @@ export function parsePartialMood(code) {
   if (palette.core || palette.base || palette.tone) partial.palette = palette
   return partial
 }
-/** Move focus between the timeline dots without changing the replay target. */
-export function nextDotTurn(turns, currentTurn, direction) {
+/** Move focus between the timeline dots without changing the replay target. */export function nextDotTurn(turns, currentTurn, direction) {
   if (!Array.isArray(turns) || turns.length === 0) return null
   const index = turns.indexOf(currentTurn)
   if (index < 0) return turns[0]

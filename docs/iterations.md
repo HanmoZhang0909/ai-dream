@@ -38,6 +38,7 @@
 - 键盘/读屏（v1.17.0）：圆点 toolbar + roving tabindex + 方向键/Home/End、Esc 退出回看（输入法/输入框/词表面板感知）、aria-live 播报、双色 focus 环、提示行 24px；「回到最新」改为底部保持 1.5s 才结束 pin；GUI 断言方向键/Home/End/Esc 与完整回看流。
 - 天气形态（v1.18.0）：协议 v2.1 追加 `rain`/`fog`（向后兼容），词表用中文形态名标注；`formLabel`/`FORM_LABELS` 单测 + MCP manifest 枚举同步；GUI 用 `__AI_DREAM_FORCE_FORM` 渲染并截图，第一版过暗后补光核与 alpha 修正。
 - README 截图（v1.19.0）：用 GUI 自测产生的真实界面图（实时/空态/雨/回看）缩小入库并写进中英 README；这些图以后每次 UI 大改需要重拍。
+- 校准导出（v1.20.0）：校准行旁「同步给 AI」输出可复制的模型侧校准 JSON（`calibrationSnippet` 纯函数 + 单测），面板强调整份覆盖/需重载/全机生效；作为双向校准的第一步；GUI 断言面板内容/全选/关闭。
 
 ## 剩余待办（需要用户或后续轮次）
 

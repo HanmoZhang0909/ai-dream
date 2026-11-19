@@ -13,6 +13,7 @@ import {
   TRANSITION_STYLES,
   buildTimelineDots,
   calibrationNoteFor,
+  calibrationSnippet,
   clamp,
   cut,
   extractPartialCanvas,
@@ -191,6 +192,25 @@ assert.equal(isEmptyState(false), true)
 assert.equal(isEmptyState(true), false)
 assert.equal(isEmptyState(undefined), true)
 
+// --- model-side calibration export -------------------------------------------
+{
+  const neutral = calibrationSnippet(0)
+  assert.equal(neutral.bias, 0)
+  assert.equal(neutral.intensity, 0.6)
+  assert.equal(neutral.tone, null)
+  assert.equal(neutral.json, null, 'no JSON is generated for a neutral bias')
+  const brighter = calibrationSnippet(0.4)
+  assert.equal(brighter.intensity, 1)
+  assert.equal(brighter.tone, '画布偏好更亮/更强')
+  assert.deepEqual(JSON.parse(brighter.json), { tone: '画布偏好更亮/更强', intensity: 1 })
+  const dimmer = calibrationSnippet(-0.4)
+  assert.equal(dimmer.intensity, 0.2)
+  assert.equal(dimmer.tone, '画布偏好更淡/更弱')
+  assert.equal(calibrationSnippet(9).bias, 0.4, 'bias is clamped before export')
+  assert.equal(calibrationSnippet(undefined).bias, 0)
+  assert.equal(calibrationSnippet(0.085).bias, 0.09, 'bias is rounded to two decimals')
+}
+
 // --- weather forms (v2.1 additive) -------------------------------------------
 assert.deepEqual(FORMS, ['cloud', 'ring', 'streak', 'spiral', 'rain', 'fog'])
 assert.equal(PATTERN_BLUR.rain, 26)
@@ -330,7 +350,10 @@ assert.equal(nextDotTurn([10, 11, 12], 99, 'next'), 10, 'unknown turns start at 
   assert.ok(client.includes('fog: 72'), 'client keeps the fog blur value')
   assert.ok(client.includes('color-mix'), 'client keeps the softened weather gradients')
   assert.ok(client.includes('FORM_LABELS'), 'client keeps the Chinese form labels')
-  assert.ok(client.includes('形态 · '), 'client labels the form in the signature panel')
+  assert.ok(client.includes('calibrationSnippet'), 'client keeps the calibration export logic')
+  assert.ok(client.includes('data-ai-dream-sync'), 'client keeps the sync-to-AI hook')
+  assert.ok(client.includes('重载插件'), 'client mentions the plugin reload requirement')
+  assert.ok(client.includes('整份覆盖'), 'client warns about overwriting the calibration file')
   assert.ok(client.includes('__AI_DREAM_FORCE_FORM'), 'client keeps the form test hook')
   assert.ok(client.includes('data-ai-dream-form'), 'client exposes the rendered form')
 }

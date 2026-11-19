@@ -96,6 +96,7 @@
 - [x] 键盘/读屏可访问性（v1.17）：toolbar + roving tabindex + 方向键/Home/End、Esc 退出回看、aria-live 播报、双色 focus 环、24px 提示行；
 - [x] 天气形态（v1.18，协议 v2.1 追加）：`rain`（斜向细光丝）/`fog`（宽而上下渐隐的雾带），词表标注中文形态名，GPU 稳定性由 GUI 截图验证；
 - [x] README 真实界面截图（v1.19）：实时/空态/雨形态/回看四张，由 GUI 自测生成；
+- [x] 校准导出（v1.20，双向校准第一步）：「同步给 AI」输出模型侧 calibration.json 片段（含覆盖/重载/生效范围警告），GUI 已验证；
 - [x] 范围：已加载窗口（transcript 不虚拟化，整段都可观察）。
 
 ## 6. 非目标

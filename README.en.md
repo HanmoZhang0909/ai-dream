@@ -64,6 +64,7 @@ Notes:
 - **Mini emotion timeline**: the colour dots under the canvas are the most recent expressed turns; click one to replay it.
 - **First-run hint**: the first time the canvas opens it explains the dots and calibration buttons; dismiss with 知道了 or wait 5 seconds, then it never shows again.
 - **Canvas calibration**: the three buttons only tune the glow (不像 / 再强一点 / 再淡一点); each click shows a short note, the ±0.4 bound reports 「已到上限」, and it never changes the AI's replies.
+- **Sync to AI**: 「同步给 AI」 next to the calibration row exports a copy-ready model-side calibration JSON (with the file path and caveats). Paste it into `calibration.json` and reload the plugin — then the AI expresses with that preference too, not just the canvas.
 - **Before the first expression**: the canvas shows a smaller, slower "sleeping" glow with 「还没有感受可以成形状 / 发送消息后画布会亮起」; dots and calibration appear only after the AI expresses once.
 - **Emotion vocabulary**: the 「情绪词表 · N」 pill in the top-right opens the list of emotions this AI defined (colour dot + name); close it with Esc, ✕, or by clicking outside.
 - **Streaming expressions**: while the assistant is still writing the canvas block the glow already starts drifting towards the new emotion.
