@@ -28,6 +28,8 @@ jobs:
         run: node scripts/check-mcp-manifest.mjs
       - name: MCP server checks
         run: node scripts/check-mcp-server.mjs
+      - name: Protocol v3 contract
+        run: node scripts/check-protocol-v3.mjs
       - name: Renderer core checks
         run: node scripts/check-renderer-core.mjs
       # Headless Chrome is environment-dependent; run it explicitly when available.

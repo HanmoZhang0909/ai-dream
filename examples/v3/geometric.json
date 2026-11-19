@@ -1,0 +1,14 @@
+{
+  "kind": "mood",
+  "schema": 3,
+  "name": "结构",
+  "intensity": 0.7,
+  "palette": { "base": "#03060a", "core": "#dff0ff", "tone": "#3b6fe0", "spectrum": ["#6fa8ff", "#1d3a8a"] },
+  "form": "ring",
+  "layers": [
+    { "primitive": "ring", "size": 0.72, "thickness": 0.06, "softness": 0.2, "opacity": 0.85, "paletteSlot": "core", "motion": { "rotate": { "speed": 0.18 } } },
+    { "primitive": "ring", "size": 0.5, "thickness": 0.03, "softness": 0.3, "opacity": 0.6, "paletteSlot": "spectrum0", "motion": { "rotate": { "speed": -0.24 }, "hold": { "holdSeconds": 2 } } },
+    { "primitive": "band", "angle": 90, "thickness": 0.02, "size": 1, "softness": 0.1, "opacity": 0.35, "paletteSlot": "spectrum1", "motion": { "hold": { "holdSeconds": 3 } } }
+  ],
+  "motion": { "speed": 0.6, "rhythm": "steady" }
+}

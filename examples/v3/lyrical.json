@@ -1,0 +1,15 @@
+{
+  "kind": "mood",
+  "schema": 3,
+  "name": "夜航",
+  "intensity": 0.62,
+  "palette": { "base": "#060910", "core": "#ffe6c7", "tone": "#8ea7c9", "spectrum": ["#ffcf9e", "#6f8dff", "#c6b3ff"] },
+  "seed": 1731,
+  "variation": 0.18,
+  "afterglow": { "hold": 4, "decay": 9 },
+  "layers": [
+    { "primitive": "haze", "size": 0.9, "height": 1, "softness": 0.95, "opacity": 0.55, "paletteSlot": "tone", "motion": { "breath": { "rate": 0.12, "depth": 0.05 } } },
+    { "primitive": "blob", "size": 0.52, "softness": 0.85, "opacity": 0.7, "paletteSlot": "core", "motion": { "wobble": { "amplitude": 0.08, "frequency": 0.3 } }, "relations": [{ "type": "echo", "target": 0, "delay": 0.8, "strength": 0.35 }] },
+    { "primitive": "lines", "angle": 104, "count": 4, "softness": 0.7, "opacity": 0.22, "paletteSlot": "spectrum1", "motion": { "drift": { "x": 0.02, "y": 0.05 } } }
+  ]
+}

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.22.0 — 2026-11-18
+
+- Protocol v3 foundation (docs + machine contract, renderer comes in later rounds): layered expression L0–L3 with an **open vocabulary** — `primitive`/`form`/`motion` names are free strings, unknown names degrade to `fallback` → name-similarity → `blob`; `macros` let an AI define its own composite primitives; `keyframes`, `transform`, `mask`, `relations` (follow/converge/split/echo), `grain`/`gloss`, `direction`, `seed`/`variation`, `afterglow`, `uneven`/`hold` are all part of the expression.
+- The only hard boundaries are program-safety and accessibility: no raw CSS/SVG/external resources, layers ≤ 8 / particles ≤ 800 / animated elements ≤ 1200 / opacity+transform only / flicker ≤ 3 Hz / reduced-motion freezes motion / every failure degrades to a visible L0 glow instead of throwing.
+- New machine contract `docs/protocol-v3.schema.json`, downgrade matrix in `docs/protocol-v3.md`, and five cross-style fixtures in `examples/v3/` (minimal / lyrical / geometric / symbolic / wild-with-unknown-primitive) validated by the new CI check `scripts/check-protocol-v3.mjs`.
+
 ## 1.21.2 — 2026-11-18
 
 - Autonomous-loop wrap-up: `docs/iterations.md` now carries a twelve-round summary (v1.12.0 → v1.21.1, ten releases), the three-layer verification method, and the remaining backlog. Final full GUI self-test passed all 15 checks with zero console errors.

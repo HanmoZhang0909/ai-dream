@@ -1,0 +1,23 @@
+{
+  "kind": "mood",
+  "schema": 3,
+  "name": "印记",
+  "intensity": 0.78,
+  "palette": { "base": "#0b0710", "core": "#f2e6ff", "tone": "#a06bb0", "spectrum": ["#c9a3e0", "#6a4b8f"] },
+  "macros": {
+    "sigil": {
+      "primitive": "ring",
+      "size": 0.58,
+      "thickness": 0.015,
+      "softness": 0.12,
+      "opacity": 0.9,
+      "paletteSlot": "core",
+      "motion": { "rotate": { "speed": 0.06 }, "flicker": { "rate": 1.6, "depth": 0.12 } }
+    }
+  },
+  "layers": [
+    { "primitive": "macro", "name": "sigil", "fallback": "ring" },
+    { "primitive": "macro", "name": "unknown-rune", "fallback": "spiral", "size": 0.4, "opacity": 0.45 },
+    { "primitive": "blob", "size": 0.35, "softness": 0.9, "opacity": 0.5, "paletteSlot": "spectrum0" }
+  ]
+}

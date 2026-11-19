@@ -1,0 +1,135 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AI Dream expression protocol v3 (open vocabulary)",
+  "description": "Open-vocabulary expression: primitive/motion names are free strings; renderers degrade unknown names gracefully. Program-safety limits only.",
+  "type": "object",
+  "required": ["kind"],
+  "properties": {
+    "kind": { "enum": ["mood"] },
+    "schema": { "type": "number" },
+    "name": { "type": "string", "maxLength": 40 },
+    "intensity": { "type": "number", "minimum": 0.2, "maximum": 1 },
+    "palette": { "$ref": "#/definitions/palette" },
+    "form": { "type": "string", "maxLength": 40 },
+    "motion": { "$ref": "#/definitions/motion" },
+    "transition": { "$ref": "#/definitions/transition" },
+    "layers": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/definitions/layer" } },
+    "macros": { "type": "object", "additionalProperties": { "$ref": "#/definitions/layer" } },
+    "seed": { "type": "integer", "minimum": 0 },
+    "variation": { "type": "number", "minimum": 0, "maximum": 1 },
+    "afterglow": { "$ref": "#/definitions/afterglow" },
+    "keyframes": { "$ref": "#/definitions/keyframes" },
+    "requires": { "type": "array", "items": { "type": "string" } }
+  },
+  "definitions": {
+    "hex": { "type": "string", "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" },
+    "palette": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "base": { "$ref": "#/definitions/hex" },
+        "core": { "$ref": "#/definitions/hex" },
+        "tone": { "$ref": "#/definitions/hex" },
+        "spectrum": { "type": "array", "minItems": 2, "maxItems": 4, "items": { "$ref": "#/definitions/hex" } }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "style": { "enum": ["soft", "ripple", "burst", "dissolve", "snap"] },
+        "speed": { "enum": ["slow", "medium", "fast"] }
+      }
+    },
+    "keyframe": {
+      "type": "object",
+      "required": ["at"],
+      "additionalProperties": false,
+      "properties": {
+        "at": { "type": "number", "minimum": 0, "maximum": 1 },
+        "easing": { "type": "string", "maxLength": 32 },
+        "values": { "type": "object", "additionalProperties": { "type": "number" } }
+      }
+    },
+    "keyframes": { "type": "array", "minItems": 2, "maxItems": 12, "items": { "$ref": "#/definitions/keyframe" } },
+    "motion": { "$ref": "#/definitions/motionBlock" },
+    "motionBlock": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "speed": { "type": "number", "minimum": 0.2, "maximum": 2 },
+        "amplitude": { "type": "number", "minimum": 0.1, "maximum": 1 },
+        "rhythm": { "type": "string", "maxLength": 24 }
+      }
+    },
+    "transform": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scale": { "type": "number", "minimum": 0.05, "maximum": 4 },
+        "translate": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number", "minimum": -1, "maximum": 1 } },
+        "rotate": { "type": "number", "minimum": -180, "maximum": 180 },
+        "skew": { "type": "number", "minimum": -45, "maximum": 45 }
+      }
+    },
+    "mask": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "maxLength": 24 },
+        "softness": { "type": "number", "minimum": 0, "maximum": 1 },
+        "angle": { "type": "number", "minimum": -180, "maximum": 180 }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "required": ["type", "target"],
+      "additionalProperties": true,
+      "properties": {
+        "type": { "type": "string", "maxLength": 24 },
+        "target": { "type": "integer", "minimum": 0, "maximum": 7 },
+        "delay": { "type": "number", "minimum": 0, "maximum": 2 },
+        "strength": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "layer": {
+      "type": "object",
+      "required": ["primitive"],
+      "additionalProperties": true,
+      "properties": {
+        "primitive": { "type": "string", "maxLength": 40 },
+        "name": { "type": "string", "maxLength": 40 },
+        "fallback": { "type": "string", "maxLength": 40 },
+        "priority": { "type": "integer", "minimum": 0, "maximum": 9 },
+        "count": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "size": { "type": "number", "minimum": 0, "maximum": 1 },
+        "height": { "type": "number", "minimum": 0, "maximum": 1 },
+        "thickness": { "type": "number", "minimum": 0, "maximum": 1 },
+        "softness": { "type": "number", "minimum": 0, "maximum": 1 },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "angle": { "type": "number", "minimum": -180, "maximum": 180 },
+        "rotation": { "type": "number", "minimum": -180, "maximum": 180 },
+        "offset": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number", "minimum": -1, "maximum": 1 } },
+        "paletteSlot": { "type": "string", "maxLength": 24 },
+        "blend": { "type": "string", "maxLength": 24 },
+        "grain": { "type": "number", "minimum": 0, "maximum": 1 },
+        "gloss": { "type": "number", "minimum": 0, "maximum": 1 },
+        "direction": { "type": "string", "maxLength": 24 },
+        "transform": { "$ref": "#/definitions/transform" },
+        "mask": { "$ref": "#/definitions/mask" },
+        "motion": { "$ref": "#/definitions/motionBlock" },
+        "keyframes": { "$ref": "#/definitions/keyframes" },
+        "relations": { "type": "array", "maxItems": 3, "items": { "$ref": "#/definitions/relation" } }
+      }
+    },
+    "afterglow": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "hold": { "type": "number", "minimum": 0, "maximum": 10 },
+        "decay": { "type": "number", "minimum": 0.5, "maximum": 20 }
+      }
+    }
+  }
+}

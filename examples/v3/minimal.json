@@ -1,0 +1,7 @@
+{
+  "kind": "mood",
+  "schema": 3,
+  "name": "安静",
+  "intensity": 0.4,
+  "palette": { "base": "#05070c", "core": "#cfe0ff" }
+}

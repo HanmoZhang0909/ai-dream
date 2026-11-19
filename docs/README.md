@@ -26,6 +26,9 @@
 | `docs/mcp-app.md` | MCP App（ChatGPT/Claude）移植说明 | 移植形态、宿主限制、验收清单变化 |
 | `docs/screenshot-*.png` | README 用的真实界面截图（由 GUI 自测生成、缩小后入库） | UI 大改后重拍 |
 | `docs/iterations.md` | 自主迭代记录（每轮增量 + 自测证据 + 工程经验） | 每轮结束后追加 |
+| `docs/protocol-v3.md` | 协议 v3：开放表达 + 程序不崩（分层/原语/降级矩阵） | 分层、原语、降级规则变化 |
+| `docs/protocol-v3.schema.json` | v3 机器契约（CI 校验） | 字段/能力/上限变化 |
+| `examples/v3/*.json` | 跨 AI 风格样例（极简/诗意/几何/符号/wild） | 兼容与降级语义变化（CI 校验） |
 | `mcp/app-manifest.json` | 可移植的工具契约（`express_emotion`） | 协议字段/枚举/范围变化（CI 校验） |
 | `mcp/server.mjs` | stdio JSON-RPC MCP server（handler 纯函数） | 工具/资源/协议方法变化（CI 单测） |
 | `renderer/core.mjs` | 与宿主无关的渲染核心（协议规范化/插值参数；MCP 渲染器共用） | 渲染语义变化（CI 单测 + 与客户端同步复制） |
@@ -75,5 +78,5 @@
 
 ## 当前状态
 
-- **最近发布**：`1.21.2` —— 十二轮自主迭代收尾（10 个版本、三层验证方法沉淀、最终 GUI 自测全绿）；
-- **下一步**：见 `docs/iterations.md`「剩余待办」（MCP 真机验证需用户账号；npm 发布、宣传物料、流式字段稳定化）。
+- **最近发布**：`1.22.0` —— 协议 v3 地基：开放表达（任意原语名/macro/keyframes/关系）+ 程序不崩硬边界 + 五份跨风格样例与 CI 契约；
+- **下一步**：协议 v3 渲染器分轮接入（core 规范化/降级 → 分层渲染 → 跨风格 GUI 截图 → v3.0.0 发布）。

@@ -63,6 +63,10 @@
 
 **剩余待办（不阻塞）**：MCP 真机验证（需用户 ChatGPT/Claude 账号）、npm 正式发布、GitHub Release 文案、社区宣传、流式字段稳定化（为预览提速做准备）、双向校准的自动写回（需 client→Host 通道）。
 
+## 协议 v3 循环（进行中）
+
+- 轮 1（v1.22.0）：v3 设计口径落地——开放词汇表（primitive/form/motion 任意名字、macro、keyframes、transform/mask/relations/grain/gloss/direction、seed/variation/afterglow/uneven/hold）、程序不崩硬边界（层数/粒子/元素上限、仅 transform/opacity、闪烁 ≤3Hz、reduced-motion、异常回落 L0）、能力协商与降级矩阵；机器契约 `docs/protocol-v3.schema.json` + 五份风格样例 + CI 校验 `check-protocol-v3.mjs`。
+
 ## GUI 自测运行方法（本地，不随仓库发布）
 
 真实界面用 `ui-selftest.mjs`（CDP 驱动已认证页面）验证，跑法：
