@@ -61,6 +61,8 @@ Notes:
 - **Not persistent**: the canvas reads the newest `canvas` block from the loaded conversation only; the signature lives in the session log.
 - **You can calibrate it**: three quiet controls under the canvas — 「不像」/「再强一点」/「再淡一点」 — apply immediately and are remembered locally.
 - **Replay emotions**: scroll up and the canvas follows that turn's emotion; a 「回看 · 第 N 轮 · 回到最新」 hint appears at the bottom — click it to jump back to live.
+- **Mini emotion timeline**: the colour dots under the canvas are the most recent expressed turns; click one to replay it.
+- **First-run hint**: the first time the canvas opens it explains the dots and calibration buttons; dismiss with 知道了 or wait 5 seconds, then it never shows again.
 - **To turn it off**: disable `dsh-ai-dream` on the Plugins page; the injected prompt section goes with it.
 
 ## Troubleshooting

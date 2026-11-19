@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.12.0 — 2026-11-18
+
+- Discoverability (GUI-verified): first time the canvas opens, a one-time hint explains the dots and calibration buttons — "圆点＝最近几轮情绪，点它回看；按钮只调光，不改回复" — with a 知道了 dismiss, 5s auto-hide + fade, remembered in `localStorage['ai-dream:onboarded:v1']`; it only shows in live mode, never while replaying.
+- Accessibility: calibration buttons gain `title` + `aria-label` and a 24px minimum height; dots become an ARIA group ("最近几轮情绪，点击回看") with 11px visuals at 0.7 opacity when inactive.
+- Replay robustness: "回到最新" now suppresses the replay hint while it keeps pinning the transcript to the bottom (long sessions lazy-load pages), and the pin loop runs up to 8s.
+- Test hooks: `data-ai-dream-*` attributes and `?ai-dream-onboard=1` / `window.__AI_DREAM_FORCE_ONBOARD` for deterministic GUI checks (no effect for real users).
+
 ## 1.11.3 — 2026-11-18
 
 - Fix CI: `TIMELINE_LAYOUT.nearBottomThreshold` now matches the client (48px) and the parity assertion checks the shipped value, so the layout invariant and the zero-build copy cannot drift again.

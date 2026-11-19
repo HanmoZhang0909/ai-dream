@@ -213,6 +213,30 @@ window.__ModuleLoader__.load({
       }
     }
 
+    // One-time onboarding flag (v1.12): explain the canvas controls once per browser.
+    const ONBOARD_KEY = 'ai-dream:onboarded:v1'
+    // Test hook: window.__AI_DREAM_FORCE_ONBOARD (CDP preload) or ?ai-dream-onboard=1
+    // forces the hint and disables auto-hide; no effect for real users.
+    const FORCE_ONBOARD = (typeof window !== 'undefined' && window.__AI_DREAM_FORCE_ONBOARD === true)
+      || (typeof location !== 'undefined' && /[?&]ai-dream-onboard=1/.test(location.search))
+
+    function readOnboarded() {
+      if (FORCE_ONBOARD) return false
+      try {
+        return window.localStorage.getItem(ONBOARD_KEY) === '1'
+      } catch {
+        return false
+      }
+    }
+
+    function markOnboarded() {
+      try {
+        window.localStorage.setItem(ONBOARD_KEY, '1')
+      } catch {
+        // ignore storage failures
+      }
+    }
+
     /** Cross-session signature cache: names keep resolving before the host init finishes. */
     function loadCachedSignature() {
       try {
@@ -1156,9 +1180,30 @@ window.__ModuleLoader__.load({
       const wireConfig = props.useProjection ? props.useProjection('aiDreamConfig') : undefined
       const [bump, setBump] = React.useState(0)
       const [flashTurn, setFlashTurn] = React.useState(null)
+      const [onboarding, setOnboarding] = React.useState(() => !readOnboarded())
+      const [onboardingFading, setOnboardingFading] = React.useState(false)
+      const [returning, setReturning] = React.useState(false)
       const topTurnRaw = useTopTurn()
       const atBottom = useTimelineAtBottom()
       const topTurn = CONFIG.replayEnabled === false || atBottom ? null : topTurnRaw
+
+      React.useEffect(() => {
+        if (!onboarding || FORCE_ONBOARD) return undefined
+        const fadeTimer = setTimeout(() => setOnboardingFading(true), 4200)
+        const hideTimer = setTimeout(() => {
+          setOnboarding(false)
+          markOnboarded()
+        }, 5000)
+        return () => {
+          clearTimeout(fadeTimer)
+          clearTimeout(hideTimer)
+        }
+      }, [onboarding])
+
+      const dismissOnboarding = () => {
+        setOnboarding(false)
+        markOnboarded()
+      }
 
       // Track "near the bottom" so a short last turn cannot keep replay mode alive.
       React.useEffect(() => {
@@ -1289,38 +1334,52 @@ window.__ModuleLoader__.load({
           saveCalibration()
           setBump(value => value + 1)
         }
-        const controls = CONFIG.calibrationEnabled === false ? [] : [['不像', -0.15], ['再强一点', 0.08], ['再淡一点', -0.08]].map(([label, delta]) => h('button', {          key: label,
+        const controls = CONFIG.calibrationEnabled === false ? [] : [
+          ['不像', -0.15, '把光的色彩调冷一点（只影响画面，不改回复）'],
+          ['再强一点', 0.08, '提高画布强度（只影响画面，不改回复）'],
+          ['再淡一点', -0.08, '降低画布强度（只影响画面，不改回复）'],
+        ].map(([label, delta, description]) => h('button', {
+          key: label,
           type: 'button',
+          title: description,
+          'aria-label': description + '：' + label,
           onClick: () => adjust(delta),
           style: {
             border: '0.5px solid ' + BORDER,
             background: 'rgba(8,12,20,0.55)',
-            color: LABEL_2,
+            color: LABEL,
             borderRadius: 6,
+            minHeight: 24,
             padding: '3px 8px',
             fontSize: 11,
             font: 'inherit',
             cursor: 'pointer',
-            opacity: 0.72,
           },
         }, label))
         const replaying = topTurn !== null && timeline.latestTurn !== null && topTurn < timeline.latestTurn
+        const showingReplayHint = replaying && !returning
         const backToLatest = () => {
           try {
             const scroll = document.querySelector('[data-conversation-scroll]')
             if (!scroll) return
+            setReturning(true)
             setAtBottom(true)
             // History lazy-loads while we scroll; keep pinning until we actually reach the bottom.
             let attempts = 0
             const pin = () => {
               attempts += 1
+              setAtBottom(true)
               scroll.scrollTop = scroll.scrollHeight
               const atEnd = scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 2
-              if (!atEnd && attempts < 30) setTimeout(pin, 80)
+              if (!atEnd && attempts < 80) {
+                setTimeout(pin, 100)
+              } else {
+                setTimeout(() => setReturning(false), 1200)
+              }
             }
             pin()
           } catch {
-            // no transcript surface: nothing to scroll
+            setReturning(false)
           }
         }
         const jumpToTurn = turn => {
@@ -1382,11 +1441,11 @@ window.__ModuleLoader__.load({
               },
             }, h('span', {
               style: {
-                width: 9,
-                height: 9,
+                width: 11,
+                height: 11,
                 borderRadius: '50%',
                 background: core,
-                opacity: active ? 0.95 : 0.45,
+                opacity: active ? 0.95 : 0.7,
               },
             })))
           }
@@ -1394,17 +1453,9 @@ window.__ModuleLoader__.load({
         // One bottom stack so hint, dots and calibration controls can never overlap.
         const bottomRows = []
         // The hint row reserves its height in both modes so switching does not shift the dots.
-        bottomRows.push(h('div', {
-          key: 'replay-hint',
-          style: {
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: 22,
-            pointerEvents: replaying ? 'auto' : 'none',
-          },
-        }, replaying
-          ? h('button', {
+        let hintContent = null
+        if (showingReplayHint) {
+          hintContent = h('button', {
             type: 'button',
             'data-ai-dream-hint': '1',
             onClick: backToLatest,
@@ -1420,10 +1471,58 @@ window.__ModuleLoader__.load({
               cursor: 'pointer',
             },
           }, '回看 · 第 ' + String(topTurn) + ' 轮 · 回到最新')
-          : null))
+        } else if (onboarding && dots.length > 0) {
+          hintContent = h('div', {
+            'data-ai-dream-onboarding': '1',
+            style: {
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              maxWidth: '96%',
+              padding: '2px 8px',
+              borderRadius: 999,
+              background: 'rgba(4,6,12,0.78)',
+              border: '0.5px solid rgba(255,255,255,0.16)',
+              color: '#dfe7f2',
+              fontSize: 10.5,
+              lineHeight: 1.3,
+              opacity: onboardingFading ? 0 : 1,
+              transition: 'opacity 0.7s ease',
+              pointerEvents: 'auto',
+            },
+          },
+          h('span', { style: { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, '圆点＝最近几轮情绪，点它回看；按钮只调光，不改回复'),
+          h('button', {
+            type: 'button',
+            'data-ai-dream-dismiss': '1',
+            onClick: dismissOnboarding,
+            style: {
+              border: '0.5px solid rgba(255,255,255,0.25)',
+              background: 'transparent',
+              color: '#e9f0ff',
+              borderRadius: 999,
+              padding: '1px 7px',
+              fontSize: 10.5,
+              font: 'inherit',
+              cursor: 'pointer',
+            },
+          }, '知道了'))
+        }
+        bottomRows.push(h('div', {
+          key: 'replay-hint',
+          style: {
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: 22,
+            pointerEvents: hintContent ? 'auto' : 'none',
+          },
+        }, hintContent))
         if (dots.length) {
           bottomRows.push(h('div', {
             key: 'dots',
+            role: 'group',
+            'aria-label': '最近几轮情绪，点击回看',
             style: { display: 'flex', gap: 2, justifyContent: 'center', alignItems: 'center', pointerEvents: 'auto' },
           }, dots))
         }
@@ -1433,7 +1532,12 @@ window.__ModuleLoader__.load({
             style: { display: 'flex', gap: 6, justifyContent: 'center', pointerEvents: 'auto' },
           }, controls))
         }
-        return h('div', { 'data-ai-dream-canvas': '1', style: { height: '100%', background: BG, position: 'relative' } },
+        return h('div', {
+          'data-ai-dream-canvas': '1',
+          'data-ai-dream-onboarding-state': onboarding ? '1' : '0',
+          'data-ai-dream-force-onboard': FORCE_ONBOARD ? '1' : '0',
+          style: { height: '100%', background: BG, position: 'relative' },
+        },
           h(MoodView, { model, revision: revision.current + bump }),
           bottomRows.length
             ? h('div', {
