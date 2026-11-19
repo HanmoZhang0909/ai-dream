@@ -39,7 +39,7 @@
             "rhythm": { "enum": ["steady", "breathing", "uneven"] }
           }
         },
-        "form": { "enum": ["cloud", "ring", "streak", "spiral"] },
+        "form": { "enum": ["cloud", "ring", "streak", "spiral", "rain", "fog"] },
         "transition": {
           "type": "object",
           "additionalProperties": false,

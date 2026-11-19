@@ -64,7 +64,7 @@ window.__ModuleLoader__.load({
 
     const TRANSITION_STYLES = ['soft', 'ripple', 'burst', 'dissolve', 'snap']
     const TRANSITION_SPEEDS = { slow: 2400, medium: 1100, fast: 480 }
-    const NEBULA_PATTERNS = ['spiral', 'ring', 'cloud', 'streak']
+    const NEBULA_PATTERNS = ['spiral', 'ring', 'cloud', 'streak', 'rain', 'fog']
     const ORB_PULSES = ['steady', 'breathe', 'flicker']
     const ORB_TONES = ['warm', 'cool', 'neutral', 'bright']
 
@@ -230,6 +230,10 @@ window.__ModuleLoader__.load({
       || (typeof location !== 'undefined' && /[?&]ai-dream-onboard=1/.test(location.search))
     // Test hook: window.__AI_DREAM_FORCE_EMPTY (CDP preload) forces the waiting state.
     const FORCE_EMPTY = (typeof window !== 'undefined' && window.__AI_DREAM_FORCE_EMPTY === true)
+    // Test hook: window.__AI_DREAM_FORCE_FORM forces one renderer form (rain/fog/...).
+    const FORCE_FORM = (typeof window !== 'undefined' && typeof window.__AI_DREAM_FORCE_FORM === 'string')
+      ? window.__AI_DREAM_FORCE_FORM
+      : null
 
     // Empty-state ring animation, injected once; reduced motion is handled in CSS.
     if (typeof document !== 'undefined' && !document.getElementById('ai-dream-style')) {
@@ -510,7 +514,7 @@ window.__ModuleLoader__.load({
       if (nameMatch) partial.name = nameMatch[1]
       if (moodMatch) partial.mood = moodMatch[1]
       if (intensityMatch) partial.intensity = Number(intensityMatch[1])
-      if (formMatch && ['cloud', 'ring', 'streak', 'spiral'].indexOf(formMatch[1]) >= 0) partial.form = formMatch[1]
+      if (formMatch && ['cloud', 'ring', 'streak', 'spiral', 'rain', 'fog'].indexOf(formMatch[1]) >= 0) partial.form = formMatch[1]
       if (palette.core || palette.base || palette.tone) partial.palette = palette
       return partial
     }
@@ -761,7 +765,13 @@ window.__ModuleLoader__.load({
       return [channel[0], channel[1], channel[2]]
     }
 
-    const PATTERN_BLUR = { cloud: 46, ring: 30, streak: 34, spiral: 52 }
+    const PATTERN_BLUR = { cloud: 46, ring: 30, streak: 34, spiral: 52, rain: 26, fog: 72 }
+
+    const FORM_LABELS = { cloud: '云', ring: '环', streak: '带', spiral: '旋', rain: '雨', fog: '雾' }
+
+    function formLabel(form) {
+      return typeof form === 'string' && typeof FORM_LABELS[form] === 'string' ? FORM_LABELS[form] : null
+    }
 
     function gradientFor(pattern, uid) {
       if (pattern === 'ring') {
@@ -772,6 +782,12 @@ window.__ModuleLoader__.load({
       }
       if (pattern === 'spiral') {
         return `conic-gradient(from 0deg, transparent 0%, var(--aic_${uid}_c1) 16%, transparent 33%, var(--aic_${uid}_c3) 50%, transparent 68%, var(--aic_${uid}_c0) 84%, transparent 100%)`
+      }
+      if (pattern === 'rain') {
+        return `radial-gradient(circle, color-mix(in srgb, var(--aic_${uid}_c0) 45%, transparent) 0%, color-mix(in srgb, var(--aic_${uid}_c1) 28%, transparent) 42%, transparent 72%), repeating-linear-gradient(102deg, transparent 0 22px, color-mix(in srgb, var(--aic_${uid}_c2) 40%, transparent) 23px 24px, transparent 25px 46px)`
+      }
+      if (pattern === 'fog') {
+        return `radial-gradient(ellipse at 50% 55%, color-mix(in srgb, var(--aic_${uid}_c1) 40%, transparent) 0%, transparent 70%), linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--aic_${uid}_c1) 52%, transparent) 28%, color-mix(in srgb, var(--aic_${uid}_c2) 42%, transparent) 55%, color-mix(in srgb, var(--aic_${uid}_c0) 28%, transparent) 72%, transparent 92%)`
       }
       return `radial-gradient(circle, #ffffff 0%, var(--aic_${uid}_c0) 22%, var(--aic_${uid}_c1) 44%, var(--aic_${uid}_c2) 60%, transparent 78%)`
     }
@@ -1264,7 +1280,10 @@ window.__ModuleLoader__.load({
         const core = typeof palette.core === 'string' && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(palette.core.trim())
           ? palette.core.trim().toLowerCase()
           : '#9a7aa6'
-        chips.push({ name, core })
+        const chip = { name, core }
+        const label = formLabel(entry.form)
+        if (label) chip.form = label
+        chips.push(chip)
         if (chips.length >= max) break
       }
       return chips
@@ -1401,7 +1420,10 @@ window.__ModuleLoader__.load({
               'aria-hidden': true,
               style: { width: 8, height: 8, borderRadius: '50%', background: chip.core, flex: '0 0 auto' },
             }),
-            h('span', null, chip.name)))))
+            h('span', null, chip.name),
+            chip.form
+              ? h('span', { style: { color: '#8b96a6', fontSize: 10, marginLeft: 4 } }, '形态 · ' + chip.form)
+              : null))))
           : null)
     }
 
@@ -1570,6 +1592,10 @@ window.__ModuleLoader__.load({
       const model = baseModel && baseModel.kind === 'mood'
         ? { ...baseModel, intensity: clamp(baseModel.intensity + CALIBRATION.intensityBias, 0.2, 1) }
         : baseModel
+      // Test hook: force one renderer form so weather forms can be verified in the GUI.
+      const renderedModel = FORCE_FORM && NEBULA_PATTERNS.indexOf(FORCE_FORM) >= 0 && model && model.kind === 'mood'
+        ? { ...model, nebula: { ...model.nebula, pattern: FORCE_FORM } }
+        : model
 
       // The onboarding hint may only be consumed after it was actually rendered;
       // the waiting state must not mark it as seen.
@@ -1939,9 +1965,10 @@ window.__ModuleLoader__.load({
           'data-ai-dream-onboarding-state': onboarding ? '1' : '0',
           'data-ai-dream-force-onboard': FORCE_ONBOARD ? '1' : '0',
           'data-ai-dream-calib': calibrationNote || '0',
+          'data-ai-dream-form': renderedModel && renderedModel.nebula ? renderedModel.nebula.pattern : '',
           style: { height: '100%', background: BG, position: 'relative' },
         },
-          h(MoodView, { model, revision: revision.current + bump }),
+          h(MoodView, { model: renderedModel, revision: revision.current + bump }),
           h(SignatureBadge, { chips: signatureList }),
           h('div', {
             role: 'status',

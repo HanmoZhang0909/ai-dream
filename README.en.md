@@ -68,6 +68,7 @@ Notes:
 - **Emotion vocabulary**: the 「情绪词表 · N」 pill in the top-right opens the list of emotions this AI defined (colour dot + name); close it with Esc, ✕, or by clicking outside.
 - **Streaming expressions**: while the assistant is still writing the canvas block the glow already starts drifting towards the new emotion.
 - **Keyboard**: Tab into the dot row, then ←/→ (Home/End jump to the ends) to move focus and Enter/Space to replay that turn; press Esc while replaying to return to live.
+- **Weather forms**: besides cloud/ring/streak/spiral the AI can now use `rain` (fine diagonal threads) and `fog` (a wide, vertically fading haze) — protocol v2.1, additive and backward compatible.
 - **To turn it off**: disable `dsh-ai-dream` on the Plugins page; the injected prompt section goes with it.
 
 ## Troubleshooting

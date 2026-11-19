@@ -7,11 +7,28 @@
  * portable source and is covered by `scripts/check-renderer-core.mjs`.
  */
 
-export const FORMS = ['cloud', 'ring', 'streak', 'spiral']
+export const FORMS = ['cloud', 'ring', 'streak', 'spiral', 'rain', 'fog']
 export const RHYTHMS = ['steady', 'breathing', 'uneven']
 export const TRANSITION_STYLES = ['soft', 'ripple', 'burst', 'dissolve', 'snap']
 export const TRANSITION_SPEEDS = { slow: 2400, medium: 1100, fast: 480 }
-export const PATTERN_BLUR = { cloud: 46, ring: 30, streak: 34, spiral: 52 }
+export const PATTERN_BLUR = { cloud: 46, ring: 30, streak: 34, spiral: 52, rain: 26, fog: 72 }
+
+/** Chinese form labels for the UI (enum ids stay protocol-internal). */
+export const FORM_LABELS = Object.freeze({
+  cloud: '云',
+  ring: '环',
+  streak: '带',
+  spiral: '旋',
+  rain: '雨',
+  fog: '雾',
+})
+
+/** User-facing label for one form, or null when the form is unknown/absent. */
+export function formLabel(form) {
+  return typeof form === 'string' && Object.prototype.hasOwnProperty.call(FORM_LABELS, form)
+    ? FORM_LABELS[form]
+    : null
+}
 
 /** Built-in fallback palettes (mirrors `MOODS` in client.js). */
 export const BUILTIN_PALETTES = {
@@ -193,7 +210,10 @@ export function signatureChips(entries, limit = SIGNATURE_VIEW_LIMIT) {
     const core = typeof palette.core === 'string' && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(palette.core.trim())
       ? palette.core.trim().toLowerCase()
       : '#9a7aa6'
-    chips.push({ name, core })
+    const chip = { name, core }
+    const label = formLabel(entry.form)
+    if (label) chip.form = label
+    chips.push(chip)
     if (chips.length >= max) break
   }
   return chips

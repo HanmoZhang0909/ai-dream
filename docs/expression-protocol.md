@@ -37,12 +37,27 @@
 | `motion.speed` | number | 否 | 0.2–2.0，整体运动速度倍率 |
 | `motion.amplitude` | number | 否 | 0.1–1.0，呼吸/脉动幅度 |
 | `motion.rhythm` | `steady｜breathing｜uneven` | 否 | 运动节奏，缺省 `breathing` |
-| `form` | `cloud｜ring｜streak｜spiral` | 否 | 光的形态，缺省 `cloud` |
+| `form` | `cloud｜ring｜streak｜spiral`（v2.1 追加 `rain｜fog`） | 否 | 光的形态，缺省 `cloud`；见 2.3 |
 | `orb.size` | number 0.1–1 | 否 | 高级：光球大小（缺省由 intensity 推导） |
 | `orb.pulse` | `steady｜breathe｜flicker` | 否 | 高级：呼吸方式 |
 | `orb.tone` | `warm｜cool｜neutral｜bright` | 否 | 高级：色温倾向 |
 | `transition.style` | `soft｜ripple｜burst｜dissolve｜snap` | 否 | 变化方式 |
 | `transition.speed` | `slow｜medium｜fast` | 否 | 插值时长：约 2.2s / 1.0s / 0.4s |
+
+## 3.2 形态语义（v2.1 追加天气形态）
+
+| form | 语义 | 视觉边界 |
+|---|---|---|
+| `cloud` | 柔云，最通用 | 居中对称的团块，带亮核 |
+| `ring` | 环，围绕与守望 | 空心环带，中心透出背景 |
+| `streak` | 斜向光带，方向感/推进感 | 横向偏斜的条带，配轻微旋转 |
+| `spiral` | 旋转，纠结/思考 | 圆锥渐变，缓慢旋转 |
+| `rain` | 雨，低落的细密情绪 | 斜向细光丝 + 柔光核；**不可**出现雨滴图标或数字 |
+| `fog` | 雾，含糊/沉静的情绪 | 上下渐隐的宽雾带 + 大模糊；**横向满幅** |
+
+- 追加是**向后兼容**的：旧渲染器遇到 `rain`/`fog` 会回退到默认形态，不报错；
+- `cloud` 与 `fog` 的分界：cloud 是**居中对称的团块**，fog 是**横向铺开、上下渐隐的雾带**——AI 选 `fog` 时应表达"说不清的弥漫感"，而不是"柔和的开心"；
+- 情绪词表里用中文形态名展示（云/环/带/旋/雨/雾），枚举 id 只存在于协议层。
 
 ## 3.1 情绪签名与动态定义（v0.5）
 
@@ -86,8 +101,7 @@
 
 - 颜色只接受 `#rgb` / `#rrggbb`；非法颜色逐字段回退；
 - 数值夹紧到区间（不报错），非数值忽略；
-- 未知 `form` 回退 `cloud`；未知 `transition` 回退 `soft/medium`；
-- 整个 JSON 解析失败：保留上一版画面，原文保留在对话中。
+- 未知 `form` 回退 `cloud`；未知 `transition` 回退 `soft/medium`；- 整个 JSON 解析失败：保留上一版画面，原文保留在对话中。
 
 ## 5. 渲染器安全边界
 

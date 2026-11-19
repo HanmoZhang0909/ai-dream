@@ -7,6 +7,7 @@ import {
   EMPTY_STATE,
   FORMS,
   PARTIAL_MARK,
+  PATTERN_BLUR,
   SIGNATURE_VIEW_LIMIT,
   TIMELINE_LAYOUT,
   TRANSITION_STYLES,
@@ -15,6 +16,7 @@ import {
   clamp,
   cut,
   extractPartialCanvas,
+  formLabel,
   hexColor,
   hexToRgb,
   inReplayMode,
@@ -189,6 +191,26 @@ assert.equal(isEmptyState(false), true)
 assert.equal(isEmptyState(true), false)
 assert.equal(isEmptyState(undefined), true)
 
+// --- weather forms (v2.1 additive) -------------------------------------------
+assert.deepEqual(FORMS, ['cloud', 'ring', 'streak', 'spiral', 'rain', 'fog'])
+assert.equal(PATTERN_BLUR.rain, 26)
+assert.equal(PATTERN_BLUR.fog, 72)
+assert.equal(PATTERN_BLUR.fog > PATTERN_BLUR.cloud * 1.5, true, 'fog is much softer than cloud')
+assert.equal(formLabel('rain'), '雨')
+assert.equal(formLabel('fog'), '雾')
+assert.equal(formLabel('spiral'), '旋')
+assert.equal(formLabel('snow'), null)
+assert.equal(formLabel(undefined), null)
+{
+  const rain = normalizeMood({ form: 'rain' })
+  assert.equal(rain.nebula.pattern, 'rain')
+  const fog = normalizeMood({ form: 'fog' })
+  assert.equal(fog.nebula.pattern, 'fog')
+  assert.equal(normalizeMood({ form: 'snow' }).nebula.pattern, 'spiral', 'unknown forms still fall back')
+  assert.equal(targetFrom(rain).blur, 26)
+  assert.equal(targetFrom(fog).blur, 72)
+}
+
 // --- streaming (partial) mood parsing ----------------------------------------
 assert.equal(extractPartialCanvas('no fence here'), null)
 assert.equal(extractPartialCanvas('```canvas\n{"kind":"mood"}\n```'), null, 'closed fences are not partial')
@@ -233,6 +255,10 @@ assert.equal(nextDotTurn([10, 11, 12], 99, 'next'), 10, 'unknown turns start at 
   assert.deepEqual(chips.map(chip => chip.name), ['专注', '调试紧', '被看穿'])
   assert.equal(chips[0].core, '#e8d9ff')
   assert.equal(chips[1].core, '#9a7aa6', 'invalid colours fall back to the default')
+  assert.equal(chips[0].form, undefined, 'no form label without a form')
+  const withForms = signatureChips([{ name: '雾里', form: 'fog' }, { name: '雨停', form: 'rain' }])
+  assert.equal(withForms[0].form, '雾')
+  assert.equal(withForms[1].form, '雨')
   assert.equal(signatureChips('nope').length, 0)
   assert.equal(signatureChips(entries, 1).length, 1)
   const many = Array.from({ length: 20 }, (_, index) => ({ name: 'e' + index }))
@@ -300,6 +326,13 @@ assert.equal(nextDotTurn([10, 11, 12], 99, 'next'), 10, 'unknown turns start at 
   assert.ok(client.includes('parsePartialMood'), 'client keeps the partial mood parser')
   assert.ok(client.includes('nextDotTurn'), 'client keeps the dot keyboard navigation')
   assert.ok(client.includes('data-ai-dream-hint'), 'client keeps the replay hint hook for Esc')
+  assert.ok(client.includes('rain: 26'), 'client keeps the rain blur value')
+  assert.ok(client.includes('fog: 72'), 'client keeps the fog blur value')
+  assert.ok(client.includes('color-mix'), 'client keeps the softened weather gradients')
+  assert.ok(client.includes('FORM_LABELS'), 'client keeps the Chinese form labels')
+  assert.ok(client.includes('形态 · '), 'client labels the form in the signature panel')
+  assert.ok(client.includes('__AI_DREAM_FORCE_FORM'), 'client keeps the form test hook')
+  assert.ok(client.includes('data-ai-dream-form'), 'client exposes the rendered form')
 }
 
 console.log('renderer core checks OK')

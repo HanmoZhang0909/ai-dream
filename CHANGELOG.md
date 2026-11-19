@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.18.0 — 2026-11-18
+
+- Weather forms (protocol v2.1, additive): `form` gains `rain` (fine diagonal light threads over a soft core) and `fog` (a wide, vertically fading haze with a much larger blur). Old renderers fall back to the default form, so v2 expressions stay compatible.
+- The emotion vocabulary panel now labels each emotion's form in Chinese (形态 · 云/环/带/旋/雨/雾) — enum ids stay protocol-internal. `formLabel` plus `FORM_LABELS` live in `renderer/core.mjs` with unit tests and client parity assertions.
+- MCP manifest `form` enum and its CI check now include both new forms; the protocol doc documents the cloud/fog boundary (centred symmetric vs horizontal full-bleed) and forbids rain-drop icons/numbers.
+- GUI-verified: `window.__AI_DREAM_FORCE_FORM` renders `rain`/`fog` in the real panel (`data-ai-dream-form`), screenshots captured, no console errors.
+
 ## 1.17.0 — 2026-11-18
 
 - Keyboard accessibility (GUI-verified): the dot row is now `role="toolbar"` with `aria-orientation` and roving tabindex (one Tab stop); ArrowLeft/ArrowRight/Home/End move focus inside the group without jumping; Enter/Space still jump. Focus rings use a two-tone outline (white 2px + dark halo) so they stay visible over bright glow cores.

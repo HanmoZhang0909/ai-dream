@@ -41,7 +41,7 @@ expect(motion && motion.speed && motion.speed.minimum === 0.2 && motion.speed.ma
 expect(motion && motion.amplitude && motion.amplitude.minimum === 0.1 && motion.amplitude.maximum === 1, 'motion.amplitude range must be 0.1..1')
 expect(JSON.stringify(motion && motion.rhythm && motion.rhythm.enum) === JSON.stringify(['steady', 'breathing', 'uneven']), 'motion.rhythm enum drifted')
 
-expect(JSON.stringify(props.form && props.form.enum) === JSON.stringify(['cloud', 'ring', 'streak', 'spiral']), 'form enum drifted')
+expect(JSON.stringify(props.form && props.form.enum) === JSON.stringify(['cloud', 'ring', 'streak', 'spiral', 'rain', 'fog']), 'form enum drifted')
 const transition = props.transition && props.transition.properties
 expect(JSON.stringify(transition && transition.style && transition.style.enum) === JSON.stringify(['soft', 'ripple', 'burst', 'dissolve', 'snap']), 'transition.style enum drifted')
 expect(JSON.stringify(transition && transition.speed && transition.speed.enum) === JSON.stringify(['slow', 'medium', 'fast']), 'transition.speed enum drifted')
