@@ -54,6 +54,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\run-ui-selftest.ps1 -Token
 - 断言失败以非零退出码区分：3 画布缺失、4 圆点不足、5 命中失败、6 行重叠、9 回看未回到实时、10 引导缺失、11 引导关闭失败、12 校准按钮不可访问、13 校准提示异常、14 空态异常、15 签名面板异常、16 键盘/Esc 异常、17 天气形态异常、18 同步面板异常；
 - 脚本与截图、报告都留在工作区，**不提交**（DSH 验证政策：不把浏览器驱动逻辑放进开源仓库）；仓库里只保留中性的 `data-ai-dream-*` 测试钩子。
 
+## 发布链路验证（v1.21.1）
+
+| 检查 | 结果 |
+|---|---|
+| GitHub Pages 市场索引 `https://hanmozhang0909.github.io/ai-dream/index.json` | 200，最新 4 个版本 `1.21.0, 1.20.1, 1.20.0, 1.19.0`，含 1.21.0 |
+| 在线 demo `demo.html` | 200（8 KB） |
+| `npm pack --dry-run` | 31 文件 / 解包 4342 KB / 压缩 4154 KB（主因 docs/demo.gif 2.5MB + 4 张截图 1.3MB） |
+| 调整后 `files` 白名单（只发 md 文档 + index.json + demo.html + 运行/MCP 资产） | 插件 tarball 大幅缩小（不再携带 GIF/PNG），仓库内文档不受影响 |
+
+- 结论：市场索引与 demo 正常；发布包体积问题通过 `files` 白名单修复。
+
 ## 剩余待办（需要用户或后续轮次）
 
 - **MCP 真机验证**：需要用户的 ChatGPT 开发者模式 / Claude 连接器账号（已写好规格与 server 骨架）；

@@ -1,6 +1,6 @@
 {
   "name": "dsh-ai-dream",
-  "version": "1.21.0",
+  "version": "1.21.1",
   "description": "AI Dream — Artificial Intelligence Driven Real-time Emotional Ambient Medium. 让每个 AI 的感受有形状 / A shape for every feeling. DSH 右侧栏一块连续流动的情绪氛围光。",
   "license": "MIT",
   "author": "HanmoZhang0909",
@@ -39,7 +39,9 @@
     "client.js",
     "cordis.patch.yml",
     "locale/*.json",
-    "docs",
+    "docs/*.md",
+    "docs/index.json",
+    "docs/demo.html",
     "examples",
     "mcp",
     "renderer",

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.21.1 — 2026-11-18
+
+- Release-chain verification + package trim: GitHub Pages market index serves 1.21.0 and the demo page answers 200; the npm `files` list now ships only markdown docs, `docs/index.json`, `demo.html` and the runtime/MCP assets, dropping the 2.5MB demo GIF and ~1.3MB screenshots from the plugin tarball (4.15MB → about 0.3MB).
+- Documented the verification in `docs/iterations.md`.
+
 ## 1.21.0 — 2026-11-18
 
 - Streaming part 2 (GUI-verified): while a partial expression is on the canvas, the reserved bottom row shows 「画布生成中…（预览）」 with `role="status"`/`aria-live` (matching the fence wording). It only appears after 250ms of streaming, disappears when the complete block lands, and an interrupted stream hides it after 8s so the hint cannot stay pinned forever.
