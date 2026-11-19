@@ -78,5 +78,5 @@
 
 ## 当前状态
 
-- **最近发布**：`1.27.0` —— MCP iframe 渲染器支持 v3（层/遮罩/关系/关键帧/variation，探针含 tier/degradations，已用无头 Chrome 验证并截图）；
-- **下一步**：补跑 DSH GUI 截图（需新 token）→ 最终文档收尾 → `v3.0.0`。
+- **最近发布**：`3.0.0` —— 协议 v3 全链路（DSH 客户端分层渲染/动画、MCP 契约、MCP iframe 渲染器、跨风格 fixtures/CI）；v2 兼容；
+- **待补**：DSH 画布 v3 的 GUI 截图（需要新的 `dsh web` token）；GitHub 推送受网络阻塞，后台重试中。
