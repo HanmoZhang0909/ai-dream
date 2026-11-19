@@ -121,3 +121,20 @@ CI 校验 schema、合法引用与降级期望；渲染截图在 GUI 轮次补�
   - v1.26.0：**MCP 工具契约同步**——`mcp/app-manifest.json` protocol 3，server 返回 `tier/layers/degradations`；
   - v1.27.0：**MCP iframe 渲染器支持 v3**——`resources/ai-dream.html` 渲染层/遮罩/关系/关键帧/variation，探针输出 `{protocol:3, tier, layers, primitives, animated, degradations}`；本地无头 Chrome 验证 tier L3 / 3 层 / 未知原语降级，截图 `docs/screenshot-v3-layers.png`；
   - 待办：DSH 画布 GUI 截图（需要新的 `dsh web` token）。
+
+## 10. v3.0 完成度清单
+
+| 部件 | 状态 | 证据 |
+|---|---|---|
+| 协议口径（L0–L3 / 降级矩阵 / 自由信封 / 安全边界） | ✅ | 本文档 + `check-protocol-v3` |
+| 机器契约（schema + 5 份跨风格 fixtures） | ✅ | `docs/protocol-v3.schema.json`、`examples/v3/*` |
+| core 规划器（能力协商/回退/夹紧/预算/永不抛错） | ✅ | `planExpressionV3` + 单测 |
+| core 动画采样（motion/keyframes/关系/variation） | ✅ | `sampleMotionV3` 等 + 单测 |
+| DSH 客户端渲染（静态层 + rAF 动画 + reduced-motion） | ✅ | `V3Scene` + 纹理断言 |
+| MCP 工具契约 v3（manifest + server 返回 tier/降级） | ✅ | `check-mcp-manifest` / `check-mcp-server` |
+| MCP iframe 渲染器 v3 | ✅ | 探针验证 + `docs/screenshot-v3-layers.png` |
+| 跨 AI 风格一致性（fixtures 在 CI 中校验） | ✅ | `check-protocol-v3` |
+| DSH 画布 v3 的 GUI 截图证据 | ⏳ 待 token | 脚本相位已就绪（exit 20） |
+| `v3.0.0` 发布 | ⏳ 下一轮 | 版本/索引/tag/CI |
+
+> "程序不崩"契约：所有未知/非法输入都会降级为可见输出，最差是 L0 光晕；渲染器只允许 transform/opacity 动画，闪烁 ≤3Hz，reduced-motion 冻结。

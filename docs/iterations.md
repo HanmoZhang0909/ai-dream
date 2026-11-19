@@ -71,6 +71,7 @@
 - 轮 4（v1.25.0）：v3 动画引擎——core 采样纯函数（motion/keyframes/关系/种子变化/悬停/闪烁上限）+ 客户端 `V3Scene` rAF 循环（仅 transform/opacity、隐藏页暂停、reduced-motion 静止）；单测覆盖确定性与边界；GUI 截图仍待 token。
 - 轮 5（v1.26.0）：MCP 工具契约同步协议 v3（开放词汇 + layers/macros/keyframes/relations/seed/variation），server 规划并返回 `tier/layers/degradations`；manifest 检查重写为 v3 断言；文档同步。GitHub 推送仍受网络阻塞，转为后台重试。
 - 轮 6（v1.27.0）：MCP iframe 渲染器支持 v3——`resources/ai-dream.html` 用 `planExpressionV3` 渲染层/遮罩/关系/关键帧/variation，探针输出 protocol 3 信息；本地无头 Chrome 验证 tier L3/3 层/未知原语降级并截图入库；v2 路径保持。DSH GUI 截图仍待新 token。
+- 轮 7（v1.28.0）：协议 v3 文档收尾——完成度清单（设计/契约/规划器/动画/客户端/MCP 契约/MCP 渲染器/跨风格 CI 全部 ✅，唯一未完成项是 DSH 画布 GUI 截图，等待新 token）；中英 README 增加 v3 自定义形状与动态说明及"绝不崩、绝不空白"承诺；product 状态更新。
 
 ## GUI 自测运行方法（本地，不随仓库发布）
 

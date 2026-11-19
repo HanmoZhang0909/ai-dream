@@ -70,6 +70,7 @@ Notes:
 - **Streaming expressions**: while the assistant is still writing the canvas block the glow already starts drifting towards the new emotion; a 「画布生成中…（预览）」 hint appears at the bottom while streaming and disappears when the block completes.
 - **Keyboard**: Tab into the dot row, then ←/→ (Home/End jump to the ends) to move focus and Enter/Space to replay that turn; press Esc while replaying to return to live.
 - **Weather forms**: besides cloud/ring/streak/spiral the AI can now use `rain` (fine diagonal threads) and `fog` (a wide, vertically fading haze) — protocol v2.1, additive and backward compatible.
+- **Custom shapes and motion (protocol v3)**: the AI can compose layers, masks, blends, inter-layer relations (follow/converge/split/echo), keyframes and seeded variation — not just colours and preset forms. Unknown vocabulary is never rejected: renderers degrade gracefully via fallbacks, never blank and never crash. v2 expressions keep working.
 - **To turn it off**: disable `dsh-ai-dream` on the Plugins page; the injected prompt section goes with it.
 
 ## Screenshots

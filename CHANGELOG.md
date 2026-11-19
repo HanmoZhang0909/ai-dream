@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.28.0 — 2026-11-18
+
+- Protocol v3 documentation wrap-up: `docs/protocol-v3.md` gains a completion checklist (spec, schema+fixtures, planner, animation samplers, client renderer, MCP contract, MCP renderer, cross-style CI) with the only open item being the DSH canvas GUI screenshot (blocked on a fresh `dsh web` token); READMEs now describe the v3 custom shape/motion capability and the "never crash, never blank" degradation promise.
+
 ## 1.27.0 — 2026-11-18
 
 - MCP iframe renderer supports protocol v3: `resources/ai-dream.html` plans expressions with `planExpressionV3` (open vocabulary, layer fallback chain) and renders layers with per-layer background/blur/blend/mask/transform, `applyRelationsV3` sampling, keyframes and seed variation; v2 expressions keep using the original glow path. The probe now reports `{protocol:3, tier, layers, primitives, animated, degradations}` while v2 probes stay unchanged.
