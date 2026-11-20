@@ -1,0 +1,49 @@
+name: publish
+
+# Publishes dsh-ai-dream to npm when a version tag is pushed (or manually).
+# Requires one repository secret: NPM_TOKEN — a granular npm access token with
+# "publish" permission for dsh-ai-dream and 2FA bypass enabled. Once configured,
+# `git tag vX.Y.Z && git push origin vX.Y.Z` publishes without any OTP prompt.
+#
+# To go fully tokenless later: configure a "Trusted Publisher" for this package
+# on npmjs.com (GitHub Actions / this repository / workflow file publish.yml),
+# then delete NODE_AUTH_TOKEN and keep `npm publish --provenance`.
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(node -p "require('./package.json').version")"
+          echo "tag=$tag package=$version"
+          if [ "$tag" != "$version" ]; then
+            echo "::error::tag $tag does not match package.json version $version"
+            exit 1
+          fi
+
+      - name: Run repository checks
+        run: npm run check
+
+      - name: Publish to npm
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

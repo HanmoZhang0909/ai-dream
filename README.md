@@ -225,6 +225,7 @@ node scripts/check-fence-regex.mjs
 - 官方插件市场正在建设中（2026-11 官方披露），目前生态主要靠各索引与 npm/Git 安装；
 - 本仓库建议在 GitHub 上打 `dsh-plugin`、`deepseek-harness` topics，方便按主题检索；
 - 后续计划：npm 包 `dsh-ai-dream` 已完成发布准备（npm 名称可用），发布后可直接 `npm i dsh-ai-dream`；在此之前仍推荐 git / 市场索引安装。
+- npm 自动发布：打 `vX.Y.Z` tag 会触发 `.github/workflows/publish.yml`（校验 tag 与 package.json 版本一致 → 跑全部检查 → 发布）。仓库只需配置一次 `NPM_TOKEN` secret（granular token，勾选 bypass 2FA）；想彻底免 token 可在 npm 上配置 Trusted Publisher（GitHub Actions）。
 
 ## 配置
 

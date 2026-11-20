@@ -179,6 +179,7 @@ Then refresh the page after editing (or wait for HMR to rebuild).
 - The official plugin marketplace is under construction (announced 2026-11); today distribution leans on community indexes plus npm/Git installs;
 - Tag this repository with the `dsh-plugin` and `deepseek-harness` GitHub topics so it is discoverable;
 - npm publish `dsh-ai-dream`: package prepared and name checked; publishing only needs an npm login.
+- npm auto-publish: pushing a `vX.Y.Z` tag triggers `.github/workflows/publish.yml` (tag/version match → full checks → publish). Configure the `NPM_TOKEN` repository secret once (granular token with 2FA bypass); for a tokenless setup use npm Trusted Publishers (GitHub Actions).
 
 ## Configuration
 
