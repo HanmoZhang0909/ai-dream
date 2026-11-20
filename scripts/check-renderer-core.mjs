@@ -516,6 +516,8 @@ assert.equal(nextDotTurn([10, 11, 12], 99, 'next'), 10, 'unknown turns start at 
   assert.ok(client.includes('V3Scene'), 'client renders v3 layers')
   assert.ok(client.includes('v3SampleMotion') && client.includes('v3ApplyRelations'), 'client keeps the v3 animation samplers')
   assert.ok(client.includes('data-ai-dream-v3-animated'), 'client flags animated v3 scenes')
+  assert.ok(client.includes('data-ai-dream-v3-fading'), 'client cross-fades between v3 plans')
+  assert.ok(client.includes('v3LayerNode'), 'client keeps the v3 layer renderer helper')
   assert.ok(client.includes('__AI_DREAM_FORCE_FORM'), 'client keeps the form test hook')
   assert.ok(client.includes('data-ai-dream-form'), 'client exposes the rendered form')
 }

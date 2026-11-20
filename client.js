@@ -942,22 +942,97 @@ window.__ModuleLoader__.load({
     }
 
     /** v3 scene: layers rendered as absolutely positioned CSS layers (no layout animation). */
+    /** One absolutely positioned v3 layer node. */
+    function v3LayerNode(layer, index, palette, refs, bases, groupKey) {
+      const blur = Math.round(4 + (1 - layer.softness) * 8)
+      const transform = layer.transform
+        ? 'translate(' + Math.round((layer.transform.translate ? layer.transform.translate[0] : 0) * 100)
+          + '%, ' + Math.round((layer.transform.translate ? layer.transform.translate[1] : 0) * 100) + '%) '
+          + 'scale(' + layer.transform.scale + ') rotate(' + Math.round(layer.transform.rotate) + 'deg)'
+          + (layer.transform.skew ? ' skew(' + Math.round(layer.transform.skew) + 'deg)' : '')
+        : 'rotate(' + Math.round(layer.rotation) + 'deg)'
+      if (bases) bases.current[index] = transform
+      const style = {
+        position: 'absolute',
+        inset: 0,
+        opacity: layer.opacity,
+        mixBlendMode: layer.blend || 'normal',
+        background: v3LayerBackground(layer, palette),
+        filter: 'blur(' + blur + 'px)',
+        transform,
+        transformOrigin: '50% 50%',
+        pointerEvents: 'none',
+      }
+      if (layer.mask) {
+        const softness = Math.round(40 + layer.mask.softness * 60)
+        const maskImage = layer.mask.type === 'linear'
+          ? 'linear-gradient(' + Math.round(layer.mask.angle) + 'deg, black 0%, black ' + (100 - softness) + '%, transparent 100%)'
+          : 'radial-gradient(circle, black 0%, black ' + (100 - softness) + '%, transparent 100%)'
+        style.maskImage = maskImage
+        style.WebkitMaskImage = maskImage
+      }
+      return h('div', {
+        key: groupKey + '-' + index,
+        ref: node => { if (refs) refs.current[index] = node },
+        'data-ai-dream-v3-layer': String(index),
+        'data-ai-dream-v3-primitive': layer.primitive,
+        style,
+      })
+    }
+
+    /** v3 scene: layered CSS layers with a cross-fade between expression plans. */
     function V3Scene(props) {
       const plan = props && props.plan ? props.plan : {}
-      const layers = Array.isArray(plan.layers) ? plan.layers : []
-      const palette = plan.palette || { base: '#05070c', core: '#cfe0ff', tone: '#5f7bb8', spectrum: [] }
-      const hasGrain = layers.some(layer => layer.grain > 0.05)
-      const animated = layers.some(layer => (layer.motion && Object.keys(layer.motion).length > 0)
+      const transition = (props && props.transition) || { style: 'soft', speed: 'medium' }
+      const duration = Math.max(220, Math.min(1600, tauFor(transition.speed, transition.style) || 900))
+      const [view, setView] = React.useState({ current: plan, previous: null })
+      const [currentFade, setCurrentFade] = React.useState(0)
+      const [previousFade, setPreviousFade] = React.useState(1)
+      const planRef = React.useRef(plan)
+      const currentNodes = React.useRef([])
+      const currentBases = React.useRef([])
+      const previousNodes = React.useRef([])
+      const previousBases = React.useRef([])
+
+      // Fade the scene in on mount (the old v2 engine glides; the v3 scene fades).
+      React.useEffect(() => {
+        const raf = requestAnimationFrame(() => setCurrentFade(1))
+        return () => cancelAnimationFrame(raf)
+      }, [])
+
+      // Cross-fade between plans: keep the previous layers as a snapshot while the
+      // new plan fades in, so scroll-replay and new expressions transition smoothly.
+      React.useEffect(() => {
+        if (planRef.current === plan) return undefined
+        planRef.current = plan
+        setView(state => ({ current: plan, previous: state.current }))
+        setCurrentFade(0)
+        setPreviousFade(1)
+        const raf = requestAnimationFrame(() => requestAnimationFrame(() => {
+          setCurrentFade(1)
+          setPreviousFade(0)
+        }))
+        const timer = setTimeout(() => setView(state => ({ current: state.current, previous: null })), duration + 140)
+        return () => {
+          cancelAnimationFrame(raf)
+          clearTimeout(timer)
+        }
+      }, [plan, duration])
+
+      const currentLayers = Array.isArray(view.current.layers) ? view.current.layers : []
+      const currentPalette = view.current.palette || { base: '#05070c', core: '#cfe0ff', tone: '#5f7bb8', spectrum: [] }
+      const animated = currentLayers.some(layer => (layer.motion && Object.keys(layer.motion).length > 0)
         || (layer.keyframes && layer.keyframes.length >= 2)
         || (layer.relations && layer.relations.length > 0))
-        || Boolean(plan.keyframes && plan.keyframes.length >= 2)
-      const refs = React.useRef([])
-      const baseTransforms = React.useRef([])
+        || Boolean(view.current.keyframes && view.current.keyframes.length >= 2)
+      const hasGrain = currentLayers.some(layer => layer.grain > 0.05)
 
       React.useEffect(() => {
         if (!animated || typeof window === 'undefined' || typeof requestAnimationFrame !== 'function') return undefined
         const reduced = Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
         if (reduced) return undefined
+        const layers = currentLayers
+        const planCurrent = view.current
         let frame = 0
         let started = 0
         const loop = now => {
@@ -965,18 +1040,18 @@ window.__ModuleLoader__.load({
           const t = (now - started) / 1000
           if (!document.hidden) {
             const samples = v3ApplyRelations(layers, t, false)
-            refs.current.forEach((node, index) => {
+            currentNodes.current.forEach((node, index) => {
               if (!node) return
               const layer = layers[index] || {}
               const sample = samples[index] || { dx: 0, dy: 0, scale: 1, rotate: 0, opacity: 1 }
-              const offset = v3VariationOffset(plan.seed || 0, plan.variation || 0, index)
+              const offset = v3VariationOffset(planCurrent.seed || 0, planCurrent.variation || 0, index)
               const keys = layer.keyframes && layer.keyframes.length >= 2
                 ? v3SampleKeyframes(layer.keyframes, (t % 6) / 6)
-                : (plan.keyframes && plan.keyframes.length >= 2 ? v3SampleKeyframes(plan.keyframes, (t % 6) / 6) : null)
+                : (planCurrent.keyframes && planCurrent.keyframes.length >= 2 ? v3SampleKeyframes(planCurrent.keyframes, (t % 6) / 6) : null)
               const scale = sample.scale * (keys && Number.isFinite(keys.scale) ? keys.scale : 1)
               const dx = sample.dx + offset * 6
               const dy = sample.dy + offset * 4
-              node.style.transform = (baseTransforms.current[index] || '')
+              node.style.transform = (currentBases.current[index] || '')
                 + ' translate3d(' + dx.toFixed(2) + '%, ' + dy.toFixed(2) + '%, 0)'
                 + ' scale(' + scale.toFixed(3) + ') rotate(' + sample.rotate.toFixed(2) + 'deg)'
               const opacity = (typeof layer.opacity === 'number' ? layer.opacity : 0.7) * sample.opacity
@@ -988,50 +1063,37 @@ window.__ModuleLoader__.load({
         }
         frame = requestAnimationFrame(loop)
         return () => cancelAnimationFrame(frame)
-      }, [animated, plan, layers])
+      }, [animated, view.current])
 
       return h('div', {
         'data-ai-dream-v3': '1',
-        'data-ai-dream-v3-layers': String(layers.length),
+        'data-ai-dream-v3-layers': String(currentLayers.length),
         'data-ai-dream-v3-animated': animated ? '1' : '0',
-        style: { position: 'absolute', inset: 0, background: palette.base, overflow: 'hidden' },
+        'data-ai-dream-v3-fading': view.previous ? '1' : '0',
+        style: { position: 'absolute', inset: 0, background: currentPalette.base, overflow: 'hidden' },
       },
-      layers.map((layer, index) => {
-        const blur = Math.round(4 + (1 - layer.softness) * 8)
-        const transform = layer.transform
-          ? 'translate(' + Math.round((layer.transform.translate ? layer.transform.translate[0] : 0) * 100)
-            + '%, ' + Math.round((layer.transform.translate ? layer.transform.translate[1] : 0) * 100) + '%) '
-            + 'scale(' + layer.transform.scale + ') rotate(' + Math.round(layer.transform.rotate) + 'deg)'
-            + (layer.transform.skew ? ' skew(' + Math.round(layer.transform.skew) + 'deg)' : '')
-          : 'rotate(' + Math.round(layer.rotation) + 'deg)'
-        baseTransforms.current[index] = transform
-        const style = {
+      view.previous
+        ? h('div', {
+          'data-ai-dream-v3-group': 'previous',
+          style: {
+            position: 'absolute',
+            inset: 0,
+            opacity: previousFade,
+            transition: 'opacity ' + duration + 'ms cubic-bezier(0.22, 0.61, 0.36, 1)',
+          },
+        }, (Array.isArray(view.previous.layers) ? view.previous.layers : []).map((layer, index) => v3LayerNode(
+          layer, index, view.previous.palette || currentPalette, previousNodes, previousBases, 'prev',
+        )))
+        : null,
+      h('div', {
+        'data-ai-dream-v3-group': 'current',
+        style: {
           position: 'absolute',
           inset: 0,
-          opacity: layer.opacity,
-          mixBlendMode: layer.blend || 'normal',
-          background: v3LayerBackground(layer, palette),
-          filter: 'blur(' + blur + 'px)',
-          transform,
-          transformOrigin: '50% 50%',
-          pointerEvents: 'none',
-        }
-        if (layer.mask) {
-          const softness = Math.round(40 + layer.mask.softness * 60)
-          const maskImage = layer.mask.type === 'linear'
-            ? 'linear-gradient(' + Math.round(layer.mask.angle) + 'deg, black 0%, black ' + (100 - softness) + '%, transparent 100%)'
-            : 'radial-gradient(circle, black 0%, black ' + (100 - softness) + '%, transparent 100%)'
-          style.maskImage = maskImage
-          style.WebkitMaskImage = maskImage
-        }
-        return h('div', {
-          key: 'v3-' + index,
-          ref: node => { refs.current[index] = node },
-          'data-ai-dream-v3-layer': String(index),
-          'data-ai-dream-v3-primitive': layer.primitive,
-          style,
-        })
-      }),
+          opacity: currentFade,
+          transition: 'opacity ' + duration + 'ms cubic-bezier(0.22, 0.61, 0.36, 1)',
+        },
+      }, currentLayers.map((layer, index) => v3LayerNode(layer, index, currentPalette, currentNodes, currentBases, 'cur'))),
       hasGrain
         ? h('div', {
           'aria-hidden': true,
@@ -2620,7 +2682,7 @@ window.__ModuleLoader__.load({
           style: { height: '100%', background: BG, position: 'relative' },
         },
           shownModel && shownModel.v3
-            ? h(V3Scene, { plan: shownModel.v3 })
+            ? h(V3Scene, { plan: shownModel.v3, transition: shownModel.transition })
             : h(MoodView, { model: shownModel, revision: revision.current + bump }),
           h(SignatureBadge, { chips: signatureList }),
           h('div', {

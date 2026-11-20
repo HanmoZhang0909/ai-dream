@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.2 — 2026-11-19
+
+- Fixed the missing transition when the canvas switches expressions: `V3Scene` used to replace its layers instantly (scroll-replay and new expressions snapped). It now keeps a snapshot of the previous plan and **cross-fades** old → new over `tauFor(transition.speed, transition.style)` (`data-ai-dream-v3-fading`/`-group` expose the state), and fades in on first mount. New plan transitions use only opacity (no layout), keep the existing per-layer rAF motion, and still respect `prefers-reduced-motion` (instant swap).
+
 ## 3.0.1 — 2026-11-19
 
 - Completed the last v3 evidence item: the authenticated DSH GUI self-test now passes with the fresh token — the canvas renders a forced v3 expression (`data-ai-dream-v3-layers="3"`, primitives `blob/ring/lines`, tier L2) and the screenshot is committed as `docs/screenshot-v3-dsh.png`. Full suite also passed (onboarding, calibration notes, sync panel, signature panel, keyboard/Home/End/Esc, dots/jump/back, empty state, weather forms, streaming hint) with only `[deepseek-account]` console noise from the headless profile (unrelated to the plugin).

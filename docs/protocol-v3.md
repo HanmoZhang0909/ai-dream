@@ -120,6 +120,7 @@ CI 校验 schema、合法引用与降级期望；渲染截图在 GUI 轮次补�
   - v1.25.0：**动画采样与播放**——core 的 `sampleMotionV3` / `sampleKeyframesV3` / `variationOffset` / `applyRelationsV3`；客户端 rAF 只改 `transform`/`opacity`，标签页隐藏时暂停，`prefers-reduced-motion` 静止；
   - v1.26.0：**MCP 工具契约同步**——`mcp/app-manifest.json` protocol 3，server 返回 `tier/layers/degradations`；
   - v1.27.0：**MCP iframe 渲染器支持 v3**——`resources/ai-dream.html` 渲染层/遮罩/关系/关键帧/variation，探针输出 `{protocol:3, tier, layers, primitives, animated, degradations}`；本地无头 Chrome 验证 tier L3 / 3 层 / 未知原语降级，截图 `docs/screenshot-v3-layers.png`；
+  - v3.0.2：**场景过渡**——`V3Scene` 切换计划时保留上一份快照做 opacity 交叉淡入（时长由 `transition.speed/style` 决定），首次挂载淡入；动画只在每层 rAF 内、reduced-motion 瞬时；
   - 待办：DSH 画布 GUI 截图（需要新的 `dsh web` token）。
 
 ## 10. v3.0 完成度清单
