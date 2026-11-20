@@ -120,3 +120,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\run-ui-selftest.ps1 -Token
 - **双向校准**：把日历校准写回签名/人格基线（当前只注入提示词）；
 - **分发**：npm 发布 `dsh-ai-dream`（用户决定）、GitHub Release、社区索引提交、真实界面截图；
 - **宣传**：demo GIF + 在线 demo + 插件市场曝光。
+
+## v3 动作原语视觉化（v3.0.7）
+
+- `direction`（lean/reach/contract）在 core、客户端、MCP 渲染器三处实现为可视偏置：lean 轻移 3%+小角度旋转、reach 伸手 6%+放大 1.06、contract 内收 2%+缩小 0.92；`angle` 决定朝向；
+- `gloss` 渲染为左上白色高光叠层；`afterglow` 在客户端交叉淡入时让旧场景先停留 `hold` 秒、再按 `decay` 拉长淡出；
+- 未知 direction 降级为无偏置并记录 `unknown-direction`，程序不崩；
+- 新增 `examples/v3/gestural.json` 第六份跨风格 fixture，协议检查要求覆盖三种方向 + gloss + afterglow；core 单测覆盖方向数学/边界/降级/afterglow 规划；MCP 渲染器实测 `tier L2 / 3 层 / animated / 0 degradations`。
+

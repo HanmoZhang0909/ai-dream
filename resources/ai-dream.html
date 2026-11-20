@@ -103,6 +103,43 @@ function baseTransform(layer) {
   return 'rotate(' + Math.round(layer.rotation || 0) + 'deg)'
 }
 
+// Direction primitives: visual lean / reach / contract (mirror of core).
+function directionBias(layer) {
+  const angle = Math.max(-180, Math.min(180, Number(layer.angle) || 0))
+  const radians = (angle * Math.PI) / 180
+  const out = { dx: 0, dy: 0, scale: 1, rotate: 0 }
+  if (layer.direction === 'lean') {
+    out.dx = Math.cos(radians) * 3
+    out.dy = Math.sin(radians) * 3
+    out.rotate = angle * 0.06
+  } else if (layer.direction === 'reach') {
+    out.dx = Math.cos(radians) * 6
+    out.dy = Math.sin(radians) * 6
+    out.scale = 1.06
+    out.rotate = angle * 0.12
+  } else if (layer.direction === 'contract') {
+    out.dx = -Math.cos(radians) * 2
+    out.dy = -Math.sin(radians) * 2
+    out.scale = 0.92
+    out.rotate = angle * -0.04
+  }
+  return out
+}
+
+function layerTransform(layer) {
+  const bias = directionBias(layer)
+  const base = baseTransform(layer)
+  if (bias.dx === 0 && bias.dy === 0 && bias.scale === 1 && bias.rotate === 0) return base
+  return base + ' translate3d(' + bias.dx.toFixed(2) + '%, ' + bias.dy.toFixed(2) + '%, 0)'
+    + ' scale(' + bias.scale.toFixed(3) + ') rotate(' + bias.rotate.toFixed(2) + 'deg)'
+}
+
+function layerBackgroundWithGloss(layer, palette) {
+  const base = layerBackground(layer, palette)
+  if (!(layer.gloss > 0.05)) return base
+  return 'radial-gradient(circle at 30% 24%, rgba(255,255,255,' + (0.1 + layer.gloss * 0.32).toFixed(2) + ') 0%, transparent 46%), ' + base
+}
+
 let v3Nodes = []
 let animated = false
 
@@ -119,9 +156,9 @@ function buildV3() {
     node.style.inset = '0'
     node.style.opacity = String(layer.opacity)
     node.style.mixBlendMode = layer.blend || 'normal'
-    node.style.background = layerBackground(layer, palette)
+    node.style.background = layerBackgroundWithGloss(layer, palette)
     node.style.filter = 'blur(' + Math.round(4 + (1 - layer.softness) * 8) + 'px)'
-    node.style.transform = baseTransform(layer)
+    node.style.transform = layerTransform(layer)
     if (layer.mask) {
       const softness = Math.round(40 + layer.mask.softness * 60)
       const maskImage = layer.mask.type === 'linear'
@@ -132,7 +169,7 @@ function buildV3() {
     }
     node.dataset.primitive = layer.primitive
     v3Root.appendChild(node)
-    v3Nodes.push({ node, layer, base: baseTransform(layer) })
+    v3Nodes.push({ node, layer, base: layerTransform(layer) })
     if ((layer.motion && Object.keys(layer.motion).length > 0) || (layer.keyframes && layer.keyframes.length >= 2)
       || (layer.relations && layer.relations.length > 0)) animated = true
   })

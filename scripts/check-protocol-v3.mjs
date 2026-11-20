@@ -69,7 +69,7 @@ function validate(value, spec, where) {
   }
 }
 
-const expectedFixtures = ['minimal.json', 'lyrical.json', 'geometric.json', 'symbolic.json', 'wild.json']
+const expectedFixtures = ['minimal.json', 'lyrical.json', 'geometric.json', 'symbolic.json', 'wild.json', 'gestural.json']
 const fixtureData = {}
 for (const name of expectedFixtures) {
   const file = path.join(fixturesDir, name)
@@ -112,6 +112,14 @@ for (const name of expectedFixtures) {
   if (!unknown) problems.push('wild.json should exercise an unknown primitive with fallback')
   if (!Array.isArray(wild.keyframes) || wild.keyframes.length < 2) problems.push('wild.json should use keyframes')
   if ((wild.layers || []).length < 8) problems.push('wild.json should reach the 8-layer budget')
+
+const gestural = fixtureData['gestural.json'] || {}
+const directions = (gestural.layers || []).map(layer => layer.direction).filter(Boolean)
+for (const required of ['lean', 'reach', 'contract']) {
+  if (directions.indexOf(required) < 0) problems.push('gestural.json should exercise the ' + required + ' direction')
+}
+if (!(gestural.layers || []).some(layer => layer.gloss > 0)) problems.push('gestural.json should use gloss')
+if (!(gestural.afterglow && gestural.afterglow.decay > 0)) problems.push('gestural.json should use afterglow')
 }
 
 // Downgrade matrix must stay documented (these rows are the compatibility promise).

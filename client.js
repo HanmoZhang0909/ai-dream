@@ -943,21 +943,54 @@ window.__ModuleLoader__.load({
 
     /** v3 scene: layers rendered as absolutely positioned CSS layers (no layout animation). */
     /** One absolutely positioned v3 layer node. */
+    // Mirror of directionTransformV3 in renderer/core.mjs.
+    function v3DirectionTransform(layer) {
+      const source = layer && typeof layer === 'object' ? layer : {}
+      const angle = Math.max(-180, Math.min(180, Number.isFinite(source.angle) ? source.angle : 0))
+      const radians = (angle * Math.PI) / 180
+      const out = { dx: 0, dy: 0, scale: 1, rotate: 0 }
+      if (source.direction === 'lean') {
+        out.dx = Math.cos(radians) * 3
+        out.dy = Math.sin(radians) * 3
+        out.rotate = angle * 0.06
+      } else if (source.direction === 'reach') {
+        out.dx = Math.cos(radians) * 6
+        out.dy = Math.sin(radians) * 6
+        out.scale = 1.06
+        out.rotate = angle * 0.12
+      } else if (source.direction === 'contract') {
+        out.dx = -Math.cos(radians) * 2
+        out.dy = -Math.sin(radians) * 2
+        out.scale = 0.92
+        out.rotate = angle * -0.04
+      }
+      return out
+    }
+
     function v3LayerNode(layer, index, palette, refs, bases, groupKey) {
       const blur = Math.round(4 + (1 - layer.softness) * 8)
-      const transform = layer.transform
+      const baseTransform = layer.transform
         ? 'translate(' + Math.round((layer.transform.translate ? layer.transform.translate[0] : 0) * 100)
           + '%, ' + Math.round((layer.transform.translate ? layer.transform.translate[1] : 0) * 100) + '%) '
           + 'scale(' + layer.transform.scale + ') rotate(' + Math.round(layer.transform.rotate) + 'deg)'
           + (layer.transform.skew ? ' skew(' + Math.round(layer.transform.skew) + 'deg)' : '')
         : 'rotate(' + Math.round(layer.rotation) + 'deg)'
+      const bias = v3DirectionTransform(layer)
+      const transform = bias.dx === 0 && bias.dy === 0 && bias.scale === 1 && bias.rotate === 0
+        ? baseTransform
+        : baseTransform + ' translate3d(' + bias.dx.toFixed(2) + '%, ' + bias.dy.toFixed(2) + '%, 0)'
+          + ' scale(' + bias.scale.toFixed(3) + ') rotate(' + bias.rotate.toFixed(2) + 'deg)'
       if (bases) bases.current[index] = transform
+      const layerBackground = v3LayerBackground(layer, palette)
+      const background = layer.gloss > 0.05
+        ? 'radial-gradient(circle at 30% 24%, rgba(255,255,255,' + (0.1 + layer.gloss * 0.32).toFixed(2) + ') 0%, transparent 46%), ' + layerBackground
+        : layerBackground
       const style = {
         position: 'absolute',
         inset: 0,
         opacity: layer.opacity,
         mixBlendMode: layer.blend || 'normal',
-        background: v3LayerBackground(layer, palette),
+        background,
         filter: 'blur(' + blur + 'px)',
         transform,
         transformOrigin: '50% 50%',
@@ -976,6 +1009,8 @@ window.__ModuleLoader__.load({
         ref: node => { if (refs) refs.current[index] = node },
         'data-ai-dream-v3-layer': String(index),
         'data-ai-dream-v3-primitive': layer.primitive,
+        'data-ai-dream-v3-direction': layer.direction || '',
+        'data-ai-dream-v3-gloss': layer.gloss > 0.05 ? '1' : '0',
         style,
       })
     }
@@ -985,6 +1020,12 @@ window.__ModuleLoader__.load({
       const plan = props && props.plan ? props.plan : {}
       const transition = (props && props.transition) || { style: 'soft', speed: 'medium' }
       const duration = Math.max(220, Math.min(1600, tauFor(transition.speed, transition.style) || 900))
+      // Afterglow: the leaving scene lingers (`hold`) and then decays slower (`decay`).
+      const afterglow = plan && plan.afterglow && typeof plan.afterglow === 'object' ? plan.afterglow : null
+      const holdMs = afterglow ? Math.max(0, Math.min(10, Number.isFinite(afterglow.hold) ? afterglow.hold : 0)) * 1000 : 0
+      const fadeMs = afterglow
+        ? Math.max(220, Math.min(2400, duration * (1 + Math.max(0.5, Math.min(20, afterglow.decay || 6)) / 10)))
+        : duration
       const [view, setView] = React.useState({ current: plan, previous: null })
       const [currentFade, setCurrentFade] = React.useState(0)
       const [previousFade, setPreviousFade] = React.useState(1)
@@ -1012,12 +1053,12 @@ window.__ModuleLoader__.load({
           setCurrentFade(1)
           setPreviousFade(0)
         }))
-        const timer = setTimeout(() => setView(state => ({ current: state.current, previous: null })), duration + 140)
+        const timer = setTimeout(() => setView(state => ({ current: state.current, previous: null })), holdMs + fadeMs + 160)
         return () => {
           cancelAnimationFrame(raf)
           clearTimeout(timer)
         }
-      }, [plan, duration])
+      }, [plan, duration, holdMs, fadeMs])
 
       const currentLayers = Array.isArray(view.current.layers) ? view.current.layers : []
       const currentPalette = view.current.palette || { base: '#05070c', core: '#cfe0ff', tone: '#5f7bb8', spectrum: [] }
@@ -1070,6 +1111,7 @@ window.__ModuleLoader__.load({
         'data-ai-dream-v3-layers': String(currentLayers.length),
         'data-ai-dream-v3-animated': animated ? '1' : '0',
         'data-ai-dream-v3-fading': view.previous ? '1' : '0',
+        'data-ai-dream-v3-afterglow': afterglow ? '1' : '0',
         style: { position: 'absolute', inset: 0, background: currentPalette.base, overflow: 'hidden' },
       },
       view.previous
@@ -1079,7 +1121,7 @@ window.__ModuleLoader__.load({
             position: 'absolute',
             inset: 0,
             opacity: previousFade,
-            transition: 'opacity ' + duration + 'ms cubic-bezier(0.22, 0.61, 0.36, 1)',
+            transition: 'opacity ' + fadeMs + 'ms cubic-bezier(0.22, 0.61, 0.36, 1) ' + holdMs + 'ms',
           },
         }, (Array.isArray(view.previous.layers) ? view.previous.layers : []).map((layer, index) => v3LayerNode(
           layer, index, view.previous.palette || currentPalette, previousNodes, previousBases, 'prev',

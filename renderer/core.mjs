@@ -212,6 +212,8 @@ export const V3_LIMITS = Object.freeze({
 export const V3_KNOWN_PRIMITIVES = Object.freeze(['blob', 'ring', 'band', 'spiral', 'lines', 'haze', 'particles', 'macro'])
 export const V3_KNOWN_MOTIONS = Object.freeze(['breath', 'drift', 'rotate', 'wobble', 'flicker', 'uneven', 'hold', 'afterglow', 'follow', 'converge', 'split', 'echo'])
 export const V3_KNOWN_RELATIONS = Object.freeze(['follow', 'converge', 'split', 'echo'])
+/** Direction primitives are visual biases, not emotion categories (open vocabulary degrades). */
+export const V3_KNOWN_DIRECTIONS = Object.freeze(['lean', 'reach', 'contract'])
 export const V3_KNOWN_MOTION_FIELDS = Object.freeze(['speed', 'amplitude', 'rhythm'])
 
 export const V3_DEFAULT_CAPABILITIES = Object.freeze({
@@ -383,8 +385,15 @@ export function normalizeLayerV3(layer, index, capabilities, macros, layerTotal)
     blend: typeof source.blend === 'string' ? source.blend : 'normal',
     grain: clampRange(source.grain, 0, 1, 0),
     gloss: clampRange(source.gloss, 0, 1, 0),
-    direction: typeof source.direction === 'string' ? source.direction : null,
+    direction: null,
     fromMacro: Boolean(resolved.macro),
+  }
+  if (typeof source.direction === 'string' && source.direction.length > 0) {
+    if (V3_KNOWN_DIRECTIONS.indexOf(source.direction) >= 0) {
+      out.direction = source.direction
+    } else {
+      notes.push({ layer: index, reason: 'unknown-direction', name: source.direction.slice(0, 40) })
+    }
   }
   if (Array.isArray(source.offset) && source.offset.length === 2) {
     out.offset = [clampRange(source.offset[0], -1, 1, 0), clampRange(source.offset[1], -1, 1, 0)]
@@ -662,6 +671,38 @@ export function sampleKeyframesV3(keyframes, progress) {
     else if (b === null) out[key] = a
     else out[key] = a + (b - a) * local
   }
+  return out
+}
+
+/**
+ * Visual bias of the expressive direction primitives (lean / reach / contract).
+ * Pure, bounded, deterministic: `dx`/`dy` are percentages, `rotate` degrees and
+ * `scale` a multiplier. Unknown or missing directions are the identity.
+ */
+export function directionTransformV3(layer) {
+  const source = layer && typeof layer === 'object' ? layer : {}
+  const angle = clampRange(source.angle, -180, 180, 0)
+  const radians = (angle * Math.PI) / 180
+  const out = { dx: 0, dy: 0, scale: 1, rotate: 0 }
+  if (source.direction === 'lean') {
+    out.dx = Math.cos(radians) * 3
+    out.dy = Math.sin(radians) * 3
+    out.rotate = angle * 0.06
+  } else if (source.direction === 'reach') {
+    out.dx = Math.cos(radians) * 6
+    out.dy = Math.sin(radians) * 6
+    out.scale = 1.06
+    out.rotate = angle * 0.12
+  } else if (source.direction === 'contract') {
+    out.dx = -Math.cos(radians) * 2
+    out.dy = -Math.sin(radians) * 2
+    out.scale = 0.92
+    out.rotate = angle * -0.04
+  }
+  out.dx = Math.max(-10, Math.min(10, out.dx))
+  out.dy = Math.max(-10, Math.min(10, out.dy))
+  out.scale = Math.max(0.5, Math.min(2, out.scale))
+  out.rotate = Math.max(-30, Math.min(30, out.rotate))
   return out
 }
 

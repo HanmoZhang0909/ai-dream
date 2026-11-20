@@ -55,6 +55,17 @@ macro 只能引用已注册原语与参数，不能执行代码；嵌套 macro �
 ### 3.4 生成式
 `seed` + `variation` + 原语自带随机参数（`scatter`/`drift` 等）允许每次略有不同；随机只在**采样**发生，不逐帧。
 
+### 3.5 方向、质感、余韵的视觉语义（v3.0.7 起）
+
+- `direction`（配合 `angle` 朝向，单位度）：
+  - `lean`：朝 `angle` 方向平移约 3%、额外旋转 `angle×0.06`（轻微倾身）；
+  - `reach`：朝 `angle` 方向平移约 6%、放大 1.06、旋转 `angle×0.12`（伸手/朝向某物）；
+  - `contract`：向内收 2%、缩小到 0.92、反向微旋（收缩/自我保护）；
+  - 未认识的 direction 记为 `unknown-direction` 并降级为无偏置（不报错）。
+- `gloss`（0–1）：在层左上叠加白色高光（透明度 `0.1 + 0.32×gloss`），营造湿润/反光质感；
+- `afterglow`（`hold` 秒 + `decay`）：客户端交叉淡入时，旧场景先停留 `hold` 秒，再以 `decay` 拉长淡出——表达结束后的余韵；
+- 三者都是**层修饰**，可自由组合，不改变预算与安全边界。
+
 ## 4. 程序不崩：硬边界（唯一不可协商的部分）
 
 1. 不执行 raw CSS/SVG/脚本/外部资源；只接受结构化 JSON；
@@ -97,7 +108,7 @@ macro 只能引用已注册原语与参数，不能执行代码；嵌套 macro �
 
 v3 主版本；字段只增不删；未知字段忽略；未知枚举走降级；`schema` 不强制。**MCP 工具契约已同步（v1.26.0）**：`mcp/app-manifest.json` 的 `protocol` 为 3，`express_emotion` 接受 layers/macros/keyframes/relations/seed/variation/afterglow（开放词汇），server 输出 `tier`/`layers`/`degradations`。
 
-## 8. 兼容性证据：四种"别的 AI 风格"样例
+## 8. 兼容性证据：六种"别的 AI 风格"样例
 
 `examples/v3/`：
 
@@ -105,7 +116,8 @@ v3 主版本；字段只增不删；未知字段忽略；未知枚举走降级�
 2. `lyrical.json` —— 多层 haze/echo/afterglow + variation（L2 自由信封）；
 3. `geometric.json` —— rings/bands + hold/rotate（L2）；
 4. `symbolic.json` —— 自定义 macro `sigil`（L3）；
-5. `wild.json` —— **故意使用未注册 primitive 名 + keyframes + 极端参数**，验证"不认识也能降级渲染、程序不崩"。
+5. `wild.json` —— **故意使用未注册 primitive 名 + keyframes + 极端参数**，验证"不认识也能降级渲染、程序不崩"；
+6. `gestural.json` —— 方向原语 `lean/reach/contract` + `gloss` 高光 + `afterglow` 余韵（L2 手势型 AI）。
 
 CI 校验 schema、合法引用与降级期望；渲染截图在 GUI 轮次补齐。
 

@@ -1,0 +1,50 @@
+{
+  "kind": "mood",
+  "schema": 3,
+  "name": "gestural",
+  "intensity": 0.78,
+  "palette": {
+    "base": "#06090d",
+    "core": "#e8f4ff",
+    "tone": "#6f9fb8",
+    "spectrum": ["#a8d8e8", "#7f8fc0"]
+  },
+  "seed": 51,
+  "variation": 0.2,
+  "afterglow": { "hold": 1.5, "decay": 8 },
+  "layers": [
+    {
+      "primitive": "blob",
+      "size": 0.6,
+      "softness": 0.8,
+      "opacity": 0.85,
+      "paletteSlot": "core",
+      "direction": "reach",
+      "angle": -20,
+      "gloss": 0.4,
+      "motion": { "breath": { "rate": 0.3, "depth": 0.05 } }
+    },
+    {
+      "primitive": "band",
+      "angle": 30,
+      "thickness": 0.12,
+      "softness": 0.45,
+      "opacity": 0.5,
+      "paletteSlot": "spectrum0",
+      "direction": "lean",
+      "gloss": 0.25
+    },
+    {
+      "primitive": "ring",
+      "size": 0.7,
+      "thickness": 0.04,
+      "softness": 0.3,
+      "opacity": 0.55,
+      "paletteSlot": "spectrum1",
+      "direction": "contract",
+      "motion": { "rotate": { "speed": 0.1 } },
+      "relations": [{ "type": "follow", "target": 0, "strength": 0.5, "delay": 0.2 }]
+    }
+  ],
+  "transition": { "style": "soft", "speed": "medium" }
+}

@@ -35,6 +35,7 @@ import {
   planExpressionV3,
   resolveCapabilities,
   resolveColors,
+  directionTransformV3,
   sampleKeyframesV3,
   sampleMotionV3,
   sentinelSelector,
@@ -321,6 +322,39 @@ assert.equal(nextDotTurn([10, 11, 12], 99, 'next'), 10, 'unknown turns start at 
   assert.equal(holdLayout[0].dx, 0)
 }
 
+// --- v3 direction primitives ---------------------------------------------------
+{
+  assert.deepEqual(directionTransformV3(null), { dx: 0, dy: 0, scale: 1, rotate: 0 })
+  assert.deepEqual(directionTransformV3({ direction: 'unknown', angle: 40 }), { dx: 0, dy: 0, scale: 1, rotate: 0 })
+  const lean = directionTransformV3({ direction: 'lean', angle: 0 })
+  assert.ok(Math.abs(lean.dx - 3) < 1e-9 && Math.abs(lean.dy) < 1e-9 && lean.rotate === 0)
+  const reach = directionTransformV3({ direction: 'reach', angle: 90 })
+  assert.ok(Math.abs(reach.dx) < 1e-9 && Math.abs(reach.dy - 6) < 1e-9 && reach.scale === 1.06)
+  const contract = directionTransformV3({ direction: 'contract', angle: 0 })
+  assert.ok(contract.dx < 0 && contract.scale === 0.92)
+  for (const sample of [lean, reach, contract]) {
+    assert.ok(Math.abs(sample.dx) <= 10 && Math.abs(sample.dy) <= 10)
+    assert.ok(sample.scale >= 0.5 && sample.scale <= 2)
+    assert.ok(Math.abs(sample.rotate) <= 30)
+  }
+  const gestural = planExpressionV3({
+    kind: 'mood',
+    intensity: 0.7,
+    afterglow: { hold: 1.5, decay: 8 },
+    layers: [
+      { primitive: 'blob', direction: 'reach', gloss: 0.4 },
+      { primitive: 'band', direction: 'lean', angle: 30 },
+      { primitive: 'ring', direction: 'contract' },
+    ],
+  })
+  assert.equal(gestural.afterglow.hold, 1.5)
+  assert.deepEqual(gestural.layers.map(layer => layer.direction), ['reach', 'lean', 'contract'])
+  assert.equal(gestural.layers[0].gloss, 0.4)
+  const unknownDirection = planExpressionV3({ kind: 'mood', layers: [{ primitive: 'blob', direction: 'shiver' }] })
+  assert.equal(unknownDirection.layers[0].direction, null)
+  assert.ok(unknownDirection.degradations.some(item => item.reason === 'unknown-direction'))
+}
+
 // --- protocol v3 planner (open vocabulary, safe degradation) -----------------
 {
   const fixtures = ['minimal', 'lyrical', 'geometric', 'symbolic', 'wild']
@@ -518,6 +552,9 @@ assert.equal(nextDotTurn([10, 11, 12], 99, 'next'), 10, 'unknown turns start at 
   assert.ok(client.includes('data-ai-dream-v3-animated'), 'client flags animated v3 scenes')
   assert.ok(client.includes('data-ai-dream-v3-fading'), 'client cross-fades between v3 plans')
   assert.ok(client.includes('v3LayerNode'), 'client keeps the v3 layer renderer helper')
+  assert.ok(client.includes('v3DirectionTransform'), 'client applies the direction primitives')
+  assert.ok(client.includes('data-ai-dream-v3-gloss'), 'client renders the gloss highlight')
+  assert.ok(client.includes('data-ai-dream-v3-afterglow'), 'client honours afterglow')
   assert.ok(client.includes('__AI_DREAM_FORCE_FORM'), 'client keeps the form test hook')
   assert.ok(client.includes('data-ai-dream-form'), 'client exposes the rendered form')
 }

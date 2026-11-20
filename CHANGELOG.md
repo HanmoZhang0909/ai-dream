@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.0.7 — 2026-11-20
+
+- v3 action primitives get their visual semantics:
+  - `direction` (with `angle`): `lean` shifts ~3% and rotates `angle×0.06`, `reach` shifts ~6%/scales 1.06/rotates `angle×0.12`, `contract` pulls in 2%/scales 0.92 — implemented in core (`directionTransformV3`), the DSH client and the MCP renderer; unknown direction names degrade to no bias and record `unknown-direction`.
+  - `gloss` adds a top-left white highlight layer (`0.1 + 0.32×gloss`); `afterglow` now makes the leaving scene linger `hold` seconds and fade out with `decay`-stretched duration in the client cross-fade.
+- Added `examples/v3/gestural.json` (sixth cross-style fixture: lean + reach + contract + gloss + afterglow) and extended the protocol check to require those styles; core tests cover the direction math, bounds, degradation and afterglow planning. MCP renderer verified: `{tier:"L2", layers:3, primitives:["blob","band","ring"], animated:true, degradations:0}`.
+
 ## 3.0.6 — 2026-11-20
 
 - npm package is live: `npm i dsh-ai-dream` installs 3.0.5+ (registry latest). This release is the first automatic CI publish through the token-based `publish.yml` path: push a `vX.Y.Z` tag → workflow verifies tag/version → runs all checks → publishes with provenance. (npm no longer allows new TOTP/Authenticator-App 2FA, so until a WebAuthn security key is configured, CI keeps using the repository `NPM_TOKEN` secret; npm plans to restrict direct bypass-token publishing from 2027-01, at which point the workflow will move to staged publishing / trusted publishing.)
