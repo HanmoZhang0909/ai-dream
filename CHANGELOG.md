@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.5 — 2026-11-20
+
+- First npm release of `dsh-ai-dream` (published via `.github/workflows/publish.yml` with a short-lived granular token; the workflow will move to npm Trusted Publishing so no token is needed afterwards). README install tables now point at `npm i dsh-ai-dream` / the `dsh-ai-dream` package name instead of "once published".
+
 ## 3.0.4 — 2026-11-20
 
 - npm publishing readiness (no runtime behaviour change): README demo/screenshot images now use absolute `raw.githubusercontent.com` URLs so they render on npm too; added privacy + DSH-preview compatibility notes; `package.json` gains `main`, `publishConfig.access`, a `check` script aggregating all nine contract checks and `prepublishOnly` running it before every publish; new `scripts/check-index.mjs` validates the host entry.

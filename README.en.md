@@ -31,7 +31,7 @@ Requires the DSH Web GUI (`profile=web`).
 | Option | How |
 |---|---|
 | **Local directory** | **Plugins → Add plugin** → pick **this directory** (absolute path) |
-| **npm** (once published) | Plugins → Add plugin → package name `dsh-ai-dream` |
+| **npm** | Plugins → Add plugin → package name `dsh-ai-dream` (or `npm i dsh-ai-dream` and install from the local directory) |
 | **Git** | Plugins → Add plugin → `https://github.com/HanmoZhang0909/ai-dream` (or `github:HanmoZhang0909/ai-dream#main`) |
 
 Refresh the page when prompted, then open the right sidebar and pick the **AI Dream** card on the guide page.
