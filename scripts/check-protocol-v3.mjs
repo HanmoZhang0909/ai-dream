@@ -69,7 +69,7 @@ function validate(value, spec, where) {
   }
 }
 
-const expectedFixtures = ['minimal.json', 'lyrical.json', 'geometric.json', 'symbolic.json', 'wild.json', 'gestural.json']
+const expectedFixtures = ['minimal.json', 'lyrical.json', 'geometric.json', 'symbolic.json', 'wild.json', 'gestural.json', 'alive.json']
 const fixtureData = {}
 for (const name of expectedFixtures) {
   const file = path.join(fixturesDir, name)
@@ -120,6 +120,13 @@ for (const required of ['lean', 'reach', 'contract']) {
 }
 if (!(gestural.layers || []).some(layer => layer.gloss > 0)) problems.push('gestural.json should use gloss')
 if (!(gestural.afterglow && gestural.afterglow.decay > 0)) problems.push('gestural.json should use afterglow')
+
+const alive = fixtureData['alive.json'] || {}
+if (!Array.isArray(alive.keyframes) || alive.keyframes.length < 3) problems.push('alive.json should use expression-level keyframes')
+if (!Array.isArray(alive.layers) || alive.layers.length < 4) problems.push('alive.json should compose at least four layers')
+if (!(alive.layers || []).some(layer => layer.grain > 0)) problems.push('alive.json should use grain')
+if (!(alive.layers || []).some(layer => layer.gloss > 0)) problems.push('alive.json should use gloss')
+if (!(alive.layers || []).some(layer => Array.isArray(layer.keyframes) && layer.keyframes.length >= 2)) problems.push('alive.json should use per-layer keyframes')
 }
 
 // Downgrade matrix must stay documented (these rows are the compatibility promise).

@@ -1,0 +1,80 @@
+{
+  "kind": "mood",
+  "schema": 3,
+  "name": "alive",
+  "intensity": 0.82,
+  "palette": {
+    "base": "#05080d",
+    "core": "#eafcff",
+    "tone": "#5fb8c8",
+    "spectrum": ["#a8ffe8", "#7f9fff", "#ffd6a0"]
+  },
+  "seed": 77,
+  "variation": 0.25,
+  "afterglow": { "hold": 1.2, "decay": 10 },
+  "keyframes": [
+    { "at": 0, "values": { "scale": 0.9, "opacity": 0.7 }, "easing": "ease-in-out" },
+    { "at": 0.45, "values": { "scale": 1.12, "opacity": 0.95 } },
+    { "at": 1, "values": { "scale": 0.95, "opacity": 0.8 }, "easing": "ease-out" }
+  ],
+  "layers": [
+    {
+      "primitive": "blob",
+      "size": 0.65,
+      "softness": 0.82,
+      "opacity": 0.85,
+      "paletteSlot": "core",
+      "gloss": 0.6,
+      "grain": 0.12,
+      "motion": { "breath": { "rate": 0.35, "depth": 0.07 } }
+    },
+    {
+      "primitive": "ring",
+      "size": 0.78,
+      "thickness": 0.03,
+      "softness": 0.25,
+      "opacity": 0.55,
+      "paletteSlot": "spectrum1",
+      "gloss": 0.3,
+      "grain": 0.08,
+      "keyframes": [
+        { "at": 0, "values": { "scale": 0.94, "opacity": 0.55 } },
+        { "at": 0.6, "values": { "scale": 1.04, "opacity": 0.7 } },
+        { "at": 1, "values": { "scale": 0.94, "opacity": 0.55 } }
+      ],
+      "relations": [{ "type": "follow", "target": 0, "strength": 0.4, "delay": 0.2 }]
+    },
+    {
+      "primitive": "particles",
+      "count": 4,
+      "size": 0.9,
+      "softness": 0.5,
+      "opacity": 0.42,
+      "paletteSlot": "spectrum0",
+      "grain": 0.2,
+      "motion": { "uneven": { "rate": 0.7, "clusters": 4 } },
+      "keyframes": [
+        { "at": 0, "values": { "opacity": 0.2 } },
+        { "at": 0.5, "values": { "opacity": 0.6 } },
+        { "at": 1, "values": { "opacity": 0.2 } }
+      ]
+    },
+    {
+      "primitive": "band",
+      "angle": 20,
+      "thickness": 0.06,
+      "softness": 0.5,
+      "opacity": 0.3,
+      "paletteSlot": "spectrum2",
+      "gloss": 0.25,
+      "grain": 0.3,
+      "direction": "lean",
+      "keyframes": [
+        { "at": 0, "values": { "opacity": 0.15 } },
+        { "at": 0.7, "values": { "opacity": 0.4 } },
+        { "at": 1, "values": { "opacity": 0.15 } }
+      ]
+    }
+  ],
+  "transition": { "style": "dissolve", "speed": "medium" }
+}

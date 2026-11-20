@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.8 — 2026-11-20
+
+- Added `examples/v3/alive.json`: a "living" v3 example combining `grain` texture, `gloss` highlights and **both expression-level and per-layer `keyframes`** across four layers (blob/ring/particles/band) to produce breathing and clustering motion. The MCP iframe renderer now samples keyframes too (expression + layer, 6 s cycle), so the same scene can be captured at different times: probe `{tier:"L3", layers:4, primitives:["blob","ring","particles","band"], animated:true, degradations:0}` and two screenshots at t=0.9/3.3 differ as expected.
+- Protocol check now requires 7 fixtures and asserts that `alive.json` uses grain, gloss, expression-level keyframes and per-layer keyframes.
+
 ## 3.0.7 — 2026-11-20
 
 - v3 action primitives get their visual semantics:

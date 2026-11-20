@@ -128,3 +128,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\run-ui-selftest.ps1 -Token
 - 未知 direction 降级为无偏置并记录 `unknown-direction`，程序不崩；
 - 新增 `examples/v3/gestural.json` 第六份跨风格 fixture，协议检查要求覆盖三种方向 + gloss + afterglow；core 单测覆盖方向数学/边界/降级/afterglow 规划；MCP 渲染器实测 `tier L2 / 3 层 / animated / 0 degradations`。
 
+## "活"的示例：grain/gloss + keyframes（v3.0.8）
+
+- 新增 `examples/v3/alive.json`：4 层（blob/ring/particles/band）+ grain 纹理 + gloss 高光 + 表达级与层级 keyframes 同时生效，形成呼吸/聚散的生命感；tier L3；
+- MCP iframe 渲染器补齐 keyframes 采样（表达级 + 层级，6 秒循环），同一场景在 t=0.9 与 t=3.3 渲染出可验证的差异（字节不同、视觉上光核大小/亮度变化）；
+- 协议检查扩展到 7 份 fixtures，并断言 alive 示例必须使用 grain/gloss/两类 keyframes。
+
+

@@ -29,6 +29,7 @@ import {
   normalizeMood,
   planExpressionV3,
   resolveCapabilities,
+  sampleKeyframesV3,
   sampleMotionV3,
   targetFrom,
   tauFor,
@@ -176,15 +177,29 @@ function buildV3() {
   if (v3Plan.keyframes && v3Plan.keyframes.length >= 2) animated = true
 }
 
+const KEYFRAME_CYCLE = 6
+
+function sampleKeysAt(keys, t) {
+  if (!Array.isArray(keys) || keys.length < 2) return null
+  return sampleKeyframesV3(keys, (t % KEYFRAME_CYCLE) / KEYFRAME_CYCLE)
+}
+
 function renderV3At(t) {
   const samples = applyRelationsV3(v3Plan.layers, t)
+  const expressionKeys = sampleKeysAt(v3Plan.keyframes, t)
   v3Nodes.forEach((entry, index) => {
     const sample = samples[index] || { dx: 0, dy: 0, scale: 1, rotate: 0, opacity: 1 }
     const offset = variationOffset(v3Plan.seed, v3Plan.variation, index)
+    const layerKeys = sampleKeysAt(entry.layer.keyframes, t)
+    const keyScale = layerKeys && Number.isFinite(layerKeys.scale) ? layerKeys.scale : 1
+    const keyOpacity = layerKeys && Number.isFinite(layerKeys.opacity) ? layerKeys.opacity : 1
+    const exprScale = expressionKeys && Number.isFinite(expressionKeys.scale) ? expressionKeys.scale : 1
+    const exprOpacity = expressionKeys && Number.isFinite(expressionKeys.opacity) ? expressionKeys.opacity : 1
+    const scale = sample.scale * keyScale * exprScale
     entry.node.style.transform = entry.base
       + ' translate3d(' + (sample.dx + offset * 6).toFixed(2) + '%, ' + (sample.dy + offset * 4).toFixed(2) + '%, 0)'
-      + ' scale(' + sample.scale.toFixed(3) + ') rotate(' + sample.rotate.toFixed(2) + 'deg)'
-    entry.node.style.opacity = String(Math.max(0, Math.min(1, entry.layer.opacity * sample.opacity)))
+      + ' scale(' + scale.toFixed(3) + ') rotate(' + sample.rotate.toFixed(2) + 'deg)'
+    entry.node.style.opacity = String(Math.max(0, Math.min(1, entry.layer.opacity * sample.opacity * keyOpacity * exprOpacity)))
   })
 }
 

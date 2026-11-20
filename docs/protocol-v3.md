@@ -108,7 +108,7 @@ macro 只能引用已注册原语与参数，不能执行代码；嵌套 macro �
 
 v3 主版本；字段只增不删；未知字段忽略；未知枚举走降级；`schema` 不强制。**MCP 工具契约已同步（v1.26.0）**：`mcp/app-manifest.json` 的 `protocol` 为 3，`express_emotion` 接受 layers/macros/keyframes/relations/seed/variation/afterglow（开放词汇），server 输出 `tier`/`layers`/`degradations`。
 
-## 8. 兼容性证据：六种"别的 AI 风格"样例
+## 8. 兼容性证据：七种"别的 AI 风格"样例
 
 `examples/v3/`：
 
@@ -117,7 +117,8 @@ v3 主版本；字段只增不删；未知字段忽略；未知枚举走降级�
 3. `geometric.json` —— rings/bands + hold/rotate（L2）；
 4. `symbolic.json` —— 自定义 macro `sigil`（L3）；
 5. `wild.json` —— **故意使用未注册 primitive 名 + keyframes + 极端参数**，验证"不认识也能降级渲染、程序不崩"；
-6. `gestural.json` —— 方向原语 `lean/reach/contract` + `gloss` 高光 + `afterglow` 余韵（L2 手势型 AI）。
+6. `gestural.json` —— 方向原语 `lean/reach/contract` + `gloss` 高光 + `afterglow` 余韵（L2 手势型 AI）；
+7. `alive.json` —— `grain` 纹理 + `gloss` 高光 + **表达级与层级 `keyframes` 同时生效**（L3），4 层组合出会呼吸/聚散的生命感。
 
 CI 校验 schema、合法引用与降级期望；渲染截图在 GUI 轮次补齐。
 
