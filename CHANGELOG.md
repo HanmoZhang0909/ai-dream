@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.4 — 2026-11-20
+
+- npm publishing readiness (no runtime behaviour change): README demo/screenshot images now use absolute `raw.githubusercontent.com` URLs so they render on npm too; added privacy + DSH-preview compatibility notes; `package.json` gains `main`, `publishConfig.access`, a `check` script aggregating all nine contract checks and `prepublishOnly` running it before every publish; new `scripts/check-index.mjs` validates the host entry.
+- `npm pack --dry-run` verified: 33 files, ~121 KB tarball; `npm publish --dry-run` is gated by `prepublishOnly` (docs checks must pass first). The npm name `dsh-ai-dream` is available; publishing needs an npm login.
+
 ## 3.0.3 — 2026-11-19
 
 - Added a local-only verification hook (`window.__AI_DREAM_SET_V3(spec)` + `data-ai-dream-test-v3`) so the GUI self-test can swap the forced v3 expression at runtime and assert the cross-fade deterministically. Verified in the real authenticated GUI: `data-ai-dream-v3-fading="1"` with both layer groups present (3 → 2 layers) during the transition, then `fading="0"` and the previous group removed. No user-visible behaviour change; the hook is inert in normal sessions.

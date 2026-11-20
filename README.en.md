@@ -8,9 +8,9 @@
 An **emotional outlet for AI** in [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
 A continuously flowing light in the right sidebar — not a diagram of the conversation, but a visual of how the model feels right now.
 
-![AI Dream mood loop](docs/demo.gif)
+![AI Dream mood loop](https://raw.githubusercontent.com/HanmoZhang0909/ai-dream/main/docs/demo.gif)
 
-> The clip is rendered from `docs/demo.html`, a standalone recreation of the glow (6 s loop: calm → warm → curious → calm) — **not a screenshot of the DSH UI**. A real UI screenshot is welcome via PR at `docs/screenshot.png`.
+> The clip is rendered from `docs/demo.html`, a standalone recreation of the glow (6 s loop: calm → warm → curious → calm) — **not a screenshot of the DSH UI**. Real DSH UI screenshots are in the Screenshots section below (captured by an automated GUI self-test).
 >
 > **Live preview**: <https://hanmozhang0909.github.io/ai-dream/demo.html> (open in a browser, no DSH required)
 
@@ -78,12 +78,12 @@ Notes:
 Real screenshots from automated GUI self-tests (the right pane is the Dream canvas; it changes with the session's emotions):
 
 <p>
-  <img src="docs/screenshot-live.png" alt="Live expression" width="48%">
-  <img src="docs/screenshot-empty.png" alt="Waiting state" width="48%">
+  <img src="https://raw.githubusercontent.com/HanmoZhang0909/ai-dream/main/docs/screenshot-live.png" alt="Live expression" width="48%">
+  <img src="https://raw.githubusercontent.com/HanmoZhang0909/ai-dream/main/docs/screenshot-empty.png" alt="Waiting state" width="48%">
 </p>
 <p>
-  <img src="docs/screenshot-rain.png" alt="Weather form: rain" width="48%">
-  <img src="docs/screenshot-replay.png" alt="Replaying one turn" width="48%">
+  <img src="https://raw.githubusercontent.com/HanmoZhang0909/ai-dream/main/docs/screenshot-rain.png" alt="Weather form: rain" width="48%">
+  <img src="https://raw.githubusercontent.com/HanmoZhang0909/ai-dream/main/docs/screenshot-replay.png" alt="Replaying one turn" width="48%">
 </p>
 
 ## Troubleshooting
@@ -173,11 +173,12 @@ Then refresh the page after editing (or wait for HMR to rebuild).
 
 ## Distribution & ecosystem
 
+- The npm package `dsh-ai-dream` is release-ready (the name is available on npm); until it is published, install from git or the market index below.
 - DSH discovers third-party plugins through **Discover** (the plugin market): enable the experimental plugin-market bundle once and add an **index URL** (format 1 JSON);
 - This repository ships a ready-to-add market index: `https://hanmozhang0909.github.io/ai-dream/index.json` (Discover → Add index source; validated with the official format-1 validator; installs from a commit-pinned git source);
 - The official plugin marketplace is under construction (announced 2026-11); today distribution leans on community indexes plus npm/Git installs;
 - Tag this repository with the `dsh-plugin` and `deepseek-harness` GitHub topics so it is discoverable;
-- Planned: publish npm package `dsh-ai-dream`.
+- npm publish `dsh-ai-dream`: package prepared and name checked; publishing only needs an npm login.
 
 ## Configuration
 
@@ -228,7 +229,9 @@ Beyond the three canvas buttons you can write a local calibration file so the ho
 - Built-in moods are a fallback vocabulary; AI-authored palettes are validated and clamped, with per-field fallback;
 - Only `canvas` fenced blocks are rendered;
 - A failed block keeps the previous visual and leaves the raw text in the conversation;
-- Replacing client bundles may require one DSH restart.
+- Replacing client bundles may require one DSH restart;
+- Built for the DSH 0.2.x **preview**: host plugin APIs are still moving fast; if an upgrade breaks loading, pin the last verified DSH version or wait for an update. Back up `~/.dsh/storages/dsh-ai-dream` before upgrades;
+- Privacy: the plugin only reads `canvas` blocks from chat messages and its own local storage directory (signature/calibration/config); it makes no outbound network requests. The MCP renderer is an optional portable prototype running inside a host-sandboxed iframe.
 
 ## License
 

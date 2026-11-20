@@ -1,6 +1,6 @@
 {
   "name": "dsh-ai-dream",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "description": "AI Dream — Artificial Intelligence Driven Real-time Emotional Ambient Medium. 让每个 AI 的感受有形状 / A shape for every feeling. DSH 右侧栏一块连续流动的情绪氛围光。",
   "license": "MIT",
   "author": "HanmoZhang0909",
@@ -63,5 +63,13 @@
         "@deepseek-ai/dsh-client-ui-conversation"
       ]
     }
+  },
+  "main": "index.js",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "check": "node --check client.js && node scripts/check-index.mjs && node scripts/check-renderer-core.mjs && node scripts/check-protocol-v3.mjs && node scripts/check-mcp-manifest.mjs && node scripts/check-mcp-server.mjs && node scripts/check-docs.mjs && node scripts/check-examples.mjs && node scripts/check-config.mjs && node scripts/check-fence-regex.mjs",
+    "prepublishOnly": "npm run check"
   }
 }

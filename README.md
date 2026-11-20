@@ -9,9 +9,9 @@
 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 **AI 情感出口**：
 右侧栏一块连续流动的光——不是解释对话，而是表达 AI 自己的情绪状态。
 
-![AI Dream 情绪循环演示](docs/demo.gif)
+![AI Dream 情绪循环演示](https://raw.githubusercontent.com/HanmoZhang0909/ai-dream/main/docs/demo.gif)
 
-> 上图为 `docs/demo.html` 独立复刻页渲染的 6 秒循环（calm → warm → curious → calm），**不是 DSH 界面截图**；真实界面截图欢迎 PR 补到 `docs/screenshot.png`。
+> 上图为 `docs/demo.html` 独立复刻页渲染的 6 秒循环（calm → warm → curious → calm），**不是 DSH 界面截图**；真实 DSH 界面截图见下方「界面预览」（来自自动化 GUI 自测）。
 >
 > **在线交互预览**：<https://hanmozhang0909.github.io/ai-dream/demo.html>（浏览器直接打开即有效果，不需要装 DSH）
 
@@ -84,12 +84,12 @@
 真实运行截图（右侧为 Dream 画布，来自自动化 GUI 自测；界面会随会话情绪变化）：
 
 <p>
-  <img src="docs/screenshot-live.png" alt="实时表达" width="48%">
-  <img src="docs/screenshot-empty.png" alt="还没有表达时" width="48%">
+  <img src="https://raw.githubusercontent.com/HanmoZhang0909/ai-dream/main/docs/screenshot-live.png" alt="实时表达" width="48%">
+  <img src="https://raw.githubusercontent.com/HanmoZhang0909/ai-dream/main/docs/screenshot-empty.png" alt="还没有表达时" width="48%">
 </p>
 <p>
-  <img src="docs/screenshot-rain.png" alt="天气形态：雨" width="48%">
-  <img src="docs/screenshot-replay.png" alt="回看某一轮" width="48%">
+  <img src="https://raw.githubusercontent.com/HanmoZhang0909/ai-dream/main/docs/screenshot-rain.png" alt="天气形态：雨" width="48%">
+  <img src="https://raw.githubusercontent.com/HanmoZhang0909/ai-dream/main/docs/screenshot-replay.png" alt="回看某一轮" width="48%">
 </p>
 
 ## 常见问题
@@ -224,7 +224,7 @@ node scripts/check-fence-regex.mjs
 - 本仓库自带一个可直接添加的市场索引：`https://hanmozhang0909.github.io/ai-dream/index.json`（Discover → Add index source；已用官方校验器验证，安装规格为 commit 固定的 git 源）；
 - 官方插件市场正在建设中（2026-11 官方披露），目前生态主要靠各索引与 npm/Git 安装；
 - 本仓库建议在 GitHub 上打 `dsh-plugin`、`deepseek-harness` topics，方便按主题检索；
-- 后续计划：发布 npm 包 `dsh-ai-dream`。
+- 后续计划：npm 包 `dsh-ai-dream` 已完成发布准备（npm 名称可用），发布后可直接 `npm i dsh-ai-dream`；在此之前仍推荐 git / 市场索引安装。
 
 ## 配置
 
@@ -275,7 +275,9 @@ node scripts/check-fence-regex.mjs
 - 内置情绪只是 fallback 词表；AI 自定义色板受 hex 校验与数值夹紧保护，非法输入逐字段回退；
 - 只渲染 `canvas` 语言的 fence；
 - 画布数据解析失败时保留上一版成功结果，原文保留在对话中；
-- 插件安装/替换 UI 代码后，偶尔需要重启 DSH 才能载入新 bundle。
+- 插件安装/替换 UI 代码后，偶尔需要重启 DSH 才能载入新 bundle；
+- 面向 DSH 0.2.x **预览版**开发：宿主插件 API 仍在快速迭代，升级 DSH 后如出现加载异常，请先回到已验证版本或等待适配；升级前建议备份 `~/.dsh/storages/dsh-ai-dream`；
+- 隐私：插件只读取对话消息中的 `canvas` 块与本机插件存储目录（签名/校准/配置），不发起任何外部网络请求；MCP 渲染器是可选的可移植原型，运行在宿主沙箱 iframe 中。
 
 ## License
 
