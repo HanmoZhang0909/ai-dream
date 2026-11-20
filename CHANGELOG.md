@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.3 — 2026-11-19
+
+- Added a local-only verification hook (`window.__AI_DREAM_SET_V3(spec)` + `data-ai-dream-test-v3`) so the GUI self-test can swap the forced v3 expression at runtime and assert the cross-fade deterministically. Verified in the real authenticated GUI: `data-ai-dream-v3-fading="1"` with both layer groups present (3 → 2 layers) during the transition, then `fading="0"` and the previous group removed. No user-visible behaviour change; the hook is inert in normal sessions.
+
 ## 3.0.2 — 2026-11-19
 
 - Fixed the missing transition when the canvas switches expressions: `V3Scene` used to replace its layers instantly (scroll-replay and new expressions snapped). It now keeps a snapshot of the previous plan and **cross-fades** old → new over `tauFor(transition.speed, transition.style)` (`data-ai-dream-v3-fading`/`-group` expose the state), and fades in on first mount. New plan transitions use only opacity (no layout), keep the existing per-layer rAF motion, and still respect `prefers-reduced-motion` (instant swap).

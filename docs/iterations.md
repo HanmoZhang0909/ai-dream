@@ -82,6 +82,9 @@
 
 **回归修复（v3.0.2）**：用户反馈"v3 场景切换没有过渡动画"——`V3Scene` 此前整块替换层。已改为保留上一份计划快照做 opacity 交叉淡入（时长按 transition 计算），首次挂载也淡入；动画仍在每层 rAF 内、reduced-motion 下瞬时切换。headless 会话导航当天受工作区/侧栏状态漂移影响，未能截到过渡帧，改用本地检查 + 请用户刷新页面实测。
 
+**过渡验证（v3.0.3）**：新增本地测试钩子 `window.__AI_DREAM_SET_V3(spec)`，在已认证 GUI 中运行时切换强制 v3 表达并断言交叉淡入：观测到 `data-ai-dream-v3-fading="1"`、新旧两组层同时在 DOM、层数 3→2，过渡结束后 `fading="0"` 且旧组移除；截图 `selftest-crossfade.png`（工作区）。同轮 headless 全量 run 因超长会话（≈95k px）下右侧栏挂载时机漂移，在早期 atTop 相位找不到画布而 exit 3；后续 v3/streaming/weather 相位各自重新导航均通过——判定为测试脚手架在超大历史下的环境问题，非产品缺陷，已给 atTop 相位加 ensureCanvas 兜底。
+
+
 
 
 

@@ -2089,6 +2089,14 @@ window.__ModuleLoader__.load({
       const wire = props.useProjection ? props.useProjection('emotionSignature') : undefined
       const wireConfig = props.useProjection ? props.useProjection('aiDreamConfig') : undefined
       const [bump, setBump] = React.useState(0)
+      // Test hook: lets the local GUI self-test swap the forced v3 expression at
+      // runtime to verify the cross-fade (never used in normal sessions).
+      const [testV3, setTestV3] = React.useState(null)
+      React.useEffect(() => {
+        if (typeof window === 'undefined') return undefined
+        window.__AI_DREAM_SET_V3 = spec => setTestV3({ spec, at: Date.now() })
+        return () => { try { delete window.__AI_DREAM_SET_V3 } catch {} }
+      }, [])
       const [flashTurn, setFlashTurn] = React.useState(null)
       const [onboarding, setOnboarding] = React.useState(() => !readOnboarded())
       const [onboardingFading, setOnboardingFading] = React.useState(false)
@@ -2227,16 +2235,17 @@ window.__ModuleLoader__.load({
             latest = { ...forcedPartial, partial: true }
           }
         }
-        if (FORCE_V3) {
-          const forcedBase = normalize({ kind: 'mood', intensity: FORCE_V3.intensity, palette: FORCE_V3.palette, name: FORCE_V3.name })
+        const forcedSpec = testV3 && testV3.spec ? testV3.spec : FORCE_V3
+        if (forcedSpec) {
+          const forcedBase = normalize({ kind: 'mood', intensity: forcedSpec.intensity, palette: forcedSpec.palette, name: forcedSpec.name })
           if (forcedBase && forcedBase.kind === 'mood') {
-            forcedBase.v3 = planV3Client(FORCE_V3)
+            forcedBase.v3 = planV3Client(forcedSpec)
             parsedAny = true
             latest = forcedBase
           }
         }
         return { latest, parsedAny, turnModels, latestTurn }
-      }, [feed, wire, wireConfig])
+      }, [feed, wire, wireConfig, testV3])
       const shown = React.useRef(null)
       if (timeline.latest) shown.current = timeline.latest
 
@@ -2679,6 +2688,7 @@ window.__ModuleLoader__.load({
           'data-ai-dream-form': renderedModel && renderedModel.nebula ? renderedModel.nebula.pattern : '',
           'data-ai-dream-partial': renderedModel && renderedModel.partial ? '1' : '0',
           'data-ai-dream-tier': shownModel && shownModel.v3 ? shownModel.v3.tier : 'L1',
+          'data-ai-dream-test-v3': testV3 ? '1' : '0',
           style: { height: '100%', background: BG, position: 'relative' },
         },
           shownModel && shownModel.v3
