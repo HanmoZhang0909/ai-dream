@@ -32,7 +32,7 @@
 | 方式 | 操作 |
 |---|---|
 | **本地目录** | 打开 **插件** 页 → **Add plugin** → 选**本仓库目录**（绝对路径） |
-| **npm** | 插件页 → Add plugin → 输入包名 `dsh-ai-dream`（也可 `npm i dsh-ai-dream` 后再用本地目录方式） |
+| **npm** | 已发布到 npm：插件页 → Add plugin → 输入包名 `dsh-ai-dream`（或 `npm i dsh-ai-dream`） |
 | **Git** | 插件页 → Add plugin → 输入 `https://github.com/HanmoZhang0909/ai-dream`（或 `github:HanmoZhang0909/ai-dream#main`） |
 
 安装完成后按提示刷新页面，然后打开右侧栏，在起始页点「**AI Dream**」卡片。

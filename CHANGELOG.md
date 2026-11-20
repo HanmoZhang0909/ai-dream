@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.0.6 — 2026-11-20
+
+- npm package is live: `npm i dsh-ai-dream` installs 3.0.5+ (registry latest). This release is the first automatic CI publish through the token-based `publish.yml` path: push a `vX.Y.Z` tag → workflow verifies tag/version → runs all checks → publishes with provenance. (npm no longer allows new TOTP/Authenticator-App 2FA, so until a WebAuthn security key is configured, CI keeps using the repository `NPM_TOKEN` secret; npm plans to restrict direct bypass-token publishing from 2027-01, at which point the workflow will move to staged publishing / trusted publishing.)
+
 ## 3.0.5 — 2026-11-20
 
 - First npm release of `dsh-ai-dream` (published via `.github/workflows/publish.yml` with a short-lived granular token; the workflow will move to npm Trusted Publishing so no token is needed afterwards). README install tables now point at `npm i dsh-ai-dream` / the `dsh-ai-dream` package name instead of "once published".
