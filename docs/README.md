@@ -78,5 +78,5 @@
 
 ## 当前状态
 
-- **最近发布**：`3.0.0` —— 协议 v3 全链路（DSH 客户端分层渲染/动画、MCP 契约、MCP iframe 渲染器、跨风格 fixtures/CI）；v2 兼容；
-- **待补**：DSH 画布 v3 的 GUI 截图（需要新的 `dsh web` token）；GitHub 推送受网络阻塞，后台重试中。
+- **最近发布**：`3.0.1` —— 补上 DSH 画布 v3 的 GUI 证据（已认证自测 exit 0 + 截图 `docs/screenshot-v3-dsh.png`），v3 证据链闭合；v2 兼容；
+- **下一步**：MCP 真机验证（需 ChatGPT/Claude 账号）；v3 原语的可视化打磨与更多 AI 风格样例。

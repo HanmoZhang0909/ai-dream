@@ -134,7 +134,7 @@ CI 校验 schema、合法引用与降级期望；渲染截图在 GUI 轮次补�
 | MCP 工具契约 v3（manifest + server 返回 tier/降级） | ✅ | `check-mcp-manifest` / `check-mcp-server` |
 | MCP iframe 渲染器 v3 | ✅ | 探针验证 + `docs/screenshot-v3-layers.png` |
 | 跨 AI 风格一致性（fixtures 在 CI 中校验） | ✅ | `check-protocol-v3` |
-| DSH 画布 v3 的 GUI 截图证据 | ⏳ 待 token | 脚本相位已就绪（exit 20） |
-| `v3.0.0` 发布 | ✅ 本地（3.0.0 tag）；GitHub 推送待网络恢复 | 版本/索引/tag 已对齐 |
+| DSH 画布 v3 的 GUI 截图证据 | ✅ v3.0.1 | 已认证 GUI 自测 exit 0：`data-ai-dream-v3-layers="3"`、primitives `blob/ring/lines`、tier L2；截图 `docs/screenshot-v3-dsh.png` |
+| `v3.0.0` 发布 | ✅ 本地（3.0.0 tag）+ v3.0.1 补丁 | 版本/index/tag 对齐；CI 见发布记录 |
 
 > "程序不崩"契约：所有未知/非法输入都会降级为可见输出，最差是 L0 光晕；渲染器只允许 transform/opacity 动画，闪烁 ≤3Hz，reduced-motion 冻结。

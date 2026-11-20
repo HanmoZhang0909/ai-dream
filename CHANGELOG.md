@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.1 — 2026-11-19
+
+- Completed the last v3 evidence item: the authenticated DSH GUI self-test now passes with the fresh token — the canvas renders a forced v3 expression (`data-ai-dream-v3-layers="3"`, primitives `blob/ring/lines`, tier L2) and the screenshot is committed as `docs/screenshot-v3-dsh.png`. Full suite also passed (onboarding, calibration notes, sync panel, signature panel, keyboard/Home/End/Esc, dots/jump/back, empty state, weather forms, streaming hint) with only `[deepseek-account]` console noise from the headless profile (unrelated to the plugin).
+- Docs: protocol v3 completion checklist marks the DSH GUI evidence and v3 release as done.
+
 ## 3.0.0 — 2026-11-18
 
 - Protocol v3 milestone: AI Dream now speaks an **open-vocabulary, layered expression protocol** end to end.
